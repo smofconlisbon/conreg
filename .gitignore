@@ -1,3 +1,13 @@
 *.swp
 *.lst
 *~
+
+.ddev
+.editorconfig
+.gitattributes
+.vscode
+phpcs.xml.dist
+
+recipes/
+vendor/
+web/

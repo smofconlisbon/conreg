@@ -6,8 +6,10 @@ use Drupal\Core\Config\ImmutableConfig;
 use Drupal\Core\Database\Connection;
 use Drupal\Core\Database\ConnectionNotDefinedException;
 use Drupal\Core\Database\Database;
-use Drupal\simple_conreg\Member;
-use Drupal\simple_conreg\SimpleConregTokens;
+use Drupal\conreg\Member;
+use Drupal\conreg\ConregTokens;
+
+// cspell:ignore permroleid permrolename
 
 /**
  *
@@ -105,7 +107,7 @@ class PlanZ {
   /**
    * Create PlanZ badge ID for member.
    *
-   * @param \Drupal\simple_conreg\Member $member
+   * @param \Drupal\conreg\Member $member
    *
    * @return string
    */
@@ -130,7 +132,7 @@ class PlanZ {
     $member = Member::loadMember($user->mid);
 
     // Get ConReg tokens, so we can add PlanZ tokens.
-    $tokens = new SimpleConregTokens($member->eid, $user->mid);
+    $tokens = new ConregTokens($member->eid, $user->mid);
     $extraTokens = [
       '[planz_user]' => $user->badgeId,
       '[planz_url]' => $this->planZUrl,
@@ -145,7 +147,7 @@ class PlanZ {
     $params['subject'] = $this->emailTemplateSubject;
     $params['body'] = $this->emailTemplateBody;
     $params['body_format'] = $this->emailTemplateFormat;
-    $module = "simple_conreg";
+    $module = "conreg";
     $key = "template";
     $to = $member->email;
     $language_code = \Drupal::languageManager()->getDefaultLanguage()->getId();

@@ -1,18 +1,16 @@
 <?php
 
+namespace Drupal\conreg;
+
 /**
- * @file
- * Contains \Drupal\simple_conreg\FieldOptionStorage
+ * Class to manage database storage for member options.
  */
-namespace Drupal\simple_conreg;
-
-use Drupal\Core\Database\Connection;
-use Drupal\devel;
-
 class FieldOptionStorage {
 
-  public static function upsertMemberOption($option)
-  {
+  /**
+   *
+   */
+  public static function upsertMemberOption($option) {
     // Make sure the datestamp gets updated.
     $option['update_date'] = time();
 
@@ -31,18 +29,20 @@ class FieldOptionStorage {
     }
     else {
       $connection->update('conreg_member_options')
-          ->fields($option)
-          ->condition('mid', $option['mid'])
-          ->condition('optid', $option['optid'])
-          ->execute();
+        ->fields($option)
+        ->condition('mid', $option['mid'])
+        ->condition('optid', $option['optid'])
+        ->execute();
     }
   }
 
-  public static function insertMemberOptions($mid, &$options)
-  {
+  /**
+   *
+   */
+  public static function insertMemberOptions($mid, &$options) {
     $connection = \Drupal::database();
-    
-    foreach ($options as $optid=>$option) {
+
+    foreach ($options as $optid => $option) {
       // Only save if option set.
       if ($option['option']) {
         $connection->insert('conreg_member_options')
@@ -56,19 +56,22 @@ class FieldOptionStorage {
           ->execute();
         $options[$optid]['changed'] = TRUE;
       }
-      else
+      else {
         $options[$optid]['changed'] = FALSE;
+      }
     }
   }
 
-  public static function updateMemberOptions($mid, &$options)
-  {
+  /**
+   *
+   */
+  public static function updateMemberOptions($mid, &$options) {
     $connection = \Drupal::database();
 
     // Get the saved member options for comparison.
     $prevOptions = self::getMemberOptions($mid, 0);
     // Loop through currently saved options, and remove any that are no longer required.
-    foreach ($prevOptions as $optid=>$delete) {
+    foreach ($prevOptions as $optid => $delete) {
       // If element not in options to save, update it's selected to 0.
       if (!array_key_exists($optid, $options) || $options[$optid]['option'] != 1) {
         $connection->update('conreg_member_options')
@@ -79,12 +82,12 @@ class FieldOptionStorage {
           ->condition('mid', $mid)
           ->condition('optid', $optid)
           ->execute();
-        }
-        $options[$optid]['changed'] = FALSE;
+      }
+      $options[$optid]['changed'] = FALSE;
     }
-    
+
     // Loop through all options to save, and either insert or update them.
-    foreach ($options as $optid=>$option) {
+    foreach ($options as $optid => $option) {
       // Only save if option set.
       if ($option['option']) {
         // Check if already saved.
@@ -102,8 +105,9 @@ class FieldOptionStorage {
               ->execute();
             $options[$optid]['changed'] = TRUE;
           }
-          else
+          else {
             $options[$optid]['changed'] = FALSE;
+          }
         }
         else {
           $connection->insert('conreg_member_options')
@@ -120,14 +124,13 @@ class FieldOptionStorage {
       }
     }
   }
-   
-  /*
+
+  /**
    * Function to return a list of options for specified member.
    */
-  public static function getMemberOptions($mid, $selected = TRUE)
-  {
+  public static function getMemberOptions($mid, $selected = TRUE) {
     $connection = \Drupal::database();
-    
+
     $select = $connection->select('conreg_member_options', 'm');
     // Select these specific fields for the output.
     $select->addField('m', 'mid');
@@ -136,11 +139,12 @@ class FieldOptionStorage {
     $select->addField('m', 'option_detail');
     $select->condition('m.mid', $mid);
     // If selected is TRUE, only select entries that are selected, otherwise select all entries.
-    if ($selected)
+    if ($selected) {
       $select->condition('m.is_selected', 1);
-    
+    }
+
     $entries = $select->execute()->fetchAll(\PDO::FETCH_ASSOC);
-    
+
     // Turn result into associative array.
     $memberOptions = [];
     foreach ($entries as $entry) {
@@ -150,18 +154,16 @@ class FieldOptionStorage {
     return $memberOptions;
   }
 
-
-  /*
+  /**
    * Function to return a list of members who have ticked specified option.
    *
-   * select m.first_name, m.last_name, m.email, o.is_selected, o.option_detail
+   * Select m.first_name, m.last_name, m.email, o.is_selected, o.option_detail
    * from conreg_members m inner join conreg_member_options o on m.mid=o.mid
    * where m.eid=1 and m.is_paid=1 and m.is_deleted=0 and o.optid=1;
    */
-  public static function adminOptionMemberListLoad($eid, $optid)
-  {
+  public static function adminOptionMemberListLoad($eid, $optid) {
     $connection = \Drupal::database();
-    
+
     $select = $connection->select('conreg_members', 'm');
     $select->join('conreg_member_options', 'o', 'm.mid=o.mid');
     // Select these specific fields for the output.
@@ -175,17 +177,20 @@ class FieldOptionStorage {
     $select->condition('m.eid', $eid);
     if (is_array($optid)) {
       $or_group = $select->orConditionGroup();
-      foreach ($optid as $curOpt)
+      foreach ($optid as $curOpt) {
         $or_group->condition('o.optid', $curOpt);
+      }
       $select->condition($or_group);
     }
     else {
       $select->condition('o.optid', $optid);
     }
-    $select->condition("is_paid", TRUE); //Only include members have paid.
-    $select->condition("is_deleted", FALSE); //Only include members who aren't deleted.
-    $select->orderby('m.mid', 'ASC');    
-    $select->orderby('o.optid', 'ASC');    
+    // Only include members have paid.
+    $select->condition("is_paid", TRUE);
+    // Only include members who aren't deleted.
+    $select->condition("is_deleted", FALSE);
+    $select->orderby('m.mid', 'ASC');
+    $select->orderby('o.optid', 'ASC');
 
     $entries = $select->execute()->fetchAll(\PDO::FETCH_ASSOC);
 
@@ -193,4 +198,3 @@ class FieldOptionStorage {
   }
 
 }
-

@@ -7,4 +7,3 @@ conreg_config_discord_invitebot:
   requirements:
     _permission: 'configure discord invitebot'
     eid: ^[0-9]+$
-

@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\simple_conreg;
+namespace Drupal\conreg;
 
 /**
  * Class to represent a group of options.

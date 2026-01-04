@@ -1,0 +1,89 @@
+.badge {
+  display: flex;
+  flex-direction: row;
+  break-inside: avoid;
+  width: 18.8cm;
+}
+
+.badge-side {
+  position: relative;
+  width: 9.4cm;
+  height: 6cm;
+  margin: 0;
+  background-color: #ccc;
+  border: 1px solid black;
+}
+
+.badge-name {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  top: 3cm;
+  left: 0.5cm;
+  width: 8.2cm;
+  height: 1.8cm;
+  padding: 0.1cm;
+  justify-content: center;
+  text-align: center;
+  border: 1px solid #ccc;
+  background-color: #fff;
+  font-size: 5em;
+}
+
+.badge-type {
+  position: absolute;
+  bottom: 2.9cm;
+  left: 0.5cm;
+  font-size: 0.5cm;
+}
+
+.badge-number {
+  position: absolute;
+  right: 0.5cm;
+  bottom: 2.9cm;
+  font-size: 0.5cm;
+}
+
+.badge-days {
+  position: absolute;
+  top: 0.5cm;
+  left: 0.5cm;
+  width: 8.4cm;
+  text-align: center;
+  font-size: 0.5cm;
+}
+
+.badge-country {
+  position: absolute;
+  top: 5.1cm;
+  left: 0.5cm;
+  width: 8.4cm;
+  text-align: center;
+  font-size: 0.5cm;
+}
+
+@media print {
+  #badge-form {
+    display: none !important;
+  }
+
+  header {
+    display: none;
+  }
+
+  #header {
+    display: none;
+  }
+
+  .highlighted {
+    display: none;
+  }
+
+  .breadcrumb {
+    display: none;
+  }
+
+  .page-title {
+    display: none;
+  }
+}

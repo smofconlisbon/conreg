@@ -1,0 +1,408 @@
+conreg.settings.*:
+  type: config_object
+  label: 'ConReg settings'
+  mapping:
+    payments:
+      type: mapping
+      mapping:
+        system:
+          type: string
+          label: 'Payment system'
+        mode:
+          type: string
+        public_key:
+          type: string
+        private_key:
+          type: string
+        currency:
+          type: string
+        symbol:
+          type: label
+          label: 'Currency symbol'
+        name:
+          type: boolean
+          label: 'Name on payment form'
+        postcode:
+          type: boolean
+          label: 'Postal code on payment form'
+        auto_approve:
+          type: boolean
+          label: 'If true, automatically approve member upon payment'
+        show_remaining:
+          type: boolean
+          label: 'Show number of memberships remaining for type in member type drop-down'
+        types:
+          type: string
+    badge_types:
+      type: text
+      label: 'List of badge types (note: you must keep the letter before | unchanged)'
+    badge_name_options:
+      type: text
+      label: 'List of options for choosing badge name'
+    badge_name_default:
+      type: string
+    days:
+      type: text
+      label: 'List of days to attend (note: you must keep code before | unchanged)'
+    member_no_digits:
+      type: string
+    registration_intro:
+      type: text
+      label: 'Introduction message for membership form'
+    payment_intro:
+      type: text
+      label: 'Introduction message for payment form'
+    communications_method:
+      type: mapping
+      mapping:
+        options:
+          type: text
+          label: 'A list of communications options (note: do not translate codes before |)'
+    display_options:
+      type: mapping
+      mapping:
+        options:
+          type: text
+          label: 'A list of options for displaying member on public lists (note: do not translate codes before |)'
+    member_listing_page:
+      type: mapping
+      mapping:
+        show_members:
+          type: boolean
+          label: 'True if member listing page is available'
+        show_countries:
+          type: boolean
+          label: 'True if member countries to be shown'
+        show_summary:
+          type: boolean
+          label: 'True if breakdown by country to be shown'
+    display:
+      type: mapping
+      mapping:
+        page_size:
+          type: integer
+    member:
+      type: mapping
+      label: 'Member settings'
+      mapping:
+        classes:
+          type: sequence
+          label: 'Member class list'
+          sequence:
+            type: mapping
+            label: 'Settings for member class'
+            mapping:
+              name:
+                type: string
+              fields:
+                type: mapping
+                mapping:
+                  first_name:
+                    type: label
+                    label: 'Label for Given name'
+                  last_name:
+                    type: label
+                    label: 'Label for Family name'
+                  name_description:
+                    type: text
+                    label: 'Description label under name fields, normally stating that at least one name field is required'
+                  email:
+                    type: label
+                    label: 'Label for Email'
+                  membership_type:
+                    type: label
+                    label: 'Label for Membership type'
+                  membership_type_description:
+                    type: label
+                    label: 'Description label for Membership type'
+                  membership_days:
+                    type: label
+                    label: 'Label for Day selection'
+                  membership_days_description:
+                    type: text
+                    label: 'Description label for Day selection'
+                  badge_name_option:
+                    type: label
+                    label: 'Label for Badge name options'
+                  badge_name:
+                    type: label
+                    label: 'Label for Custom badge name'
+                  badge_name_description:
+                    type: text
+                    label: 'Description label for Badge name'
+                  display:
+                    type: label
+                    label: 'Label for whether member would like to be on public member list'
+                  display_description:
+                    type: label
+                    label: 'Description label for display on public member list option'
+                  communication_method:
+                    type: label
+                    label: 'Label for Communications method'
+                  communication_method_description:
+                    type: text
+                    label: 'Description label for Communications method'
+                  same_address:
+                    type: label
+                    label: 'Label for address same as member 1'
+                  street:
+                    type: label
+                    label: 'Label for Address line 1'
+                  street2:
+                    type: label
+                    label: 'Label for Address line 2'
+                  city:
+                    type: label
+                    label: 'Label for Town/City'
+                  county:
+                    type: label
+                    label: 'Label for County/State'
+                  postcode:
+                    type: label
+                    label: 'Label for Postal/Zip code'
+                  country:
+                    type: label
+                    label: 'Label for Country'
+                  country_description:
+                    type: label
+                    label: 'Description label for Country'
+                  phone:
+                    type: label
+                    label: 'Label for Phone'
+                  birth_date:
+                    type: label
+                    label: 'Label for Birth Date'
+                  age:
+                    type: label
+                    label: 'Label for Age'
+                  age_min:
+                    type: integer
+                    label: 'Minimum age'
+                  age_max:
+                    type: integer
+                    label: 'Maximum age'
+              mandatory:
+                type: sequence
+                sequence:
+                  type: integer
+              max_length:
+                type: sequence
+                sequence:
+                  type: integer
+        types:
+          type: sequence
+          label: 'Member types list'
+          sequence:
+            type: mapping
+            label: 'Settings for member type'
+            mapping:
+              name:
+                type: label
+                label: 'Name of member type'
+              description:
+                type: label
+                label: 'Description of member type - normally includes age requirement and price'
+              price:
+                type: string
+              number_allowed:
+                type: integer
+                label: 'Number of members allowed to register for this member type'
+              badgeType:
+                type: string
+              memberClass:
+                type: string
+              allowFirst:
+                type: integer
+              active:
+                type: integer
+              defaultDays:
+                type: string
+              fieldset:
+                type: string
+              days:
+                type: sequence
+                label: 'Settings for days for each member type'
+                sequence:
+                  type: mapping
+                  label: 'Day settings'
+                  mapping:
+                    description:
+                      type: label
+                      label: 'Description of the day for the member (should include price)'
+                    price:
+                      type: string
+                      label: 'Price for the member for day'
+              confirmation:
+                type: mapping
+                label: 'Confirmation email'
+                mapping:
+                  override:
+                    type: boolean
+                    label: 'If true, override the confirmation email'
+                  template_subject:
+                    type: label
+                    label: 'The subject of the overridden confirmation email'
+                  template_body:
+                    type: text
+                    label: 'The body of the overridden confirmation email'
+                  template_format:
+                    type: string
+                    label: 'The text format of the overridden template'
+    submit:
+      type: mapping
+      label: 'Labels for submit buttons'
+      mapping:
+        payment:
+          type: label
+          label: 'Submit button when amount to be paid'
+        free:
+          type: label
+          label: 'Submit button if all members are free'
+    confirmation:
+      type: mapping
+      label: 'Labels for confirmation email'
+      mapping:
+        copy_us:
+          type: integer
+        from_name:
+          type: label
+          label: 'Subject for emails'
+        from_email:
+          type: string
+        copy_email_to:
+          type: string
+        format_html:
+          type: integer
+        template_subject:
+          type: label
+          label: 'The subject of the confirmation email'
+        template_body:
+          type: text
+          label: 'The body of the confirmation email'
+        template_format:
+          type: string
+        notification_subject:
+          type: label
+          label: 'The subject of the notification sent to admin'
+    member_editable:
+      type: mapping
+      label: 'Indicate which fields may be edited by member'
+      mapping:
+        first_name:
+          type: integer
+        last_name:
+          type: integer
+        badge_name:
+          type: integer
+        street:
+          type: integer
+        street2:
+          type: integer
+        city:
+          type: integer
+        county:
+          type: integer
+        postcode:
+          type: integer
+        country:
+          type: integer
+        age:
+          type: integer
+        display:
+          type: integer
+        communication_method:
+          type: integer
+        phone:
+          type: integer
+        birth_date:
+          type: integer
+    checkin:
+      type: mapping
+      label: 'Defaults for check-in page'
+      mapping:
+        display:
+          type: string
+        communication_method:
+          type: string
+    thanks:
+      type: mapping
+      label: 'Settings for Thank You page'
+      mapping:
+        title:
+          type: label
+          label: 'Title of Thank You page'
+        thank_you_message:
+          type: text
+          label: 'Message to display on Thank You page'
+        thank_you_format:
+          type: string
+    member_check:
+      type: mapping
+      label: 'Settings for the Check Membership page'
+      mapping:
+        title:
+          type: label
+          label: 'The title of the check membership page'
+        intro:
+          type: text
+          label: 'Intro text for check membership page'
+        confirm_subject:
+          type: label
+          label: 'The subject of the member check email'
+        confirm_body:
+          type: text
+          label: 'The body of the check member email'
+        confirm_format:
+          type: string
+        unknown_body:
+          type: text
+          label: 'The body of the email send if not a member'
+        unknown_format:
+          type: string
+    member_edit:
+      type: mapping
+      label: 'Settings for self service member editing'
+      mapping:
+        intro_text:
+          type: text
+          label: 'Intro to member edit page'
+        intro_format:
+          type: string
+        email_editable:
+          type: integer
+        badge_name_editable:
+          type: integer
+    reference:
+      type: mapping
+      label: 'Reference values to use'
+      mapping:
+        default_country:
+          type: string
+        countries:
+          type: string
+        geoplugin:
+          type: integer
+        no_country_label:
+          type: label
+          label: 'Option to select for users who don''t want to specify a country'
+    conreg_options:
+      type: mapping
+      label: 'Settings for membership options'
+      mapping:
+        option_groups:
+          type: text
+          label: 'The groupings of membership options'
+        options:
+          type: text
+          label: 'The options withing an option group'
+
+block.settings.conreg_price_availability:
+  type: block_settings
+  label: 'Price and Availability block'
+  mapping:
+    eid:
+      type: integer
+      label: Event ID
+    price_text:
+      type: string
+      label: Price and availability text

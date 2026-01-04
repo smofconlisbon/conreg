@@ -1,0 +1,5 @@
+conreg.settings:
+  title: 'ConReg settings'
+  base_route_name: conreg_event_list
+  names:
+    - conreg.settings.1

@@ -1,15 +1,16 @@
 <?php
 
-use Drupal\simple_conreg\Member;
-use Drupal\conreg_clickup\ConregClickUp;
+/**
+ * @file
+ */
+
+use Drupal\conreg\Member;
 
 /**
  * Called when ConReg
  * We only want to create ClickUp tasks after member has paid, so will always be on update event.
  */
-function conreg_clickup_convention_member_updated(Member $member)
-{
+function conreg_clickup_convention_member_updated(Member $member) {
   // Create ClickUp tasks for options.
-  //ConregClickUp::createMemberTasks($member->eid, $member->mid, $member->getOptions());
+  // ConregClickUp::createMemberTasks($member->eid, $member->mid, $member->getOptions());
 }
-

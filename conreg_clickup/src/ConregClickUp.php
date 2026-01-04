@@ -1,60 +1,58 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\conreg_clickup\ConregClickUp.
- */
-
 namespace Drupal\conreg_clickup;
 
 use Drupal\Component\Serialization\Json;
 use Drupal\Core\Datetime\DrupalDateTime;
 use Drupal\Core\Utility\Error;
-use Drupal\simple_conreg\SimpleConregConfig;
-use Drupal\simple_conreg\SimpleConregStorage;
-use Drupal\simple_conreg\FieldOptions;
+use Drupal\conreg\ConregConfig;
+use Drupal\conreg\ConregStorage;
+use Drupal\conreg\FieldOptions;
 use GuzzleHttp\Exception\RequestException;
+
+// cspell:ignore ecode
 
 /**
  * List options for Simple Convention Registration.
  */
-class ConregClickUp
-{
+class ConregClickUp {
 
   /**
    * Get a ClickUp Token.
    *
    * Parameters: Event ID.
    */
-  public static function getToken($clientId, $clientSecret, $code)
-  {
+  public static function getToken($clientId, $clientSecret, $code) {
     $base_url = 'https://api.clickup.com/api/v2';
     $client = \Drupal::httpClient();
     $response = $client->post($base_url . '/oauth/token', [
-      'verify' => true,
-      'form_params' => ['client_id' => $clientId,
-                        'client_secret'=> $clientSecret,
-                        'code' => $code,],
-        'headers' => [
-          'Content-type' => 'application/x-www-form-urlencoded',
-        ],
+      'verify' => TRUE,
+      'form_params' => [
+        'client_id' => $clientId,
+        'client_secret' => $clientSecret,
+        'code' => $code,
+      ],
+      'headers' => [
+        'Content-type' => 'application/x-www-form-urlencoded',
+      ],
     ])->getBody()->getContents();
     $decoded = Json::decode($response);
 
     return $decoded['access_token'];
   }
 
-
-  public static function getTeam($token = NULL)
-  {
+  /**
+   *
+   */
+  public static function getTeam($token = NULL) {
     if (empty($token)) {
-      $config = \Drupal::config('simple_conreg.clickup');
+      $config = \Drupal::config('conreg.clickup');
       $token = $config->get('clickup.token');
     }
     $base_url = 'https://api.clickup.com/api/v2';
     $client = \Drupal::httpClient();
     $response = $client->get($base_url . '/team', [
-      'verify' => true,
+      'verify' => TRUE,
       'headers' => [
         'Content-type' => 'application/json',
         'Authorization' => $token,
@@ -65,17 +63,18 @@ class ConregClickUp
     return $decoded;
   }
 
-
-  public static function getSpaces($team, $token = NULL)
-  {
+  /**
+   *
+   */
+  public static function getSpaces($team, $token = NULL) {
     if (empty($token)) {
-      $config = \Drupal::config('simple_conreg.clickup');
+      $config = \Drupal::config('conreg.clickup');
       $token = $config->get('clickup.token');
     }
     $base_url = 'https://api.clickup.com/api/v2';
     $client = \Drupal::httpClient();
-    $response = $client->get($base_url . "/team/$team/space" , [
-      'verify' => true,
+    $response = $client->get($base_url . "/team/$team/space", [
+      'verify' => TRUE,
       'headers' => [
         'Content-type' => 'application/json',
         'Authorization' => $token,
@@ -86,17 +85,18 @@ class ConregClickUp
     return $decoded;
   }
 
-
-  public static function getLists($space, $token = NULL)
-  {
+  /**
+   *
+   */
+  public static function getLists($space, $token = NULL) {
     if (empty($token)) {
-      $config = \Drupal::config('simple_conreg.clickup');
+      $config = \Drupal::config('conreg.clickup');
       $token = $config->get('clickup.token');
     }
     $base_url = 'https://api.clickup.com/api/v2';
     $client = \Drupal::httpClient();
-    $response = $client->get($base_url . "/space/$space/list" , [
-      'verify' => true,
+    $response = $client->get($base_url . "/space/$space/list", [
+      'verify' => TRUE,
       'headers' => [
         'Content-type' => 'application/json',
         'Authorization' => $token,
@@ -107,16 +107,18 @@ class ConregClickUp
     return $decoded;
   }
 
-  public static function getFolders($space, $token = NULL)
-  {
+  /**
+   *
+   */
+  public static function getFolders($space, $token = NULL) {
     if (empty($token)) {
-      $config = \Drupal::config('simple_conreg.clickup');
+      $config = \Drupal::config('conreg.clickup');
       $token = $config->get('clickup.token');
     }
     $base_url = 'https://api.clickup.com/api/v2';
     $client = \Drupal::httpClient();
-    $response = $client->get($base_url . "/space/$space/folder?archived=false" , [
-      'verify' => true,
+    $response = $client->get($base_url . "/space/$space/folder?archived=false", [
+      'verify' => TRUE,
       'headers' => [
         'Content-type' => 'application/json',
         'Authorization' => $token,
@@ -132,18 +134,19 @@ class ConregClickUp
    *
    * Parameters: List ID, Assignees, Name, Description. Optional: Token.
    */
-  public static function createTask($list, $assignees, $name, $description, $status, $token = NULL, &$message=NULL)
-  {
+  public static function createTask($list, $assignees, $name, $description, $status, $token = NULL, &$message = NULL) {
     if (empty($token)) {
-      $config = \Drupal::config('simple_conreg.clickup');
+      $config = \Drupal::config('conreg.clickup');
       $token = $config->get('clickup.token');
     }
     $base_url = 'https://api.clickup.com/api/v2';
     $client = \Drupal::httpClient();
-    if (is_array($assignees))
+    if (is_array($assignees)) {
       $assigneeArray = $assignees;
-    else
+    }
+    else {
       $assigneeArray = explode(',', $assignees);
+    }
     try {
       $body = [
         'name' => $name,
@@ -152,15 +155,15 @@ class ConregClickUp
         'status' => $status,
         'priority' => NULL,
         'due_date' => NULL,
-        'due_date_time' => false,
+        'due_date_time' => FALSE,
         'start_date' => NULL,
-        'start_date_time' => false,
-        'notify_all' => true,
+        'start_date_time' => FALSE,
+        'notify_all' => TRUE,
         'parent' => NULL,
-        'links_to' => NULL
+        'links_to' => NULL,
       ];
       $response = $client->post($base_url . "/list/$list/task", [
-        'verify' => true,
+        'verify' => TRUE,
         'body' => Json::encode($body),
         'headers' => [
           'Content-type' => 'application/json',
@@ -185,29 +188,30 @@ class ConregClickUp
    *
    * Parameters: List ID, Assignees, Name, Description. Optional: Token.
    */
-  public static function updateTask($taskId, $assignees, $name, $description, $status, $token = NULL, &$message=NULL)
-  {
+  public static function updateTask($taskId, $assignees, $name, $description, $status, $token = NULL, &$message = NULL) {
     if (empty($token)) {
-      $config = \Drupal::config('simple_conreg.clickup');
+      $config = \Drupal::config('conreg.clickup');
       $token = $config->get('clickup.token');
     }
     $base_url = 'https://api.clickup.com/api/v2';
     $client = \Drupal::httpClient();
-    if (is_array($assignees))
+    if (is_array($assignees)) {
       $assigneeArray = $assignees;
-    else
+    }
+    else {
       $assigneeArray = explode(',', $assignees);
+    }
     try {
       $body = [
         'name' => $name,
         'markdown_description' => $description,
         'assignees' => ['add' => $assigneeArray],
         'status' => $status,
-        'notify_all' => true,
-        "archived" => false,
+        'notify_all' => TRUE,
+        "archived" => FALSE,
       ];
       $response = $client->put($base_url . "/task/$taskId", [
-        'verify' => true,
+        'verify' => TRUE,
         'body' => Json::encode($body),
         'headers' => [
           'Content-type' => 'application/json',
@@ -223,7 +227,8 @@ class ConregClickUp
       return FALSE;
     }
 
-    return TRUE; // Success.
+    // Success.
+    return TRUE;
   }
 
   /**
@@ -231,18 +236,17 @@ class ConregClickUp
    *
    * Parameters: Event ID, Member ID, Options array, optional Config for event.
    */
-  public static function createMemberTasks($eid, $mid, $options, $config=NULL)
-  {
-    $clickupConfig = \Drupal::config('simple_conreg.clickup');
+  public static function createMemberTasks($eid, $mid, $options, $config = NULL) {
+    $clickupConfig = \Drupal::config('conreg.clickup');
     $token = $clickupConfig->get('clickup.token');
 
     // If event config not passed in, load it.
     if (is_null($config)) {
-      $config = SimpleConregConfig::getConfig($eid);
+      $config = ConregConfig::getConfig($eid);
     }
 
     // Load the member record and get name.
-    $member = SimpleConregStorage::load(['eid' => $eid, 'mid' => $mid]);
+    $member = ConregStorage::load(['eid' => $eid, 'mid' => $mid]);
     $memberName = $member['first_name'] . ' ' . $member['last_name'];
 
     $optionTitles = FieldOptions::getFieldOptionsTitles($eid, $config);
@@ -258,7 +262,7 @@ class ConregClickUp
       $taskOptions = [];
       $changed = FALSE;
       foreach (explode("\n", $groupMapping) as $mappingLine) {
-        list($optId, $memberIds) = explode('|', $mappingLine);
+        [$optId, $memberIds] = explode('|', $mappingLine);
         if ($options[$optId]['option'] || $options[$optId]['is_selected']) {
           if (isset($options[$optId]['changed']) && $options[$optId]['changed']) {
             $changed = TRUE;
@@ -289,16 +293,15 @@ class ConregClickUp
           self::updateTask($clickUpTask, $assignees, t('@task [updated on @date]', ['@task' => $taskName, '@date' => $date->format('Y-m-d')]), $taskDescription, $status, $token);
           self::updateMemberClickupOption($mid, $groupName, $clickUpTask);
         }
-        // if task exists and no changes, don't save.
+        // If task exists and no changes, don't save.
       }
     }
   }
 
-  /*
+  /**
    * DB functions for ClickUp table. May move to a separate class later.
    */
-  public static function insertMemberClickupOption($mid, $optionGroup, $clickUpTaskId)
-  {
+  public static function insertMemberClickupOption($mid, $optionGroup, $clickUpTaskId) {
     $connection = \Drupal::database();
 
     $connection->insert('conreg_member_clickup_options')
@@ -311,8 +314,10 @@ class ConregClickUp
       ->execute();
   }
 
-  public static function updateMemberClickupOption($mid, $optionGroup, $clickUpTaskId)
-  {
+  /**
+   *
+   */
+  public static function updateMemberClickupOption($mid, $optionGroup, $clickUpTaskId) {
     $connection = \Drupal::database();
 
     $connection->update('conreg_member_clickup_options')
@@ -325,8 +330,10 @@ class ConregClickUp
       ->execute();
   }
 
-  public static function getMemberClickupOption($mid, $optionGroup)
-  {
+  /**
+   *
+   */
+  public static function getMemberClickupOption($mid, $optionGroup) {
     $connection = \Drupal::database();
 
     $select = $connection->select('conreg_member_clickup_options', 'm');
@@ -335,10 +342,14 @@ class ConregClickUp
     $select->condition('m.mid', $mid);
     $select->condition('m.option_group', $optionGroup);
 
-    return $select->execute()->fetchField(); // Only selecting one field.
+    // Only selecting one field.
+    return $select->execute()->fetchField();
   }
 
-  public static function getMembersWithoutTasks($eid, $optids, $count) {
+  /**
+   *
+   */
+  public static function getMembersWithoutTasks($eid, $optIds, $count) {
     $connection = \Drupal::database();
 
     $select = $connection->select('conreg_members', 'm');
@@ -348,14 +359,19 @@ class ConregClickUp
     $select->addField('m', 'mid');
     $select->condition('m.eid', $eid);
     $select->condition('m.is_paid', 1);
-    $select->condition('o.optid', $optids, 'IN');
+    $select->condition('o.optid', $optIds, 'IN');
     $select->condition('o.is_selected', 1);
     $select->isNull('c.clickup_task_id');
     $select->distinct();
 
-    if ($count)
-      return $select->countQuery()->execute()->fetchField(); // Count the number of rows.
-    else
-      return $select->execute()->fetchAll(\PDO::FETCH_ASSOC); // Only selecting one field.
+    if ($count) {
+      // Count the number of rows.
+      return $select->countQuery()->execute()->fetchField();
+    }
+    // Only selecting one field.
+    else {
+      return $select->execute()->fetchAll(\PDO::FETCH_ASSOC);
+    }
   }
+
 }

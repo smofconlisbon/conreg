@@ -1,0 +1,403 @@
+conreg_register:
+  path: 'members/register/{eid}'
+  defaults:
+    _title: 'Registration'
+    _form: '\Drupal\conreg\Form\Registration'
+    eid: 1
+    return: ''
+  requirements:
+    _permission: 'convention registration'
+    eid: ^[0-9]+$
+
+conreg_fantable_register:
+  path: 'admin/members/fantable/register/{eid}'
+  defaults:
+    _title: 'Registration'
+    _form: '\Drupal\conreg\Form\Registration'
+    eid: 1
+    return: 'fantable'
+  requirements:
+    _permission: 'fan table registration'
+    eid: ^[0-9]+$
+
+conreg_portal_register:
+  path: 'members/portal/register/{eid}'
+  defaults:
+    _title: 'Registration'
+    _form: '\Drupal\conreg\Form\Registration'
+    eid: 1
+    return: 'portal'
+  requirements:
+    _permission: 'member portal'
+    eid: ^[0-9]+$
+  options:
+    no_cache: true
+
+conreg_checkout:
+  path: 'members/checkout/{payid}/{key}'
+  defaults:
+    _title: 'Payment'
+    _form: '\Drupal\conreg\Form\Checkout'
+    return: ''
+  requirements:
+    _permission: 'convention registration'
+    payid: ^[0-9]+$
+    key: ^[0-9]+$
+  options:
+    no_cache: true
+
+conreg_fantable_checkout:
+  path: 'members/fantable/checkout/{payid}/{key}'
+  defaults:
+    _title: 'Payment'
+    _form: '\Drupal\conreg\Form\Checkout'
+    return: 'fantable'
+  requirements:
+    _permission: 'convention registration'
+    payid: ^[0-9]+$
+    key: ^[0-9]+$
+  options:
+    no_cache: true
+
+conreg_portal_checkout:
+  path: 'members/portal/checkout/{payid}/{key}'
+  defaults:
+    _title: 'Payment'
+    _form: '\Drupal\conreg\Form\Checkout'
+    return: 'portal'
+  requirements:
+    _permission: 'convention registration'
+    payid: ^[0-9]+$
+    key: ^[0-9]+$
+  options:
+    no_cache: true
+
+conreg_thanks:
+  path: 'members/thanks/{eid}'
+  defaults:
+    _title: 'Thank you'
+    _controller: '\Drupal\conreg\Controller\ConregController::registrationThanks'
+    eid: 1
+  requirements:
+    _permission: 'convention registration'
+    eid: ^[0-9]+$
+
+conreg_list:
+  path: 'members/list/{eid}'
+  defaults:
+    _title: 'Member List'
+    _controller: '\Drupal\conreg\Controller\ConregController::memberList'
+    eid: 1
+  requirements:
+    _permission: 'convention registration'
+    eid: ^[0-9]+$
+
+conreg_check:
+  path: 'members/check/{eid}'
+  defaults:
+    _title: 'Check Membership'
+    _form: '\Drupal\conreg\Form\CheckMember'
+    eid: 1
+  requirements:
+    _permission: 'check membership'
+    eid: ^[0-9]+$
+
+conreg_login:
+  path: 'members/login/{mid}/{key}/{expiry}'
+  defaults:
+    _title: 'Login'
+    _controller: '\Drupal\conreg\Controller\LoginController::memberLoginAndRedirect'
+  requirements:
+    _access: 'TRUE'
+    mid: ^[0-9]+$
+    key: ^[0-9]+$
+    expiry: ^[0-9]+$
+  options:
+    no_cache: true
+
+conreg_portal:
+  path: 'members/portal/{eid}'
+  defaults:
+    _title: 'Member Portal'
+    _form: '\Drupal\conreg\Form\MemberPortal'
+    eid: 1
+  requirements:
+    _permission: 'member portal'
+    eid: ^[0-9]+$
+
+conreg_portal_edit:
+  path: 'members/portal/edit/{eid}/{mid}'
+  defaults:
+    _title: 'Edit Member'
+    _form: '\Drupal\conreg\Form\MemberEdit'
+    eid: 1
+  requirements:
+    _permission: 'member portal'
+    eid: ^[0-9]+$
+    mid: ^[0-9]+$
+
+conreg_event_list:
+  path: 'admin/config/conreg/events'
+  defaults:
+    _title: 'ConReg Event List'
+    _form: '\Drupal\conreg\Form\Admin\EventList'
+  requirements:
+    _permission: 'configure convention registration'
+
+conreg_event_clone:
+  path: 'admin/config/conreg/clone/{eid}'
+  defaults:
+    _title: 'Clone Event'
+    _form: '\Drupal\conreg\Form\Admin\EventClone'
+    eid: 1
+  requirements:
+    _permission: 'configure convention registration'
+    eid: ^[0-9]+$
+
+conreg_config:
+  path: 'admin/config/conreg/{eid}'
+  defaults:
+    _title: 'Event Configuration'
+    _form: '\Drupal\conreg\Form\Admin\EventConfig'
+    eid: 1
+  requirements:
+    _permission: 'configure convention registration'
+    eid: ^[0-9]+$
+
+conreg_config_member_classes:
+  path: 'admin/config/conreg/member-classes/{eid}'
+  defaults:
+    _title: 'Member Classes'
+    _form: '\Drupal\conreg\Form\Admin\MemberClasses'
+    eid: 1
+  requirements:
+    _permission: 'configure convention registration'
+    eid: ^[0-9]+$
+
+conreg_config_member_types:
+  path: 'admin/config/conreg/member-types/{eid}'
+  defaults:
+    _title: 'Member Types'
+    _form: '\Drupal\conreg\Form\Admin\MemberTypes'
+    eid: 1
+  requirements:
+    _permission: 'configure convention registration'
+    eid: ^[0-9]+$
+
+conreg_config_addons:
+  path: 'admin/config/conreg/addons/{eid}'
+  defaults:
+    _title: 'Add-ons'
+    _form: '\Drupal\conreg\Form\Admin\EventAddOns'
+    eid: 1
+  requirements:
+    _permission: 'configure convention add-ons'
+    eid: ^[0-9]+$
+
+conreg_config_email_templates:
+  path: 'admin/config/conreg/email/templates'
+  defaults:
+    _title: 'Simple Convention Email Templates'
+    _form: '\Drupal\conreg\ConregConfigEmailTemplates'
+  requirements:
+    _permission: 'configure convention email templates'
+
+conreg_admin_member_list:
+  path: 'admin/members/member-list/{eid}'
+  defaults:
+    _title: 'Member List'
+    _controller: '\Drupal\conreg\Controller\ConregController::memberAdminMemberList'
+    eid: 1
+  requirements:
+    _permission: 'view membership details'
+    eid: ^[0-9]+$
+
+conreg_badge_upload:
+  path: 'members/badge/upload/{eid}'
+  defaults:
+    _controller: '\Drupal\conreg\Controller\BadgeUploadController::badgeUpload'
+    eid: 1
+  requirements:
+    _permission: 'view membership badges'
+    eid: ^[0-9]+$
+
+conreg_admin_member_options:
+  path: 'admin/members/options/{eid}/{option}'
+  defaults:
+    _title: 'Member Options'
+    _form: '\Drupal\conreg\SimpleConregAdminMemberOptions'
+    eid: 1
+    option: 0
+  requirements:
+    _permission: 'view membership options'
+    eid: ^[0-9]+$
+    option: ^[0-9]*$
+
+conreg_admin_member_addons:
+  path: 'admin/members/addons/{eid}/{addon}'
+  defaults:
+    _title: 'Member Options'
+    _form: '\Drupal\conreg\SimpleConregAdminMemberAddOns'
+    eid: 1
+    addon: 0
+  requirements:
+    _permission: 'view membership add-ons'
+    eid: ^[0-9]+$
+    addon: ^[0-9]*$
+
+conreg_admin_mailout_emails:
+  path: 'admin/members/mailout/{eid}'
+  defaults:
+    _title: 'Member Mailout Emails'
+    _form: '\Drupal\conreg\SimpleConregAdminMailoutEmails'
+    eid: 1
+    option: 0
+    export: FALSE
+  requirements:
+    _permission: 'manage mailout lists'
+    eid: ^[0-9]+$
+
+conreg_admin_mailout_emails_export:
+  path: "admin/members/mailout_export/{eid}/{methods}/{languages}/{fields}"
+  defaults:
+    _title: "Exporting Member Mailout Emails"
+    _form: '\Drupal\conreg\SimpleConregAdminMailoutEmails'
+    eid: 1
+    option: 0
+    export: TRUE
+    methods: null
+    languages: null
+    fields: null
+  requirements:
+    _permission: 'manage mailout lists'
+    eid: ^[0-9]+$
+
+conreg_admin_member_summary:
+  path: 'members/member-summary/{eid}'
+  defaults:
+    _title: 'Membership Summary'
+    _controller: '\Drupal\conreg\Controller\ConregController::memberAdminMemberSummary'
+    eid: 1
+  requirements:
+    _permission: 'view membership summary'
+    eid: ^[0-9]+$
+
+conreg_admin_child_member_ages:
+  path: 'members/child-members/{eid}'
+  defaults:
+    _title: 'Child Member Ages'
+    _controller: '\Drupal\conreg\Controller\ConregController::memberAdminChildMemberAges'
+    eid: 1
+  requirements:
+    _permission: 'view child members'
+    eid: ^[0-9]+$
+
+conreg_admin_members:
+  path: 'admin/members/list/{eid}/{display}/{page}'
+  defaults:
+    _title: 'Manage Members'
+    _form: '\Drupal\conreg\Form\Admin\AdminMembers'
+    eid: 1
+    display: 'approval'
+    page: 1
+  requirements:
+    _permission: 'manage convention members'
+    eid: ^[0-9]+$
+    display: ^[a-z_]+$
+    page: ^[0-9]+$
+
+conreg_admin_members_add:
+  path: 'admin/members/add/{eid}'
+  defaults:
+    _title: 'Manage Members - Add Member'
+    _form: '\Drupal\conreg\Form\Admin\AdminMemberEdit'
+    eid: 1
+  requirements:
+    _permission: 'manage convention members'
+    eid: ^[0-9]+$
+
+conreg_admin_members_edit:
+  path: 'admin/members/edit/{eid}/{mid}'
+  defaults:
+    _title: 'Manage Members - Edit Member'
+    _form: '\Drupal\conreg\Form\Admin\AdminMemberEdit'
+    eid: 1
+  requirements:
+    _permission: 'manage convention members'
+    eid: ^[0-9]+$
+    mid: ^[0-9]+$
+
+conreg_admin_members_delete:
+  path: 'admin/members/delete/{eid}/{mid}'
+  defaults:
+    _title: 'Manage Members - Delete Member'
+    _form: '\Drupal\conreg\Form\Admin\MemberDelete'
+    eid: 1
+  requirements:
+    _permission: 'manage convention members'
+    eid: ^[0-9]+$
+    mid: ^[0-9]+$
+
+conreg_admin_members_transfer:
+  path: 'admin/members/transfer/{eid}/{mid}'
+  defaults:
+    _title: 'Manage Members - Transfer Member'
+    _form: '\Drupal\conreg\Form\Admin\MemberTransfer'
+    eid: 1
+  requirements:
+    _permission: 'manage convention members'
+    eid: ^[0-9]+$
+    mid: ^[0-9]+$
+
+conreg_admin_members_email:
+  path: 'admin/members/email/{eid}/{mid}'
+  defaults:
+    _title: 'Member Administration - Email Member'
+    _form: '\Drupal\conreg\SimpleConregAdminMemberEmail'
+    eid: 1
+  requirements:
+    _permission: 'manage convention members'
+    eid: ^[0-9]+$
+    mid: ^[0-9]+$
+
+conreg_admin_bulk_email:
+  path: 'admin/members/bulk-email/{eid}'
+  defaults:
+    _title: 'Membership Bulk Email Sender'
+    _form: '\Drupal\conreg\SimpleConregAdminBulkEmail'
+    eid: 1
+  requirements:
+    _permission: 'bulk email sending'
+    eid: ^[0-9]+$
+
+conreg_admin_bulk_email_send:
+  path: 'admin/members/bulk-send/{mid}'
+  defaults:
+    _controller: '\Drupal\conreg\Controller\BulkMailController::bulkSend'
+  requirements:
+    _permission: 'bulk email sending'
+    mid: ^[0-9]+$
+
+conreg_admin_checkin:
+  path: 'admin/members/checkin/{eid}/{lead_mid}'
+  defaults:
+    _title: 'Member Checkin'
+    _form: '\Drupal\conreg\SimpleConregAdminCheckIn'
+    eid: 1
+    lead_mid: 0
+  requirements:
+    _permission: 'check in convention members'
+    eid: ^[0-9]+$
+    lead_mid: ^[0-9]+$
+
+conreg_admin_fantable:
+  path: 'admin/members/fantable/{eid}/{lead_mid}'
+  defaults:
+    _title: 'Fan Table'
+    _form: '\Drupal\conreg\Form\Admin\FanTable'
+    eid: 1
+    lead_mid: 0
+  requirements:
+    _permission: 'fan table registration'
+    eid: ^[0-9]+$
+    lead_mid: ^[0-9]+$

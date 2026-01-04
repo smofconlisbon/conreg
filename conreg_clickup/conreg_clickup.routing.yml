@@ -15,4 +15,3 @@ conreg_config_clickup_options:
   requirements:
     _permission: 'configure ClickUp integration'
     eid: ^[0-9]+$
-

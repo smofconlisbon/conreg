@@ -6,12 +6,14 @@ use Drupal\conreg_planz\BadgeIdSource;
 use Drupal\conreg_planz\PlanZ;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\simple_conreg\FieldOptions;
-use Drupal\simple_conreg\SimpleConregEventStorage;
-use Drupal\simple_conreg\SimpleConregTokens;
+use Drupal\conreg\FieldOptions;
+use Drupal\conreg\EventStorage;
+use Drupal\conreg\ConregTokens;
+
+// cspell:ignore badgeid permroleid permrolename
 
 /**
- * Configure simple_conreg settings for this site.
+ * Configure conreg settings for this site.
  */
 class ConfigPlanZForm extends ConfigFormBase {
   private PlanZ $planz;
@@ -40,9 +42,9 @@ class ConfigPlanZForm extends ConfigFormBase {
     $form_state->set('eid', $eid);
 
     // Fetch event name from Event table.
-    if (count($event = SimpleConregEventStorage::load(['eid' => $eid])) < 3) {
+    if (count($event = EventStorage::load(['eid' => $eid])) < 3) {
       // Event not in database. Display error.
-      $form['simple_conreg_event'] = [
+      $form['conreg_event'] = [
         '#markup' => $this->t('Event not found. Please contact site admin.'),
         '#prefix' => '<h3>',
         '#suffix' => '</h3>',
@@ -50,12 +52,12 @@ class ConfigPlanZForm extends ConfigFormBase {
       return parent::buildForm($form, $form_state);
     }
 
-    $config = \Drupal::config('simple_conreg.settings.' . $eid . '.planz');
+    $config = \Drupal::config('conreg.settings.' . $eid . '.planz');
     $fieldOptions = FieldOptions::getFieldOptions($eid);
     $this->planz = new PlanZ($config);
 
     $form['#attached'] = [
-      'library' => ['simple_conreg/conreg_admin'],
+      'library' => ['conreg/conreg_admin'],
     ];
 
     $form['admin'] = [
@@ -276,7 +278,7 @@ class ConfigPlanZForm extends ConfigFormBase {
     $form['email']['template_body'] = [
       '#type' => 'text_format',
       '#title' => $this->t('InviteBulk email body'),
-      '#description' => $this->t('Text for the email body. you may use the following tokens: @tokens.', ['@tokens' => SimpleConregTokens::tokenHelp(['planz_user', 'planz_password', 'planz_url'])]),
+      '#description' => $this->t('Text for the email body. you may use the following tokens: @tokens.', ['@tokens' => ConregTokens::tokenHelp(['planz_user', 'planz_password', 'planz_url'])]),
       '#default_value' => $this->planz->emailTemplateBody,
       '#format' => $this->planz->emailTemplateFormat,
     ];
@@ -291,7 +293,7 @@ class ConfigPlanZForm extends ConfigFormBase {
     $eid = $form_state->get('eid');
 
     $vals = $form_state->getValues();
-    $config = \Drupal::getContainer()->get('config.factory')->getEditable('simple_conreg.settings.' . $eid . '.planz');
+    $config = \Drupal::getContainer()->get('config.factory')->getEditable('conreg.settings.' . $eid . '.planz');
     $config->set('target', $vals['authenticate']['target']);
     $config->set('badge_id_source', $vals['members']['badge_id_source']);
     $config->set('prefix', $vals['members']['prefix']);

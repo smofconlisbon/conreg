@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\simple_conreg\Controller;
+namespace Drupal\conreg\Controller;
 
 use Drupal\Component\Datetime\TimeInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
@@ -8,8 +8,8 @@ use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Language\LanguageManagerInterface;
 use Drupal\Core\Session\AccountProxyInterface;
 use Drupal\Core\Url;
-use Drupal\simple_conreg\SimpleConregStorage;
-use Drupal\simple_conreg\SimpleConregConfig;
+use Drupal\conreg\ConregStorage;
+use Drupal\conreg\ConregConfig;
 use Drupal\user\Entity\User;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -83,7 +83,7 @@ class LoginController extends ControllerBase {
   public function memberLoginAndRedirect($mid, $key, $expiry) {
 
     // Check member credentials valid.
-    $member = SimpleConregStorage::load([
+    $member = ConregStorage::load([
       'mid' => $mid,
       'random_key' => $key,
       'login_exp_date' => $expiry,
@@ -110,7 +110,7 @@ class LoginController extends ControllerBase {
     // Check if user already logged in. If so, redirect to member portal.
     if ($this->currentUser && $user && $user->id() == $this->currentUser->id()) {
       // Redirect to member portal.
-      return $this->redirect('simple_conreg_portal', ['eid' => $member['eid']], ['absolute' => TRUE]);
+      return $this->redirect('conreg_portal', ['eid' => $member['eid']], ['absolute' => TRUE]);
     }
 
     // If user doesn't exist, create new user.
@@ -133,7 +133,7 @@ class LoginController extends ControllerBase {
     }
 
     // Check if role needs to be added.
-    $config = SimpleConregConfig::getConfig($member['eid']);
+    $config = ConregConfig::getConfig($member['eid']);
     $addRole = $config->get('member_portal.add_role');
     if ($addRole) {
       // Check if user has role already.
@@ -150,17 +150,17 @@ class LoginController extends ControllerBase {
     // Redirecting at the same time as login was causing trouble, so after
     // loading, load JS to reload page. Redirect will happen on reload. As
     // fallback, display link to member portal.
-    $url_object = Url::fromRoute('simple_conreg_portal', ['eid' => $member['eid']], ['absolute' => TRUE, 'query' => ['redirect' => 'redirect']]);
+    $url_object = Url::fromRoute('conreg_portal', ['eid' => $member['eid']], ['absolute' => TRUE, 'query' => ['redirect' => 'redirect']]);
     $output = [
       // '#attached' => [
-      //   'library' => ['simple_conreg/conreg_login'],
+      //   'library' => ['conreg/conreg_login'],
       // ],
       '#title' => $this->t('Welcome @name!', ['@name' => $member['first_name']]),
       'link' => [
         '#type' => 'link',
         '#url' => $url_object,
         '#title' => $this->t('Enter Member Portal'),
-      ]
+      ],
     ];
     return $output;
   }

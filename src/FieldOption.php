@@ -1,10 +1,10 @@
 <?php
 
-namespace Drupal\simple_conreg;
+namespace Drupal\conreg;
 
 /**
  * @file
- * Contains \Drupal\simple_conreg\FieldOption.
+ * Contains \Drupal\conreg\FieldOption.
  */
 
 /**
@@ -116,7 +116,7 @@ class FieldOption {
       }
       return TRUE;
     }
-    \Drupal::logger('simple_conreg')->notice(t('Unexpected membership option line: @line', ['@line' => $optionLine]));
+    \Drupal::logger('conreg')->notice(t('Unexpected membership option line: @line', ['@line' => $optionLine]));
     return FALSE;
   }
 

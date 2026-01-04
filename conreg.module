@@ -1,0 +1,149 @@
+<?php
+
+/**
+ * @file
+ * Warning: should not be in namespace!
+ */
+
+use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\conreg\EventStorage;
+use Drupal\conreg\ConregStorage;
+use Drupal\conreg\ConregOptions;
+use Drupal\conreg\ConregEmailer;
+use Drupal\conreg\ConregConfig;
+
+/**
+ *
+ */
+function conreg_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    // Case 'conreg_register':
+    // Help text for the simple page registered for this path.
+    // return t('Please register your details.');.
+    case 'help.page.conreg':
+      // Help text for the admin section, using the module name in the path.
+      return t("Configure settings for convention registration.");
+  }
+}
+
+/**
+ *
+ */
+function conreg_mail($key, &$message, $params) {
+
+  switch ($key) {
+    // Use template handler.
+    case 'template':
+      ConregEmailer::createEmail($message, $params);
+      break;
+  }
+}
+
+/**
+ *
+ */
+function conreg_form_alter(&$form, FormStateInterface $form_state, $form_id) {
+
+  switch ($form_id) {
+    case "simplenews_newsletter_edit_form":
+    case "simplenews_newsletter_add_form":
+      // Get the newsletter ID from the form.
+      $newsletter_id = $form['id']['#default_value'];
+      // Get the list of active events.
+      $events = EventStorage::loadAll(['is_open' => 1]);
+      foreach ($events as $event) {
+        $eid = $event['eid'];
+        $config = ConregConfig::getConfig($eid);
+        $simplenews_options = $config->get('simplenews.options');
+        // Get saved settings if they exist.
+        $active = (isset($simplenews_options[$newsletter_id]) ? $simplenews_options[$newsletter_id]['active'] : 0);
+        $communications_methods = (isset($simplenews_options[$newsletter_id]) ? $simplenews_options[$newsletter_id]['communications_methods'] : []);
+
+        $form['conreg_' . $eid] = [
+          '#type' => 'fieldset',
+          '#title' => t('Simple Convention Registration - @event', ['@event' => $event['event_name']]),
+          '#tree' => TRUE,
+        ];
+        $form['conreg_' . $eid]['active'] = [
+          '#type' => 'checkbox',
+          '#title' => t('Automatically populate this newsletter with convention members'),
+          '#description' => t('Check this box if you want this newsletter to be populated with convention members that meet the criteria below. This may cause other members to be unsubscribed, so best not to expose a sign-up form if using this for convention members.'),
+          '#default_value' => $active,
+        ];
+        $form['conreg_' . $eid]['communications_methods'] = [
+          '#type' => 'checkboxes',
+          '#title' => t('Communications methods to subscribe to newsletter'),
+          '#options' => ConregOptions::communicationMethod($eid, $config, FALSE),
+          '#default_value' => $communications_methods,
+        ];
+      }
+
+      // Attach our custom submit handler.
+      $form['actions']['submit']['#submit'][] = 'conreg_simplenews_form_submit';
+      break;
+  }
+}
+
+/**
+ *
+ */
+function conreg_simplenews_form_submit($form, FormStateInterface $form_state) {
+  $form_values = $form_state->getValues();
+
+  // Get Drupal SimpleNews subscription manager.
+  /** @var \Drupal\simplenews\Subscription\SubscriptionManagerInterface */
+  $subscription_manager = \Drupal::service('simplenews.subscription_manager');
+
+  $newsletter_id = $form_values['id'];
+  // Get the list of active events.
+  $events = EventStorage::loadAll(['is_open' => 1]);
+  foreach ($events as $event) {
+    $eid = $event['eid'];
+    $config = \Drupal::getContainer()->get('config.factory')->getEditable('conreg.settings.' . $eid);
+    $active = $form_values['conreg_' . $eid]['active'];
+    $communications_methods = $form_values['conreg_' . $eid]['communications_methods'];
+    $simplenews_options = $config->get('simplenews.options');
+    $simplenews_options[$newsletter_id]['active'] = $active;
+    $simplenews_options[$newsletter_id]['communications_methods'] = $communications_methods;
+    $config->set('simplenews.options', $simplenews_options);
+    $config->save();
+
+    // If newsletter is active for convention members, subscribe members matching criteria.
+    if (isset($active) && $active) {
+      // Check SimpleNews module loaded.
+      if (\Drupal::moduleHandler()->moduleExists('simplenews')) {
+        // Get unique convention member email addresses.
+        $members = ConregStorage::adminSimplenewsSubscribeListLoad($eid);
+
+        // Loop through convention members.
+        foreach ($members as $member) {
+          // Check if member matches newsletter criteria.
+          if (isset($member['communication_method']) &&
+              array_key_exists($member['communication_method'], $communications_methods) &&
+              $communications_methods[$member['communication_method']]) {
+            // Subscribe member if criteria met.
+            $subscription_manager->subscribe($member['email'], $newsletter_id);
+          }
+          else {
+            // Check if member is a subscriber.
+            if ($subscription_manager->isSubscribed($member['email'], $newsletter_id)) {
+              // Unsubscribe member if criteria don't match.
+              $subscription_manager->unsubscribe($member['email'], $newsletter_id);
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_page_attachments().
+ */
+function conreg_page_attachments(&$variables) {
+  // Include Icon CSS if Drupal earlier than 11.1 - after this use Icon API.
+  if (version_compare(\Drupal::VERSION, '11.1', '<')) {
+    $variables['#attached']['library'][] = 'conreg/icon';
+  }
+}

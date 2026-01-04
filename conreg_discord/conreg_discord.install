@@ -8,8 +8,7 @@
 /**
  * Implements hook_requirements().
  */
-function conreg_discord_requirements($phase)
-{
+function conreg_discord_requirements($phase) {
   $requirements = [];
   return $requirements;
 }
@@ -22,8 +21,7 @@ function conreg_discord_requirements($phase)
  * @see hook_install()
  * @ingroup conreg_discord
  */
-function conreg_discord_install()
-{
+function conreg_discord_install() {
 }
 
 /**
@@ -34,33 +32,31 @@ function conreg_discord_install()
  * @see hook_schema()
  * @ingroup conreg_discord
  */
-function conreg_discord_schema()
-{
-  // create table conreg_discord (mid int primary key, invite_code varchar(100) not null, update_date int not null);
-  $schema['conreg_discord'] = array(
+function conreg_discord_schema() {
+  // Create table conreg_discord (mid int primary key, invite_code varchar(100) not null, update_date int not null);.
+  $schema['conreg_discord'] = [
     'description' => 'Stores events on the registration system.',
-    'fields' => array(
-      'mid' => array(
+    'fields' => [
+      'mid' => [
         'type' => 'int',
         'not null' => TRUE,
         'description' => 'Primary Key: Unique event ID.',
-      ),
-      'invite_code' => array(
+      ],
+      'invite_code' => [
         'type' => 'varchar',
         'length' => 100,
         'not null' => TRUE,
         'description' => 'Name of the event.',
-      ),
-      'update_date' => array(
+      ],
+      'update_date' => [
         'type' => 'int',
         'not null' => TRUE,
         'default' => 0,
         'description' => 'Unix timestamp for the date and time last updated.',
-      ),
-    ),
-    'primary key' => array('mid'),
-  );
+      ],
+    ],
+    'primary key' => ['mid'],
+  ];
 
   return $schema;
 }
-

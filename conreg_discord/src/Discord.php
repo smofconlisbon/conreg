@@ -1,25 +1,15 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\conreg_discord\Discord.
- */
-
 namespace Drupal\conreg_discord;
 
 use Drupal\Component\Serialization\Json;
 use Drupal\Core\Utility\Error;
-use Drupal\Core\Url;
-use Drupal\Core\Datetime\DrupalDateTime;
-use Drupal\simple_conreg\SimpleConregConfig;
-use Drupal\simple_conreg\SimpleConregStorage;
-use Drupal\simple_conreg\FieldOptions;
-use Drupal\devel;
 use GuzzleHttp\Exception\RequestException;
 
-
-class Discord
-{
+/**
+ *
+ */
+class Discord {
   const BASE_URL = 'https://discordapp.com/api/';
   const INVITE_URL = 'https://discordapp.com/invite/';
   public $token;
@@ -31,8 +21,7 @@ class Discord
   /**
    * Constructs a new Member object.
    */
-  public function __construct($token, $channelId)
-  {
+  public function __construct($token, $channelId) {
     $this->token = $token;
     $this->channelId = $channelId;
   }
@@ -40,8 +29,7 @@ class Discord
   /**
    * Gets the channel object.
    */
-  public function getChannel()
-  {
+  public function getChannel() {
     $client = \Drupal::httpClient();
     try {
       $response = $client->get(self::BASE_URL . '/channels/' . $this->channelId, [
@@ -50,7 +38,7 @@ class Discord
           'Authorization' => 'Bot ' . $this->token,
         ],
       ])->getBody()->getContents();
-      $this->channel = (object)Json::decode($response);
+      $this->channel = (object) Json::decode($response);
       $this->message = '';
     }
     catch (RequestException $e) {
@@ -67,13 +55,12 @@ class Discord
   /**
    * Gets an invite to the channel.
    */
-  public function getChannelInvite()
-  {
+  public function getChannelInvite() {
     $client = \Drupal::httpClient();
     $json = [
-        'max_age' => 0,
-        'max_uses' => 1,
-        'unique' => true,
+      'max_age' => 0,
+      'max_uses' => 1,
+      'unique' => TRUE,
     ];
     try {
       $response = $client->post(self::BASE_URL . '/channels/' . $this->channelId . '/invites', [
@@ -83,7 +70,7 @@ class Discord
         ],
         'body' => json_encode($json, JSON_FORCE_OBJECT),
       ])->getBody()->getContents();
-      $decoded = (object)Json::decode($response);
+      $decoded = (object) Json::decode($response);
       $this->inviteCode = $decoded->code;
       $this->message = '';
     }

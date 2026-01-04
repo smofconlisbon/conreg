@@ -8,9 +8,9 @@ use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Datetime\DrupalDateTime;
 use Drupal\Core\Url;
 use Drupal\Core\Link;
-use Drupal\simple_conreg\SimpleConregConfig;
-use Drupal\simple_conreg\SimpleConregOptions;
-use Drupal\simple_conreg\SimpleConregStorage;
+use Drupal\conreg\ConregConfig;
+use Drupal\conreg\ConregOptions;
+use Drupal\conreg\ConregStorage;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -57,12 +57,14 @@ class BadgeNamesForm extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form,
-                            FormStateInterface $form_state,
-                            int $eid = 1,
-                            bool $export = FALSE,
-                            string|NULL $fields = NULL,
-                            string|NULL $update = NULL): Response | Array {
+  public function buildForm(
+    array $form,
+    FormStateInterface $form_state,
+    int $eid = 1,
+    bool $export = FALSE,
+    string|NULL $fields = NULL,
+    string|NULL $update = NULL,
+  ): Response | Array {
     // Store Event ID in form state.
     $form_state->set('eid', $eid);
 
@@ -75,9 +77,9 @@ class BadgeNamesForm extends FormBase {
 
     $form = [
       '#attached' => [
-        'library' => ['simple_conreg/conreg_tables'],
+        'library' => ['conreg/conreg_tables'],
       ],
-      '#prefix' => '<div id="memberform">',
+      '#prefix' => '<div id="memberForm">',
       '#suffix' => '</div>',
     ];
 
@@ -127,7 +129,7 @@ class BadgeNamesForm extends FormBase {
       '#type' => 'date',
       '#title' => $this->t('Updated since'),
       '#ajax' => [
-        'wrapper' => 'memberform',
+        'wrapper' => 'memberForm',
         'callback' => [$this, 'updateDisplayCallback'],
         'event' => 'change',
       ],
@@ -199,7 +201,7 @@ class BadgeNamesForm extends FormBase {
       '#title' => $title,
       '#default_value' => $default,
       '#ajax' => [
-        'wrapper' => 'memberform',
+        'wrapper' => 'memberForm',
         'callback' => [$this, 'updateDisplayCallback'],
         'event' => 'change',
       ],
@@ -238,9 +240,11 @@ class BadgeNamesForm extends FormBase {
    * @return \Symfony\Component\HttpFoundation\Response
    *   HTTP response containing headers and file output.
    */
-  private function exportBadges(int $eid,
-                                string $fields,
-                                string $update): Response {
+  private function exportBadges(
+    int $eid,
+    string $fields,
+    string $update,
+  ): Response {
     $badgeNameRows = $this->getBadgeNameRows($eid,
     // 'M' for Member No.
       empty($fields) || str_contains($fields, 'M'),
@@ -300,18 +304,20 @@ class BadgeNamesForm extends FormBase {
    * @return object
    *   Object containing header and rows arrays.
    */
-  private function getBadgeNameRows(int $eid,
-                                    bool $showMemberNo = TRUE,
-                                    bool $showMemberName = TRUE,
-                                    bool $showBadgeName = TRUE,
-                                    bool $showBadgeTypes = TRUE,
-                                    bool $showMemberTypes = FALSE,
-                                    bool $showDays = TRUE,
-                                    string|NULL $updated = NULL): object {
-    $config = SimpleConregConfig::getConfig($eid);
-    $badgeTypes = SimpleConregOptions::badgeTypes($eid, $config);
-    $memberTypes = SimpleConregOptions::memberTypes($eid, $config);
-    $days = SimpleConregOptions::days($eid, $config);
+  private function getBadgeNameRows(
+    int $eid,
+    bool $showMemberNo = TRUE,
+    bool $showMemberName = TRUE,
+    bool $showBadgeName = TRUE,
+    bool $showBadgeTypes = TRUE,
+    bool $showMemberTypes = FALSE,
+    bool $showDays = TRUE,
+    string|NULL $updated = NULL,
+  ): object {
+    $config = ConregConfig::getConfig($eid);
+    $badgeTypes = ConregOptions::badgeTypes($eid, $config);
+    $memberTypes = ConregOptions::memberTypes($eid, $config);
+    $days = ConregOptions::days($eid, $config);
     $digits = $config->get('member_no_digits');
 
     $headers = [];
@@ -340,7 +346,7 @@ class BadgeNamesForm extends FormBase {
     if (!is_null($updated)) {
       $options['update_since'] = $updated;
     }
-    foreach (SimpleConregStorage::adminMemberBadges($eid, 0, $options) as $entry) {
+    foreach (ConregStorage::adminMemberBadges($eid, 0, $options) as $entry) {
       $row = [];
       if ($showMemberNo) {
         $row['member_no'] =
@@ -362,13 +368,13 @@ class BadgeNamesForm extends FormBase {
         $row['member_type'] = $memberTypes->types[$entry['member_type']]->name ?? $entry['member_type'];
       }
       if ($showDays) {
-        $dayDescs = [];
+        $dayDescriptions = [];
         if (!empty($entry['days'])) {
           foreach (explode('|', $entry['days']) as $day) {
-            $dayDescs[] = $days[$day] ?? $day;
+            $dayDescriptions[] = $days[$day] ?? $day;
           }
         }
-        $row['days'] = implode(', ', $dayDescs);
+        $row['days'] = implode(', ', $dayDescriptions);
       }
       $rows[] = $row;
     }

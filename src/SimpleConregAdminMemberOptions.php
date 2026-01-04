@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\simple_conreg;
+namespace Drupal\conreg;
 
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
@@ -69,7 +69,7 @@ class SimpleConregAdminMemberOptions extends FormBase {
    * {@inheritdoc}
    */
   public function getFormId() {
-    return 'simple_conreg_admin_member_options';
+    return 'conreg_admin_member_options';
   }
 
   /**
@@ -92,19 +92,19 @@ class SimpleConregAdminMemberOptions extends FormBase {
       if (empty($val['optid'])) {
         // Optid not set, so entry is group heading.
         $groupAdded = FALSE;
-        $grpid = $val['grpid'];
+        $groupId = $val['group_id'];
         $groupTitle = $val['group_title'];
-        $groupTitles[$grpid] = $groupTitle;
+        $groupTitles[$groupId] = $groupTitle;
       }
       else {
         // Entry is option.
         if ($this->currentUser->hasPermission('view field option ' . $val['optid'] . ' event ' . $eid)) {
           // Only display if user has permission to see option.
           if (!$groupAdded) {
-            $options[$grpid] = $groupTitle;
+            $options[$groupId] = $groupTitle;
             $groupAdded = TRUE;
           }
-          $options[$grpid . "_" . $val['optid']] = " - " . $val['option_title'];
+          $options[$groupId . "_" . $val['optid']] = " - " . $val['option_title'];
           $optionTitles[$val['optid']] = $val['option_title'];
         }
       }
@@ -113,7 +113,7 @@ class SimpleConregAdminMemberOptions extends FormBase {
     // Check if user can see any options.
     if (empty($options)) {
       // User cannot see any options - display error message.
-      $form['simple_conreg_event'] = [
+      $form['conreg_event'] = [
         '#markup' => $this->t("You don't have permission to see any options. Please contact your administrator."),
         '#prefix' => '<h3>',
         '#suffix' => '</h3>',
@@ -124,7 +124,7 @@ class SimpleConregAdminMemberOptions extends FormBase {
     $group = $this->request->query->get('group');
     $option = $this->request->query->get('option');
 
-    $tempstore = $this->privateTempStoreFactory->get('simple_conreg');
+    $tempstore = $this->privateTempStoreFactory->get('conreg');
     // If form values submitted, use the display value that was submitted over
     // the passed in values.
     if (isset($form_values['selOption'])) {
@@ -162,9 +162,9 @@ class SimpleConregAdminMemberOptions extends FormBase {
 
     $form = [
       '#attached' => [
-        'library' => ['simple_conreg/conreg_tables'],
+        'library' => ['conreg/conreg_tables'],
       ],
-      '#prefix' => '<div id="memberform">',
+      '#prefix' => '<div id="memberForm">',
       '#suffix' => '</div>',
     ];
 
@@ -175,7 +175,7 @@ class SimpleConregAdminMemberOptions extends FormBase {
       '#default_value' => $selection,
       '#required' => TRUE,
       '#ajax' => [
-        'wrapper' => 'memberform',
+        'wrapper' => 'memberForm',
         'callback' => [$this, 'updateDisplayCallback'],
         'event' => 'change',
       ],
@@ -188,7 +188,7 @@ class SimpleConregAdminMemberOptions extends FormBase {
       '#title' => $this->t('Show email address'),
       '#default_value' => FALSE,
       '#ajax' => [
-        'wrapper' => 'memberform',
+        'wrapper' => 'memberForm',
         'callback' => [$this, 'updateDisplayCallback'],
         'event' => 'change',
       ],
@@ -225,14 +225,14 @@ class SimpleConregAdminMemberOptions extends FormBase {
       // Group heading selected.
       $selOption = [];
       foreach ($groupList as $groupOption) {
-        if ($groupOption['grpid'] == $selGroup && !empty($groupOption['optid']) && $this->currentUser->hasPermission('view field option ' . $groupOption['optid'] . ' event ' . $eid)) {
-          $selOption[] = $groupOption['optid'];
-          $displayOpts[] = $groupOption['optid'];
-          $headers['option_' . $groupOption['optid']] = [
+        if ($groupOption['group_id'] == $selGroup && !empty($groupOption['option_id']) && $this->currentUser->hasPermission('view field option ' . $groupOption['optid'] . ' event ' . $eid)) {
+          $selOption[] = $groupOption['option_id'];
+          $displayOpts[] = $groupOption['option_id'];
+          $headers['option_' . $groupOption['option_id']] = [
             'data' => $groupOption['option_title'],
-            'field' => 'option_' . $groupOption['optid'],
+            'field' => 'option_' . $groupOption['option_id'],
           ];
-          $optionTotals[$groupOption['optid']] = 0;
+          $optionTotals[$groupOption['option_id']] = 0;
         }
       }
     }
@@ -240,7 +240,7 @@ class SimpleConregAdminMemberOptions extends FormBase {
     $form['copy'] = [
       '#type' => 'button',
       '#value' => $this->t('Copy to clipboard'),
-      '#attributes' => ['class' => ['table-copy']]
+      '#attributes' => ['class' => ['table-copy']],
     ];
 
     $headers['total'] = ['data' => 'Total', 'field' => 'total'];
@@ -256,7 +256,7 @@ class SimpleConregAdminMemberOptions extends FormBase {
     if (!empty($selOption)) {
       // Fetch all entries for selected option or group.
       $entries = FieldOptionStorage::adminOptionMemberListLoad($eid, $selOption);
-      // Reorganise to put all entries for a member in the same row.
+      // Rearrange to put all entries for a member in the same row.
       $optRows = [];
       foreach ($entries as $entry) {
         if (!isset($optRows[$entry['mid']])) {

@@ -1,8 +1,7 @@
 <?php
 
-namespace Drupal\simple_conreg\Controller;
+namespace Drupal\conreg\Controller;
 
-use Composer\Repository\FilesystemRepository;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\File\FileExists;
 use Drupal\Core\File\FileSystemInterface;
@@ -36,15 +35,15 @@ class BadgeUploadController extends ControllerBase {
    * Function used for badge uploading.
    */
   public function badgeUpload($eid) {
-    $pngdata = $this->request->request->get('data');
-    if (!empty($pngdata)) {
-      [$id, $base64] = explode('|', $pngdata);
+    $pngData = $this->request->request->get('data');
+    if (!empty($pngData)) {
+      [$id, $base64] = explode('|', $pngData);
       [, $data]      = explode(';', $base64);
       [, $data]      = explode(',', $data);
-      $pngdata       = base64_decode($data);
+      $pngData       = base64_decode($data);
       $path          = 'public://badges/' . $eid;
       $this->fileSystem->prepareDirectory($path, FileSystemInterface::CREATE_DIRECTORY);
-      $this->fileRepository->writeData($pngdata, $path . '/' . $id . '.png', FileExists::Replace);
+      $this->fileRepository->writeData($pngData, $path . '/' . $id . '.png', FileExists::Replace);
     }
 
     $content['markup'] = [

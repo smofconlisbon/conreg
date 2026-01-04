@@ -22,3 +22,13 @@ conreg_badges_list_export:
     _permission: "view membership badges"
     eid: ^[0-9]+$
     update: ^[0-9]+$
+
+conreg_badges_print:
+  path: 'members/badges/print/{eid}'
+  defaults:
+    _title: 'Badges'
+    _form: '\Drupal\conreg_badges\Form\BadgePrint'
+    eid: 1
+  requirements:
+    _permission: 'view membership badges'
+    eid: ^[0-9]+$

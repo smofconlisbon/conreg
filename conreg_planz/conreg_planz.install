@@ -5,11 +5,12 @@
  * Install, update and uninstall functions for the conreg_planz module.
  */
 
+// cspell:ignore badgeid
+
 /**
  * Implements hook_requirements().
  */
-function conreg_planz_requirements($phase)
-{
+function conreg_planz_requirements($phase) {
   $requirements = [];
   return $requirements;
 }
@@ -22,8 +23,7 @@ function conreg_planz_requirements($phase)
  * @see hook_install()
  * @ingroup conreg_planz
  */
-function conreg_planz_install()
-{
+function conreg_planz_install() {
 }
 
 /**
@@ -34,33 +34,31 @@ function conreg_planz_install()
  * @see hook_schema()
  * @ingroup conreg_planz
  */
-function conreg_planz_schema()
-{
-  // create table conreg_planz (mid int primary key, planz_user_id varchar(255) not null, update_date int not null);
-  $schema['conreg_planz'] = array(
+function conreg_planz_schema() {
+  // Create table conreg_planz (mid int primary key, planz_user_id varchar(255) not null, update_date int not null);.
+  $schema['conreg_planz'] = [
     'description' => 'Stores events on the registration system.',
-    'fields' => array(
-      'mid' => array(
+    'fields' => [
+      'mid' => [
         'type' => 'int',
         'not null' => TRUE,
         'description' => 'Primary Key: Unique event ID.',
-      ),
-      'badgeid' => array(
+      ],
+      'badgeid' => [
         'type' => 'varchar',
         'length' => 15,
         'not null' => TRUE,
         'description' => 'Name of the event.',
-      ),
-      'update_date' => array(
+      ],
+      'update_date' => [
         'type' => 'int',
         'not null' => TRUE,
         'default' => 0,
         'description' => 'Unix timestamp for the date and time last updated.',
-      ),
-    ),
-    'primary key' => array('mid'),
-  );
+      ],
+    ],
+    'primary key' => ['mid'],
+  ];
 
   return $schema;
 }
-

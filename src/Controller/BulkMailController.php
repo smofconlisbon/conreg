@@ -1,12 +1,12 @@
 <?php
 
-namespace Drupal\simple_conreg\Controller;
+namespace Drupal\conreg\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Language\LanguageManagerInterface;
 use Drupal\Core\Mail\MailManagerInterface;
-use Drupal\simple_conreg\SimpleConregConfig;
-use Drupal\simple_conreg\SimpleConregStorage;
+use Drupal\conreg\ConregConfig;
+use Drupal\conreg\ConregStorage;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -62,19 +62,19 @@ class BulkMailController extends ControllerBase {
    */
   public function bulkSend(int $mid): array {
     // Look up email address for member.
-    $member = SimpleConregStorage::load([
+    $member = ConregStorage::load([
       'mid' => $mid,
       'is_deleted' => 0,
     ]);
 
-    $config = SimpleConregConfig::getConfig($member['eid']);
+    $config = ConregConfig::getConfig($member['eid']);
 
     // Set up parameters for receipt email.
     $params = ['eid' => $member['eid'], 'mid' => $member['mid']];
-    $params['subject'] = $config->get('bulkemail.template_subject');
-    $params['body'] = $config->get('bulkemail.template_body');
-    $params['body_format'] = $config->get('bulkemail.template_format');
-    $module = "simple_conreg";
+    $params['subject'] = $config->get('bulk_email.template_subject');
+    $params['body'] = $config->get('bulk_email.template_body');
+    $params['body_format'] = $config->get('bulk_email.template_format');
+    $module = "conreg";
     $key = "template";
     $to = $member["email"];
     $language_code = $this->languageManager->getDefaultLanguage()->getId();

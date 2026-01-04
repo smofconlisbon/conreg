@@ -12,8 +12,8 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Render\RendererInterface;
 use Drupal\Core\TempStore\PrivateTempStoreFactory;
-use Drupal\simple_conreg\SimpleConregOptions;
-use Drupal\simple_conreg\SimpleConregEventStorage;
+use Drupal\conreg\ConregOptions;
+use Drupal\conreg\EventStorage;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -75,7 +75,7 @@ class LookupMemberForm extends FormBase {
    * {@inheritdoc}
    */
   public function getFormId() {
-    return 'simple_conreg_admin_members';
+    return 'conreg_admin_members';
   }
 
   /**
@@ -84,27 +84,27 @@ class LookupMemberForm extends FormBase {
   public function buildForm(array $form, FormStateInterface $form_state, $eid = 1) {
     // Store Event ID in form state.
     $form_state->set('eid', $eid);
-    $event = SimpleConregEventStorage::load(['eid' => $eid]);
+    $event = EventStorage::load(['eid' => $eid]);
 
     // Get any existing form values for use in AJAX validation.
     $form_values = $form_state->getValues();
 
-    $config = $this->config('simple_conreg.settings.' . $eid);
-    $badgeTypes = SimpleConregOptions::badgeTypes($eid, $config);
-    $days = SimpleConregOptions::days($eid, $config);
+    $config = $this->config('conreg.settings.' . $eid);
+    $badgeTypes = ConregOptions::badgeTypes($eid, $config);
+    $days = ConregOptions::days($eid, $config);
     $digits = $config->get('member_no_digits');
 
-    $tempstore = $this->privateTempStoreFactory->get('simple_conreg');
-    // Use form value if submittd, if not check for previous search.
+    $tempstore = $this->privateTempStoreFactory->get('conreg');
+    // Use form value if submitted, if not check for previous search.
     $search = $form_values['search'] ?? $tempstore->get('lookup_search') ?? '';
     $tempstore->set('lookup_search', $search);
 
     $form = [
       '#attached' => [
-        'library' => ['simple_conreg/conreg_tables'],
+        'library' => ['conreg/conreg_tables'],
       ],
       '#title' => $this->t('@event_name Member Lookup', ['@event_name' => $event['event_name']]),
-      '#prefix' => '<div id="memberform">',
+      '#prefix' => '<div id="memberForm">',
       '#suffix' => '</div>',
     ];
 
@@ -160,7 +160,7 @@ class LookupMemberForm extends FormBase {
       '#validate' => [],
       '#submit' => ['::search'],
       '#ajax' => [
-        'wrapper' => 'memberform',
+        'wrapper' => 'memberForm',
         'callback' => [$this, 'updateDisplayCallback'],
       ],
     ];
@@ -168,7 +168,7 @@ class LookupMemberForm extends FormBase {
     if (strlen($search) < 3) {
       $form['message'] = [
         '#markup' => $this->t('Please enter at least 3 characters in search box.'),
-        '#prefix' => '<div id="memberform">',
+        '#prefix' => '<div id="memberForm">',
         '#suffix' => '</div>',
       ];
       return $form;
@@ -213,11 +213,11 @@ class LookupMemberForm extends FormBase {
         '#markup' => Html::escape($entry['badge_name']),
       ];
       if (!empty($entry['days'])) {
-        $dayDescs = [];
+        $dayDescriptions = [];
         foreach (explode('|', $entry['days']) as $day) {
-          $dayDescs[] = $days[$day] ?? $day;
+          $dayDescriptions[] = $days[$day] ?? $day;
         }
-        $memberDays = implode(', ', $dayDescs);
+        $memberDays = implode(', ', $dayDescriptions);
       }
       else {
         $memberDays = '';

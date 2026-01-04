@@ -1,0 +1,29 @@
+conreg.event_list:
+  title: Event List
+  route_name: conreg_event_list
+  base_route: conreg_event_list
+  weight: 1
+
+conreg.config:
+  title: Event Configuration
+  route_name: conreg_config
+  base_route: conreg_config
+  weight: 1
+
+conreg.config_member_classes:
+  title: Member Classes
+  route_name: conreg_config_member_classes
+  base_route: conreg_config
+  weight: 2
+
+conreg.config_member_types:
+  title: Member Types
+  route_name: conreg_config_member_types
+  base_route: conreg_config
+  weight: 3
+
+conreg.config_addons:
+  title: Add-Ons
+  route_name: conreg_config_addons
+  base_route: conreg_config
+  weight: 4

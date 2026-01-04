@@ -7,4 +7,3 @@ conreg_config_airtable_options:
   requirements:
     _permission: 'configure AirTable integration'
     eid: ^[0-9]+$
-

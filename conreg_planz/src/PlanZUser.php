@@ -3,25 +3,68 @@
 namespace Drupal\conreg_planz;
 
 use Drupal\Core\Database\Connection;
-use Drupal\simple_conreg\Member;
+use Drupal\conreg\Member;
+
+// cspell:ignore pubsname sortedpubsname badgeid postaddress postcity poststate
+// cspell:ignore postcountry regtype permroleid Zabcefghijklmnopqrstuvwxyz
 
 /**
- *
+ * Class for inserting members into PlanZ.
  */
 class PlanZUser {
-  private PlanZ $planz;
+  /**
+   * The member ID.
+   *
+   * @var int
+   */
   public int $mid;
+
+  /**
+   * The badge ID.
+   *
+   * @var string
+   */
   public string $badgeId;
+
+  /**
+   * The plaintext password.
+   *
+   * @var string|null
+   */
   public ?string $password;
+
+  /**
+   * The the hashed password.
+   *
+   * @var string|null
+   */
   public ?string $hashedPassword;
+
+  /**
+   * True if already added to PlanZ.
+   *
+   * @var bool
+   */
   public bool $existingParticipant = FALSE;
-  public ?string $pubsname = NULL;
-  public ?string $sortedpubsname = NULL;
+
+  /**
+   * The members name for publications.
+   *
+   * @var string|null
+   */
+  public ?string $pubsName = NULL;
+
+  /**
+   * The publication name for sorting.
+   *
+   * @var string|null
+   */
+  public ?string $sortedPubsName = NULL;
 
   /**
    * Constructs a new Member object.
    */
-  public function __construct(PlanZ $planz) {
+  public function __construct(protected PlanZ $planz) {
     $this->planz = $planz;
     $this->password = NULL;
     $this->hashedPassword = NULL;
@@ -33,7 +76,8 @@ class PlanZUser {
    * @param int $mid
    *   Member ID.
    *
-   * @return bool TRUE if member details found. FALSE if member not present on PlanZ.
+   * @return bool
+   *   TRUE if member details found. FALSE if member not present on PlanZ.
    */
   public function load(int $mid): bool {
     // Get regular Drupal DB connection.
@@ -43,7 +87,7 @@ class PlanZUser {
     $select->condition('z.mid', $mid);
     $badgeId = $select->execute()->fetchField();
     if (empty($badgeId)) {
-      // If no linked PlanZ user, check for matching email address on PlanZ users.
+      // If no linked PlanZ user, check for matching email address on PlanZ.
       return $this->checkExistingUser($mid);
     }
 
@@ -60,8 +104,8 @@ class PlanZUser {
     $record = $select->execute()->fetchObject();
     if ($record) {
       $this->existingParticipant = TRUE;
-      $this->pubsname = $record?->pubsname;
-      $this->sortedpubsname = $record?->sortedpubsname;
+      $this->pubsName = $record?->pubsname;
+      $this->sortedPubsName = $record?->sortedpubsname;
       $this->hashedPassword = $record->password;
     }
     else {
@@ -71,12 +115,13 @@ class PlanZUser {
   }
 
   /**
-   * Check if member is an existing PlanZ user. If found, create on conreg_planz table.
+   * Check if member is PlanZ user. If found, create on conreg_planz table.
    *
    * @param int $mid
    *   Member ID.
    *
-   * @return bool TRUE if member exists on PlanZ
+   * @return bool
+   *   TRUE if member exists on PlanZ.
    */
   private function checkExistingUser(int $mid): bool {
     // Get member details.
@@ -94,7 +139,7 @@ class PlanZUser {
       return FALSE;
     }
 
-    // Check that the user we've found isn't already linked to a different member.
+    // Check that the user we've found isn't already linked to another member.
     $connection = \Drupal::database();
     $select = $connection->select('conreg_planz', 'z');
     $select->addField('z', 'mid');
@@ -107,7 +152,8 @@ class PlanZUser {
       return FALSE;
     }
 
-    // We've found a PlanZ user, and confirmed it's not assigned to another ConReg member, so update member badge ID and save to conreg_planz.
+    // We've found a PlanZ user, and confirmed it's not assigned to another
+    // ConReg member, so update member badge ID and save to conreg_planz.
     $this->mid = $mid;
     $this->badgeId = $badgeId;
     $this->saveConregPlanZ();
@@ -118,7 +164,7 @@ class PlanZUser {
   /**
    * Save ConReg member to PlanZ.
    *
-   * @param \Drupal\simple_conreg\Member $member
+   * @param \Drupal\conreg\Member $member
    *   The member object to save.
    * @param bool $reset
    *   If true, reset member password.
@@ -131,7 +177,8 @@ class PlanZUser {
     }
 
     if (empty($this->badgeId)) {
-      // Member does not have badge ID, so need to create one, and save to conreg_planz table.
+      // Member does not have badge ID, so need to create one, and save to
+      // conreg_planz table.
       $this->badgeId = $this->planz->createBadgeId($member);
       $this->saveConregPlanZ();
     }
@@ -173,10 +220,11 @@ class PlanZUser {
    *
    * @param \Drupal\Core\Database\Connection $planZCon
    *   Connection to PlanZ database.
-   * @param \Drupal\simple_conreg\Member $member
+   * @param \Drupal\conreg\Member $member
    *   The member to save.
    *
-   * @return int Number of rows affected (usually 1)
+   * @return int
+   *   Number of rows affected (usually 1).
    */
   private function saveCongoDump(Connection $planZCon, Member $member): int {
     $return_value = $planZCon->upsert('CongoDump')
@@ -211,9 +259,13 @@ class PlanZUser {
    * @param string $sortingName
    *   The name to save to the sortedpubsname field.
    *
-   * @return int Number of rows affected (normally 1)
+   * @return int
+   *   Number of rows affected (normally 1).
    */
   private function saveParticipant(Connection $planZCon, ?string $publicationName = NULL, ?string $sortingName = NULL): int {
+    $this->pubsName = $publicationName;
+    $this->sortedPubsName = $sortingName;
+
     if ($this->planz->generatePassword && empty($this->hashedPassword)) {
       $this->password = $this->generatePassword(12);
       $this->hashedPassword = password_hash(trim($this->password), PASSWORD_DEFAULT);
@@ -260,7 +312,8 @@ class PlanZUser {
    * @param int $role
    *   The ID of the role to add.
    *
-   * @return int Number of rows updated
+   * @return int
+   *   Number of rows updated.
    */
   private function saveUserRole(Connection $planZCon, int $role): int {
 
@@ -281,7 +334,8 @@ class PlanZUser {
    * @param int $chars
    *   Number of characters length for password.
    *
-   * @return string A random password
+   * @return string
+   *   A random password.
    */
   public function generatePassword(int $chars): string {
     $data = '1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZabcefghijklmnopqrstuvwxyz!%^*()[]{};:@#,/';

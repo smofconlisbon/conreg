@@ -1,0 +1,42 @@
+conreg.register:
+  title: Register
+  route_name: conreg_register
+  weight: 0
+
+conreg.list:
+  title: List Members
+  route_name: conreg_list
+  weight: 1
+
+conreg.check:
+  title: Check Membership
+  route_name: conreg_check
+  weight: 2
+
+conreg.portal:
+  title: Member Portal
+  route_name: conreg_portal
+  weight: 3
+
+conreg.events:
+  title: ConReg events
+  description: Manage registration for conventions.
+  route_name: conreg_event_list
+  menu_name: admin
+  parent: system.admin
+  weight: 10
+  options:
+    icon:
+      pack_id: conreg
+      icon_id: identification-badge
+
+conreg.config_email:
+  title: Email Templates
+  route_name: conreg_config_email_templates
+  menu_name: admin
+  parent: conreg.events
+  weight: -100
+
+conreg.event_links:
+  deriver: \Drupal\conreg\Plugin\Derivative\EventsMenuDeriver
+  menu_name: admin

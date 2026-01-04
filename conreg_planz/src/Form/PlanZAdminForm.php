@@ -6,11 +6,13 @@ use Drupal\conreg_planz\PlanZ;
 use Drupal\conreg_planz\PlanZUser;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\simple_conreg\FieldOptions;
-use Drupal\simple_conreg\Member;
+use Drupal\conreg\FieldOptions;
+use Drupal\conreg\Member;
+
+// cspell:ignore badgeid
 
 /**
- * Configure simple_conreg settings for this site.
+ * Configure conreg settings for this site.
  */
 class PlanZAdminForm extends FormBase {
   private PlanZ $planz;
@@ -38,7 +40,7 @@ class PlanZAdminForm extends FormBase {
     // Store Event ID in form state.
     $form_state->set('eid', $eid);
 
-    $config = \Drupal::config('simple_conreg.settings.' . $eid . '.planz');
+    $config = \Drupal::config('conreg.settings.' . $eid . '.planz');
     $this->planz = new PlanZ($config);
     /**
      * Manual member invites.
@@ -206,7 +208,7 @@ class PlanZAdminForm extends FormBase {
    */
   public function callbackManualAdd(array $form, FormStateInterface $form_state) {
     $eid = $form_state->get('eid');
-    $config = \Drupal::config('simple_conreg.settings.' . $eid . '.planz');
+    $config = \Drupal::config('conreg.settings.' . $eid . '.planz');
 
     $fieldOptions = FieldOptions::getFieldOptions($eid);
     $optionFields = [];

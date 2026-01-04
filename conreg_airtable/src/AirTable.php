@@ -1,54 +1,49 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\conreg_airtable\AirTable.
- */
-
 namespace Drupal\conreg_airtable;
 
 use Drupal\Component\Serialization\Json;
-use Drupal\Core\Url;
-use Drupal\Core\Datetime\DrupalDateTime;
-use Drupal\simple_conreg\Member;
-use Drupal\simple_conreg\SimpleConregConfig;
-use Drupal\simple_conreg\FieldOptions;
-//use Drupal\simple_conreg\SimpleConregStorage;
-//use Drupal\simple_conreg\FieldOptions;
-use Drupal\devel;
+use Drupal\conreg\Member;
+use Drupal\conreg\ConregConfig;
+use Drupal\conreg\FieldOptions;
 use GuzzleHttp\Exception\TransferException;
-use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Exception\ClientException;
 
-class AirTable
-{
+/**
+ *
+ */
+class AirTable {
 
-  public static function test($eid)
-  {
-    $config = SimpleConregConfig::getConfig($eid);
+  /**
+   *
+   */
+  public static function test($eid) {
+    $config = ConregConfig::getConfig($eid);
     $api_url = $config->get('airtable.api_url') . '?maxRecords=3';
     $api_key = $config->get('airtable.api_key');
 
     try {
       $client = \Drupal::httpClient();
       $response = $client->get($api_url, [
-        'verify' => true,
+        'verify' => TRUE,
         'headers' => [
           'Content-type' => 'application/json',
-          'Authorization' => 'Bearer '.$api_key,
+          'Authorization' => 'Bearer ' . $api_key,
         ],
       ])->getBody()->getContents();
     }
     catch (ClientException $e) {
-      return false;
+      return FALSE;
     }
 
     return $response;
   }
 
-  public static function addMembers($eid, $mids)
-  {
-    $config = SimpleConregConfig::getConfig($eid);
+  /**
+   *
+   */
+  public static function addMembers($eid, $mids) {
+    $config = ConregConfig::getConfig($eid);
     $fieldOptions = FieldOptions::getFieldOptions($eid);
     $records = new \stdClass();
     $records->records = [];
@@ -60,19 +55,21 @@ class AirTable
       $connection = \Drupal::database();
       foreach ($records['records'] as $key => $value) {
         $id = $value['id'];
-        $entry = [ 'mid' => $mids[$key], 'airtable_id' => $id ];
+        $entry = ['mid' => $mids[$key], 'airtable_id' => $id];
         $insert = $connection->insert('conreg_airtable_members')
-          -> fields($entry)
-          -> execute();
+          ->fields($entry)
+          ->execute();
       }
       return $records;
     }
-    return false;
+    return FALSE;
   }
 
-  public static function updateMembers($eid, $airtable_ids)
-  {
-    $config = SimpleConregConfig::getConfig($eid);
+  /**
+   *
+   */
+  public static function updateMembers($eid, $airtable_ids) {
+    $config = ConregConfig::getConfig($eid);
     $fieldOptions = FieldOptions::getFieldOptions($eid);
     $records = new \stdClass();
     $records->records = [];
@@ -85,13 +82,15 @@ class AirTable
     }
   }
 
-  public static function getMemberFields($mid, $airtable_id, $config, $fieldOptions)
-  {
+  /**
+   *
+   */
+  public static function getMemberFields($mid, $airtable_id, $config, $fieldOptions) {
     $fields = new \stdClass();
     $fields->id = $airtable_id;
     $fields->fields = new \stdClass();
     $member = Member::loadMember($mid);
-    foreach ($config->get('airtable.mappings') as $field=>$mapped) {
+    foreach ($config->get('airtable.mappings') as $field => $mapped) {
       if (!empty($mapped)) {
         $fields->fields->$mapped = $member->fieldDisplay($field);
       }
@@ -117,14 +116,16 @@ class AirTable
     return $fields;
   }
 
-  public static function removeMembers($eid, $airtable_ids)
-  {
+  /**
+   *
+   */
+  public static function removeMembers($eid, $airtable_ids) {
     $records = new \stdClass();
     $records->records = [];
     foreach ($airtable_ids as $mid => $airtable_id) {
       $fields = new \stdClass();
       $fields->id = $airtable_id;
-      $fields->deleted = true;
+      $fields->deleted = TRUE;
       $records->records[] = $fields;
     }
     if ($return = self::deleteMembers($eid, $records)) {
@@ -133,49 +134,53 @@ class AirTable
     }
   }
 
-  public static function postMembers($eid, $records)
-  {
-    $config = SimpleConregConfig::getConfig($eid);
+  /**
+   *
+   */
+  public static function postMembers($eid, $records) {
+    $config = ConregConfig::getConfig($eid);
     $api_url = $config->get('airtable.api_url');
     $api_key = $config->get('airtable.api_key');
 
     try {
       $client = \Drupal::httpClient();
       $response = $client->post($api_url, [
-        'verify' => true,
+        'verify' => TRUE,
         'headers' => [
           'Content-type' => 'application/json',
-          'Authorization' => 'Bearer '.$api_key,
+          'Authorization' => 'Bearer ' . $api_key,
         ],
         'body' => Json::encode($records),
       ])->getBody()->getContents();
     }
     catch (ClientException $e) {
-      //\Drupal::messenger()->addMessage(t('Error adding to AirTable: '), 'error');
+      // \Drupal::messenger()->addMessage(t('Error adding to AirTable: '), 'error');
       \Drupal::logger('conreg_airtable')->info('Client Exception inserting into Airtable: @message', ['@message' => $e->getMessage()]);
-      return false;
+      return FALSE;
     }
     catch (TransferException $e) {
       \Drupal::logger('conreg_airtable')->info('Transfer Exception inserting into Airtable: @message', ['@message' => $e->getMessage()]);
-      return false;
+      return FALSE;
     }
 
     return $response;
   }
 
-  public static function putMembers($eid, $records)
-  {
-    $config = SimpleConregConfig::getConfig($eid);
+  /**
+   *
+   */
+  public static function putMembers($eid, $records) {
+    $config = ConregConfig::getConfig($eid);
     $api_url = $config->get('airtable.api_url');
     $api_key = $config->get('airtable.api_key');
 
     try {
       $client = \Drupal::httpClient();
       $response = $client->put($api_url, [
-        'verify' => true,
+        'verify' => TRUE,
         'headers' => [
           'Content-type' => 'application/json',
-          'Authorization' => 'Bearer '.$api_key,
+          'Authorization' => 'Bearer ' . $api_key,
         ],
         'body' => Json::encode($records),
       ])->getBody()->getContents();
@@ -183,38 +188,40 @@ class AirTable
     }
     catch (ClientException $e) {
       \Drupal::logger('conreg_airtable')->info('Client Exception updating entry in Airtable: @message', ['@message' => $e->getMessage()]);
-      return false;
+      return FALSE;
     }
     catch (TransferException $e) {
       \Drupal::logger('conreg_airtable')->info('Transfer Exception updating entry in Airtable: @message', ['@message' => $e->getMessage()]);
-      return false;
+      return FALSE;
     }
 
   }
 
-  public static function deleteMember($eid, $airtable_id)
-  {
-    $config = SimpleConregConfig::getConfig($eid);
+  /**
+   *
+   */
+  public static function deleteMember($eid, $airtable_id) {
+    $config = ConregConfig::getConfig($eid);
     $api_url = $config->get('airtable.api_url') . '/' . $airtable_id;
     $api_key = $config->get('airtable.api_key');
 
     try {
       $client = \Drupal::httpClient();
       $response = $client->delete($api_url, [
-        'verify' => true,
+        'verify' => TRUE,
         'headers' => [
-          'Authorization' => 'Bearer '.$api_key,
+          'Authorization' => 'Bearer ' . $api_key,
         ],
       ])->getBody()->getContents();
       return $response;
     }
     catch (ClientException $e) {
       \Drupal::logger('conreg_airtable')->info('Client Exception deleting from Airtable: @message', ['@message' => $e->getMessage()]);
-      return false;
+      return FALSE;
     }
     catch (TransferException $e) {
       \Drupal::logger('conreg_airtable')->info('Transfer Exception deleting from Airtable: @message', ['@message' => $e->getMessage()]);
-      return false;
+      return FALSE;
     }
 
   }

@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\simple_conreg;
+namespace Drupal\conreg;
 
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
@@ -14,7 +14,7 @@ class SimpleConregAdminMemberAddOns extends FormBase {
    * {@inheritdoc}
    */
   public function getFormId() {
-    return 'simple_conreg_admin_member_options';
+    return 'conreg_admin_member_options';
   }
 
   /**
@@ -27,7 +27,7 @@ class SimpleConregAdminMemberAddOns extends FormBase {
     // Get any existing form values for use in AJAX validation.
     $form_values = $form_state->getValues();
 
-    $config = $this->config('simple_conreg.settings.' . $eid);
+    $config = $this->config('conreg.settings.' . $eid);
 
     $addons = $config->get('add-ons');
     $options = [0 => 'All'];
@@ -39,7 +39,7 @@ class SimpleConregAdminMemberAddOns extends FormBase {
       }
     }
 
-    $tempstore = \Drupal::service('tempstore.private')->get('simple_conreg');
+    $tempstore = \Drupal::service('tempstore.private')->get('conreg');
     // If form values submitted, use the display value that was submitted over the passed in values.
     if (isset($form_values['selAddOn'])) {
       $selection = $form_values['selAddOn'];
@@ -53,9 +53,9 @@ class SimpleConregAdminMemberAddOns extends FormBase {
     $tempstore->set('adminMemberSelectedAddOn', $selection);
     $form = [
       '#attached' => [
-        'library' => ['simple_conreg/conreg_tables'],
+        'library' => ['conreg/conreg_tables'],
       ],
-      '#prefix' => '<div id="addonform">',
+      '#prefix' => '<div id="addOnForm">',
       '#suffix' => '</div>',
     ];
 
@@ -66,7 +66,7 @@ class SimpleConregAdminMemberAddOns extends FormBase {
       '#default_value' => $selection,
       '#required' => TRUE,
       '#ajax' => [
-        'wrapper' => 'addonform',
+        'wrapper' => 'addOnForm',
         'callback' => [$this, 'updateDisplayCallback'],
         'event' => 'change',
       ],
@@ -75,10 +75,10 @@ class SimpleConregAdminMemberAddOns extends FormBase {
     $form['copy'] = [
       '#type' => 'button',
       '#value' => $this->t('Copy to clipboard'),
-      '#attributes' => ['class' => ['table-copy']]
+      '#attributes' => ['class' => ['table-copy']],
     ];
 
-    $memberAddOns = SimpleConregAddonStorage::loadAddOnReport($eid, $selection);
+    $memberAddOns = AddonStorage::loadAddOnReport($eid, $selection);
 
     $rows = [];
     $headers = [

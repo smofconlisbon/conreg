@@ -1,17 +1,19 @@
 <?php
 
-namespace Drupal\simple_conreg\Plugin\Mail;
+namespace Drupal\conreg\Plugin\Mail;
 
 use Drupal\Core\Mail\MailFormatHelper;
 use Drupal\Core\Mail\MailInterface;
 use Drupal\Core\Site\Settings;
 use Symfony\Component\Mime\Header\UnstructuredHeader;
 
+// cspell:ignore windir
+
 /**
  * Defines the default Drupal mail backend, using PHP's native mail() function.
  *
  * @Mail(
- *   id = "simple_conreg_php_mail",
+ *   id = "conreg_php_mail",
  *   label = @Translation("Simple Convention Registration PHP mailer"),
  *   description = @Translation("Sends the message as HTML, using PHP's native mail() function.")
  * )
@@ -59,9 +61,9 @@ class SimpleConregPhpMail implements MailInterface {
         unset($message['headers']['Return-Path']);
       }
     }
-    $mimeheaders = [];
+    $mimeHeaders = [];
     foreach ($message['headers'] as $name => $value) {
-      $mimeheaders[] = $name . ': ' . (new UnstructuredHeader('subject', $value))->getBodyAsString();
+      $mimeHeaders[] = $name . ': ' . (new UnstructuredHeader('subject', $value))->getBodyAsString();
     }
     $line_endings = Settings::get('mail_line_endings', PHP_EOL);
     // Prepare mail commands.
@@ -73,7 +75,7 @@ class SimpleConregPhpMail implements MailInterface {
     $mail_body = preg_replace('@\r?\n@', $line_endings, $message['body']);
     // For headers, PHP's API suggests that we use CRLF normally,
     // but some MTAs incorrectly replace LF with CRLF. See #234403.
-    $mail_headers = implode("\n", $mimeheaders);
+    $mail_headers = implode("\n", $mimeHeaders);
 
     $request = \Drupal::request();
 

@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\simple_conreg;
+namespace Drupal\conreg;
 
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 
@@ -61,7 +61,7 @@ class Member extends \stdClass {
    *   Loaded member object.
    */
   public static function loadMember(int $mid): Member {
-    $member = self::newMember(SimpleConregStorage::load(['mid' => $mid]));
+    $member = self::newMember(ConregStorage::load(['mid' => $mid]));
 
     // Add member options to member object.
     $member->options = MemberOption::loadAllMemberOptions($mid);
@@ -81,7 +81,7 @@ class Member extends \stdClass {
    *   Loaded member object.
    */
   public static function loadMemberByMemberNo(int $eid, int $memberNo): Member|null {
-    $member = self::newMember(SimpleConregStorage::load([
+    $member = self::newMember(ConregStorage::load([
       'eid' => $eid,
       'member_no' => $memberNo,
       'is_deleted' => 0,
@@ -107,7 +107,7 @@ class Member extends \stdClass {
    *   The member object.
    */
   public static function loadMemberByEmail(int $eid, string $email): Member|NULL {
-    $row = SimpleConregStorage::load([
+    $row = ConregStorage::load([
       'eid' => $eid,
       'email' => $email,
       'is_deleted' => 0,
@@ -141,7 +141,7 @@ class Member extends \stdClass {
       return [];
     }
     // Load all members in group.
-    $rows = SimpleConregStorage::loadAll([
+    $rows = ConregStorage::loadAll([
       'eid' => $eid,
       'lead_mid' => $leadMember->mid,
       'is_deleted' => 0,
@@ -177,7 +177,7 @@ class Member extends \stdClass {
     $entry['update_date'] = time();
     // If no mid set, inserting new member.
     if (empty($this->mid)) {
-      $new_mid = SimpleConregStorage::insert($entry);
+      $new_mid = ConregStorage::insert($entry);
       if (isset($new_mid)) {
         $this->mid = $new_mid;
         $this->updateOptionMids();
@@ -187,7 +187,7 @@ class Member extends \stdClass {
         $this->lead_mid = $new_mid;
         // Update first member with own member ID as lead member ID.
         $update = ['mid' => $this->mid, 'lead_mid' => $this->lead_mid];
-        SimpleConregStorage::update($update);
+        ConregStorage::update($update);
       }
       // Update member options.
       $this->saveMemberOptions();
@@ -196,7 +196,7 @@ class Member extends \stdClass {
     }
     else {
       // Updating an existing member.
-      SimpleConregStorage::update($entry);
+      ConregStorage::update($entry);
       // Update member options.
       $this->saveMemberOptions();
       // Invoke member updated hook.
@@ -229,7 +229,7 @@ class Member extends \stdClass {
       'mid' => $this->mid,
     ];
     // Update the member record.
-    if (SimpleConregStorage::update($entry)) {
+    if (ConregStorage::update($entry)) {
       // Invoke member deleted hook.
       \Drupal::moduleHandler()->invokeAll('convention_member_deleted', ['member' => $this]);
     }
@@ -279,7 +279,7 @@ class Member extends \stdClass {
    *   The formatted field value.
    */
   public function fieldDisplay(string $field): string {
-    $config = SimpleConregConfig::getConfig($this->eid);
+    $config = ConregConfig::getConfig($this->eid);
 
     switch ($field) {
       case 'member_no':
@@ -291,34 +291,34 @@ class Member extends \stdClass {
         return $this->badge_type . sprintf("%0" . $digits . "d", $this->member_no);
 
       case 'member_type':
-        $types = SimpleConregOptions::memberTypes($this->eid, $config);
+        $types = ConregOptions::memberTypes($this->eid, $config);
         return isset($types->types[$this->member_type]) ? $types->types[$this->member_type]->name : $this->member_type;
 
       case 'days':
-        $days = SimpleConregOptions::days($this->eid, $config);
+        $days = ConregOptions::days($this->eid, $config);
         if (!empty($this->days)) {
-          $dayDescs = [];
+          $dayDescriptions = [];
           foreach (explode('|', $this->days) as $day) {
-            $dayDescs[] = $days[$day] ?? $day;
+            $dayDescriptions[] = $days[$day] ?? $day;
           }
-          return implode(', ', $dayDescs);
+          return implode(', ', $dayDescriptions);
         }
         return '';
 
       case 'badge_type':
-        $badgeTypes = SimpleConregOptions::badgeTypes($this->eid, $config);
+        $badgeTypes = ConregOptions::badgeTypes($this->eid, $config);
         return $badgeTypes[$this->badge_type] ?? $this->badge_type;
 
       case 'communication_method':
-        $communicationsOptions = SimpleConregOptions::communicationMethod($this->eid, $config);
+        $communicationsOptions = ConregOptions::communicationMethod($this->eid, $config);
         return $communicationsOptions[$this->communication_method] ?? $this->communication_method;
 
       case 'display':
-        $displayOptions = SimpleConregOptions::display();
+        $displayOptions = ConregOptions::display();
         return $displayOptions[$this->display] ?? $this->display;
 
       case 'country':
-        $countryOptions = SimpleConregOptions::memberCountries($this->eid, $config);
+        $countryOptions = ConregOptions::memberCountries($this->eid, $config);
         return $countryOptions[$this->country] ?? $this->country;
 
       case 'join_date':

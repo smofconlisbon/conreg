@@ -2,7 +2,7 @@
 DESCRIPTION
 -----------
 
-Simple Convention Registration is a module to allow 
+Simple Convention Registration is a module to allow
 
 REQUIREMENTS
 ------------
@@ -17,15 +17,14 @@ INSTALLATION
 
  1. CREATE DIRECTORY
 
-    Create a new directory "simple_conreg" in the sites/all/modules directory and
-    place the entire contents of this simple_conreg folder in it.
+    Create a new directory "conreg" in the sites/all/modules directory and
+    place the entire contents of this conreg folder in it.
 
  2. RUN COMPOSER
 
     From the Drupal base directory, run the commands:
 
     php sites/all/modules/composer_manager/scripts/init.php
-    composer dumpautoload
     composer drupal-update
 
     This is required to install the Stripe library.
@@ -63,5 +62,5 @@ RELATED MODULES
 
 DOCUMENTATION
 -------------
-More help can be found on the help pages: http://simple_conreg.lostcarpark.com
-and in the drupal.org handbook: 
+More help can be found on the help pages: http://conreg.lostcarpark.com
+and in the drupal.org handbook:

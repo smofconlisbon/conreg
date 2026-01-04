@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\simple_conreg;
+namespace Drupal\conreg;
 
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
@@ -16,7 +16,7 @@ class SimpleConregAdminBulkEmail extends FormBase {
    * {@inheritdoc}
    */
   public function getFormId() {
-    return 'simple_conreg_admin_member_email';
+    return 'conreg_admin_member_email';
   }
 
   /**
@@ -45,51 +45,51 @@ class SimpleConregAdminBulkEmail extends FormBase {
     // Store Event ID in form state.
     $form_state->set('eid', $eid);
 
-    $config = $this->config('simple_conreg.settings.' . $eid);
+    $config = $this->config('conreg.settings.' . $eid);
 
     $form = [
       '#tree' => TRUE,
-      '#prefix' => '<div id="bulkmailform">',
+      '#prefix' => '<div id="bulk-mail-form">',
       '#suffix' => '</div>',
       '#attached' => [
-        'library' => ['simple_conreg/conreg_bulkemail'],
+        'library' => ['conreg/conreg_bulk_email'],
       ],
     ];
 
     // Fields for writing email message.
-    $form['bulkemail'] = [
+    $form['bulk_email'] = [
       '#type' => 'fieldset',
       '#title' => $this->t('Email message'),
       '#prefix' => '<div id="message">',
       '#suffix' => '</div>',
     ];
 
-    $form['bulkemail']['from_name'] = [
+    $form['bulk_email']['from_name'] = [
       '#type' => 'textfield',
       '#title' => $this->t('From email name'),
       '#description' => $this->t('Name that confirmation email is sent from.'),
-      '#default_value' => $config->get('bulkemail.from_name'),
+      '#default_value' => $config->get('bulk_email.from_name'),
     ];
 
-    $form['bulkemail']['from_email'] = [
+    $form['bulk_email']['from_email'] = [
       '#type' => 'textfield',
       '#title' => $this->t('From email address'),
       '#description' => $this->t('Email address that confirmation email is sent from (if you check the above box, a copy will also be sent to this address).'),
-      '#default_value' => $config->get('bulkemail.from_email'),
+      '#default_value' => $config->get('bulk_email.from_email'),
     ];
 
-    $form['bulkemail']['template_subject'] = [
+    $form['bulk_email']['template_subject'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Bulk email subject'),
-      '#default_value' => $config->get('bulkemail.template_subject'),
+      '#default_value' => $config->get('bulk_email.template_subject'),
     ];
 
-    $form['bulkemail']['template_body'] = [
+    $form['bulk_email']['template_body'] = [
       '#type' => 'text_format',
       '#title' => $this->t('Bulk email body'),
-      '#description' => $this->t('Text for the email body. you may use the following tokens: @tokens.', ['@tokens' => SimpleConregTokens::tokenHelp()]),
-      '#default_value' => $config->get('bulkemail.template_body'),
-      '#format' => $config->get('bulkemail.template_format'),
+      '#description' => $this->t('Text for the email body. you may use the following tokens: @tokens.', ['@tokens' => ConregTokens::tokenHelp()]),
+      '#default_value' => $config->get('bulk_email.template_body'),
+      '#format' => $config->get('bulk_email.template_format'),
     ];
 
     $form['submit'] = [
@@ -101,20 +101,20 @@ class SimpleConregAdminBulkEmail extends FormBase {
       '#type' => 'fieldset',
       '#title' => $this->t('Sending Options'),
     ];
-    $memberTypes = SimpleConregOptions::memberTypes($eid, $config);
+    $memberTypes = ConregOptions::memberTypes($eid, $config);
     $form['options']['member_types'] = [
       '#type' => 'checkboxes',
       '#title' => $this->t('Member types'),
       '#options' => $memberTypes->privateOptions,
     ];
-    $badgeTypes = SimpleConregOptions::badgeTypes($eid, $config);
+    $badgeTypes = ConregOptions::badgeTypes($eid, $config);
     $form['options']['badge_types'] = [
       '#type' => 'checkboxes',
       '#title' => $this->t('Badge types'),
       '#options' => $badgeTypes,
     ];
 
-    $communicationMethods = SimpleConregOptions::communicationMethod($eid, $config, FALSE);
+    $communicationMethods = ConregOptions::communicationMethod($eid, $config, FALSE);
     $form['options']['communication_methods'] = [
       '#type' => 'checkboxes',
       '#title' => $this->t('Communication methods'),
@@ -134,7 +134,7 @@ class SimpleConregAdminBulkEmail extends FormBase {
     ];
     $form['options']['delay'] = [
       '#type' => 'number',
-      '#title' => $this->t('Delay (in miliseconds)'),
+      '#title' => $this->t('Delay (in milliseconds)'),
       '#default_value' => '1000',
     ];
 
@@ -173,12 +173,12 @@ class SimpleConregAdminBulkEmail extends FormBase {
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $eid = $form_state->get('eid');
     $vals = $form_state->getValues();
-    $config = $this->configFactory->getEditable('simple_conreg.settings.' . $eid);
-    $config->set('bulkemail.from_name', $vals['bulkemail']['from_name']);
-    $config->set('bulkemail.from_email', $vals['bulkemail']['from_email']);
-    $config->set('bulkemail.template_subject', $vals['bulkemail']['template_subject']);
-    $config->set('bulkemail.template_body', $vals['bulkemail']['template_body']['value']);
-    $config->set('bulkemail.template_format', $vals['bulkemail']['template_body']['format']);
+    $config = $this->configFactory->getEditable('conreg.settings.' . $eid);
+    $config->set('bulk_email.from_name', $vals['bulk_email']['from_name']);
+    $config->set('bulk_email.from_email', $vals['bulk_email']['from_email']);
+    $config->set('bulk_email.template_subject', $vals['bulk_email']['template_subject']);
+    $config->set('bulk_email.template_body', $vals['bulk_email']['template_body']['value']);
+    $config->set('bulk_email.template_format', $vals['bulk_email']['template_body']['format']);
     $config->save();
   }
 
@@ -197,7 +197,7 @@ class SimpleConregAdminBulkEmail extends FormBase {
     $options['field_options'] = array_filter($vals['options']['field_options'] ?? [], fn($item) => !empty($item));
     $options['member_range'] = ($vals['options']['member_range'] ?? 0);
     // For all members in range, if type in selection, add to list.
-    foreach (SimpleConregStorage::adminMemberBadges($eid, FALSE, $options) as $member) {
+    foreach (ConregStorage::adminMemberBadges($eid, FALSE, $options) as $member) {
       $ids[] = $member['mid'];
     }
     $form['sending']['ids']['#value'] = implode(" ", $ids);

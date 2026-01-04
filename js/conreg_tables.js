@@ -1,5 +1,5 @@
 (function (Drupal) {
-  Drupal.behaviors.tablecopy = {
+  Drupal.behaviors.table_copy = {
     attach: function (context) {
       const copyButtons = document.querySelectorAll('.table-copy');
       if (copyButtons) {

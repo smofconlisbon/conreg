@@ -7,4 +7,3 @@ conreg_member_lookup:
   requirements:
     _permission: 'lookup members'
     eid: ^[0-9]+$
-

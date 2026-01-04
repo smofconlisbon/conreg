@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\simple_conreg;
+namespace Drupal\conreg;
 
 use Drupal\Core\Config\ImmutableConfig;
 
@@ -37,16 +37,16 @@ class FieldOptions {
    */
   public function __construct($eid, ImmutableConfig|NULL $config = NULL) {
     if (is_null($config)) {
-      $config = SimpleConregConfig::getConfig($eid);
+      $config = ConregConfig::getConfig($eid);
     }
 
-    // Initialise results arrays.
+    // Set up results arrays.
     $this->groups = [];
     $this->options = [];
     $this->memberClasses = [];
 
     // Get option groups and split into lines.
-    foreach (explode("\n", $config->get('simple_conreg_options.option_groups') ?? '') as $group) {
+    foreach (explode("\n", $config->get('conreg_options.option_groups') ?? '') as $group) {
       $optionGroup = FieldOptionGroup::newGroup($group);
       if ($optionGroup) {
         $this->groups[$optionGroup->groupId] = $optionGroup;
@@ -54,7 +54,7 @@ class FieldOptions {
     }
 
     // Get options and split into lines.
-    foreach (explode("\n", $config->get('simple_conreg_options.options') ?? '') as $option) {
+    foreach (explode("\n", $config->get('conreg_options.options') ?? '') as $option) {
       $fieldOption = FieldOption::newOption($option);
       if ($fieldOption) {
         $this->options[$fieldOption->optionId] = $fieldOption;
@@ -88,11 +88,11 @@ class FieldOptions {
    *   True to reset cached values.
    *
    * @return FieldOptions
-   *   Object structure contatining available options.
+   *   Object structure containing available options.
    */
   public static function getFieldOptions($eid, $reset = FALSE) {
     $language = \Drupal::languageManager()->getCurrentLanguage()->getId();
-    $cid = 'simple_conreg:fieldOptions_' . $eid . '_' . $language;
+    $cid = 'conreg:fieldOptions_' . $eid . '_' . $language;
 
     // Check if field options previously cached.
     if (!$reset && $cache = \Drupal::cache()->get($cid)) {
@@ -120,12 +120,12 @@ class FieldOptions {
   public static function getFieldOptionsTitles(int $eid, ImmutableConfig|NULL $config = NULL): array {
     // If event config not passed in, load it.
     if (is_null($config)) {
-      $config = SimpleConregConfig::getConfig($eid);
+      $config = ConregConfig::getConfig($eid);
     }
 
     // Get the list of options, and put titles in an array.
     $optionTitles = [];
-    foreach (explode("\n", $config->get('simple_conreg_options.options')) as $optionLine) {
+    foreach (explode("\n", $config->get('conreg_options.options')) as $optionLine) {
       [$optid, , $optionTitle] = explode('|', $optionLine);
       $optionTitles[$optid] = $optionTitle;
     }
@@ -145,7 +145,7 @@ class FieldOptions {
     // Get member's options from database.
     $entries = FieldOptionStorage::getMemberOptions($mid);
 
-    // Initialise return array.
+    // Set up return array.
     $memberOptions = [];
     // Loop through option groups.
     foreach ($this->groups as $optionGroup) {
@@ -227,7 +227,7 @@ class FieldOptions {
           '#prefix' => '<div class="optionGroup">',
           '#suffix' => '</div>',
         ];
-        // If attachind options to existing field, insert field into container.
+        // If attaching options to existing field, insert field into container.
         if (isset($field)) {
           // Put the original element under the container we added.
           $memberForm[$group->fieldName][$group->fieldName] = $field;
@@ -262,7 +262,7 @@ class FieldOptions {
    * @param array &$memberOptions
    *   An array of member options to be saved.
    */
-  public function procesOptionFields($classRef, array &$memberVals, $mid, array &$memberOptions) {
+  public function processOptionFields($classRef, array &$memberVals, $mid, array &$memberOptions) {
     // Loop through each field on the member form.
     foreach ($this->groups as $group) {
       // Check if fieldname exists in submitted values.
@@ -363,10 +363,10 @@ class FieldOptions {
    *   Options array.
    */
   public function getFieldOptionList(): array {
-    // Initialise results array.
+    // Set up results array.
     $fieldOptions = [];
     foreach ($this->options as $optid => $option) {
-      $fieldOptions[] = ['optid' => $optid, 'option_title' => $option->title];
+      $fieldOptions[] = ['option_id' => $optid, 'option_title' => $option->title];
     }
     return $fieldOptions;
   }
@@ -378,14 +378,14 @@ class FieldOptions {
    *   Options array.
    */
   public function getFieldOptionGroupedList(): array {
-    // Initialise results array.
+    // Set up results array.
     $fieldOptions = [];
-    foreach ($this->groups as $grpid => $group) {
-      $fieldOptions[] = ['grpid' => $grpid, 'group_title' => $group->title];
-      foreach ($group->options as $optid => $option) {
+    foreach ($this->groups as $groupId => $group) {
+      $fieldOptions[] = ['group_id' => $groupId, 'group_title' => $group->title];
+      foreach ($group->options as $optionId => $option) {
         $fieldOptions[] = [
-          'grpid' => $grpid,
-          'optid' => $optid,
+          'group_id' => $groupId,
+          'option_id' => $optionId,
           'option_title' => $option->title,
         ];
       }

@@ -1,0 +1,2 @@
+# Exclude canvas conversion JS from ESLint.
+js/html2canvas.min.js

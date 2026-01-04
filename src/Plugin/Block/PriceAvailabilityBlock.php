@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Drupal\simple_conreg\Plugin\Block;
+namespace Drupal\conreg\Plugin\Block;
 
 use Drupal\Core\Block\Attribute\Block;
 use Drupal\Core\Block\BlockBase;
@@ -10,14 +10,14 @@ use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
-use Drupal\simple_conreg\SimpleConregOptions;
+use Drupal\conreg\ConregOptions;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Provides a price and availability block.
  */
 #[Block(
-  id: 'simple_conreg_price_availability',
+  id: 'conreg_price_availability',
   admin_label: new TranslatableMarkup('Price and Availability'),
   category: new TranslatableMarkup('ConReg'),
 )]
@@ -69,7 +69,7 @@ final class PriceAvailabilityBlock extends BlockBase implements ContainerFactory
     $form['price_text'] = [
       '#type' => 'textarea',
       '#title' => $this->t('Price and availability text'),
-      '#description' => $this->t('Describe the price and availability of member types. Replacable tokens: [price:type], [quantity:type], [remaining:type].'),
+      '#description' => $this->t('Describe the price and availability of member types. Replaceable tokens: [price:type], [quantity:type], [remaining:type].'),
       '#default_value' => $this->configuration['price_text'],
     ];
     return $form;
@@ -88,10 +88,10 @@ final class PriceAvailabilityBlock extends BlockBase implements ContainerFactory
    */
   public function build(): array {
     $eid = $this->configuration['eid'];
-    $config = $this->configFactory->get('simple_conreg.settings.' . $eid);
-    $types = SimpleConregOptions::memberTypes($eid, $config);
+    $config = $this->configFactory->get('conreg.settings.' . $eid);
+    $types = ConregOptions::memberTypes($eid, $config);
     $price_text = $this->configuration['price_text'];
-    foreach($types->types as $type_id => $type_vals) {
+    foreach ($types->types as $type_id => $type_vals) {
       $search = [
         "[price:$type_id]",
         "[quantity:$type_id]",
