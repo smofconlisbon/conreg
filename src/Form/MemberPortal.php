@@ -34,9 +34,6 @@ class MemberPortal extends FormBase {
     // Store Event ID in form state.
     $form_state->set('eid', $eid);
 
-    // Get any existing form values for use in AJAX validation.
-    $form_values = $form_state->getValues();
-
     $config = $this->config('conreg.settings.' . $eid);
     $types = ConregOptions::memberTypes($eid, $config);
     $upgrades = ConregOptions::memberUpgrades($eid, $config);
@@ -297,9 +294,6 @@ class MemberPortal extends FormBase {
    */
   public function payCard(array &$form, FormStateInterface $form_state) {
     $eid = $form_state->get('eid');
-    $config = ConregConfig::getConfig($eid);
-    $types = ConregOptions::memberTypes($eid, $config);
-    $days = ConregOptions::days($eid, $config);
     $form_values = $form_state->getValues();
 
     // Create a payment.

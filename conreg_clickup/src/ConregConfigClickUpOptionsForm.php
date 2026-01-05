@@ -247,7 +247,6 @@ class ConregConfigClickUpOptionsForm extends ConfigFormBase {
 
     $groupOptions = $form_state->get('groupOptions');
     $buttonGroups = $form_state->get('buttonGroups');
-    $vals = $form_state->getValues();
     $group = $buttonGroups[$form_state->getTriggeringElement()['#name']];
     $members = ConregClickUp::getMembersWithoutTasks($eid, $groupOptions[$group], FALSE);
     \Drupal::messenger()->addMessage($this->t('Creating tasks for @name.', ['@name' => $group]));

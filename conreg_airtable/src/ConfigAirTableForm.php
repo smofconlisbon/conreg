@@ -280,7 +280,6 @@ class ConfigAirTableForm extends ConfigFormBase {
    */
   public function submitBulkAdd(array &$form, FormStateInterface $form_state) {
     $eid = $form_state->get('eid');
-    $vals = $form_state->getValues();
 
     $connection = \Drupal::database();
     $query = $connection->select('conreg_members', 'm');
@@ -312,7 +311,6 @@ class ConfigAirTableForm extends ConfigFormBase {
    */
   public function submitBulkUpdate(array &$form, FormStateInterface $form_state) {
     $eid = $form_state->get('eid');
-    $vals = $form_state->getValues();
 
     $connection = \Drupal::database();
     $query = $connection->select('conreg_members', 'm');

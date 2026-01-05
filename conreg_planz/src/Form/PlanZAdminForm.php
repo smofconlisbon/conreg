@@ -124,7 +124,6 @@ class PlanZAdminForm extends FormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $eid = $form_state->get('eid');
   }
 
   /**

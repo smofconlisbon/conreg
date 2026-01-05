@@ -358,10 +358,6 @@ class MemberEdit extends FormBase {
    */
   public function submitCancel(array &$form, FormStateInterface $form_state) {
     $eid = $form_state->get('eid');
-    // Get session state to return to correct page.
-    $tempstore = \Drupal::service('tempstore.private')->get('conreg');
-    $display = $tempstore->get('display');
-    $page = $tempstore->get('page');
     // Redirect to member list.
     $form_state->setRedirect('conreg_portal', ['eid' => $eid]);
   }
@@ -375,7 +371,6 @@ class MemberEdit extends FormBase {
     $curMemberClassRef = $form_state->get('member_class');
     $member = $form_state->get('member');
 
-    $config = $this->config('conreg.settings.' . $eid);
     $form_values = $form_state->getValues();
 
     // Get field options from form state. If not set, get from config.
@@ -432,12 +427,6 @@ class MemberEdit extends FormBase {
     // All members saved. Now save any add-ons.
     // Addons::saveMemberAddons($config, $form_values, $mid);.
     if ($return) {
-
-      // Get session state to return to correct page.
-      $tempstore = \Drupal::service('tempstore.private')->get('conreg');
-      $display = $tempstore->get('display');
-      $page = $tempstore->get('page');
-
       // Redirect to member list.
       $form_state->setRedirect('conreg_portal', ['eid' => $eid]);
     }

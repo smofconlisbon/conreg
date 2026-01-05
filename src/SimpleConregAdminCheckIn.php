@@ -561,7 +561,6 @@ class SimpleConregAdminCheckIn extends FormBase {
     $eid = $form_state->get('eid');
     $config = ConregConfig::getConfig($eid);
     $types = ConregOptions::memberTypes($eid, $config);
-    $days = ConregOptions::days($eid, $config);
     $form_values = $form_state->getValues();
     // Assign random key for payment URL.
     $rand_key = mt_rand();

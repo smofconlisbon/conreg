@@ -482,7 +482,6 @@ class MemberTypes extends ConfigFormBase {
    * Call back for move up button.
    */
   public function moveUpSubmit(array &$form, FormStateInterface $form_state) {
-    $eid = $form_state->get('eid');
     $memberTypes = $form_state->get('member_types');
 
     // Get the parent of the button that was triggered.
@@ -517,7 +516,6 @@ class MemberTypes extends ConfigFormBase {
    * Call back for move down button.
    */
   public function moveDownSubmit(array &$form, FormStateInterface $form_state) {
-    $eid = $form_state->get('eid');
     $memberTypes = $form_state->get('member_types');
 
     // Get the parent of the button that was triggered.

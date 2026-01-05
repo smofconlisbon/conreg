@@ -492,7 +492,7 @@ class AdminMembers extends FormBase {
           // No member number for unapproved members.
           $member->member_no = 0;
         }
-        $return = $member->saveMember();
+        $member->saveMember();
       }
     }
     $this->cacheTagInvalidator->invalidateTags(['simple-conreg-member-list']);

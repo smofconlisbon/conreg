@@ -55,7 +55,6 @@ class ConfigDiscordForm extends ConfigFormBase {
     }
 
     $this->config = ConregConfig::getConfig($eid);
-    $fieldOptions = FieldOptions::getFieldOptions($eid);
     $types = ConregOptions::memberTypes($eid, $this->config);
 
     $form['#attached'] = [
@@ -301,7 +300,6 @@ class ConfigDiscordForm extends ConfigFormBase {
     // $form['discord_invites']['replace']['result']['#markup'] = print_r($this->memberTypes, TRUE);
     // $memberNos = $this->getAwaitingMemberNos($eid);
     // $form['discord_invites']['replace']['result']['#markup'] = print_r($memberNos, TRUE);
-    $output = [];
     $vals = $form_state->getValues();
 
     if (empty($vals['discord_invites']['max_invites'])) {
@@ -516,10 +514,9 @@ class ConfigDiscordForm extends ConfigFormBase {
     $key = "template";
     $to = $member->email;
     $language_code = \Drupal::languageManager()->getDefaultLanguage()->getId();
-    $send_now = TRUE;
     // Send confirmation email to member.
     if (!empty($member->email)) {
-      $result = \Drupal::service('plugin.manager.mail')->mail($module, $key, $to, $language_code, $params);
+      \Drupal::service('plugin.manager.mail')->mail($module, $key, $to, $language_code, $params);
     }
   }
 

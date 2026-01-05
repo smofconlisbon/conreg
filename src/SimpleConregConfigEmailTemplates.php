@@ -87,7 +87,7 @@ class ConregConfigEmailTemplates extends ConfigFormBase {
 
     $config = \Drupal::getContainer()->get('config.factory')->getEditable('conreg.email_templates');
     $count = 0;
-    foreach ($vals['templates'] as $key => $template) {
+    foreach ($vals['templates'] as $template) {
       if (!empty($template['subject']) || !empty($template['body']['value'])) {
         $count++;
         $config->set('template' . $count . 'subject', $template['subject']);

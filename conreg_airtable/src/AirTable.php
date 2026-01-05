@@ -56,7 +56,7 @@ class AirTable {
       foreach ($records['records'] as $key => $value) {
         $id = $value['id'];
         $entry = ['mid' => $mids[$key], 'airtable_id' => $id];
-        $insert = $connection->insert('conreg_airtable_members')
+        $connection->insert('conreg_airtable_members')
           ->fields($entry)
           ->execute();
       }
@@ -122,7 +122,7 @@ class AirTable {
   public static function removeMembers($eid, $airtable_ids) {
     $records = new \stdClass();
     $records->records = [];
-    foreach ($airtable_ids as $mid => $airtable_id) {
+    foreach ($airtable_ids as $airtable_id) {
       $fields = new \stdClass();
       $fields->id = $airtable_id;
       $fields->deleted = TRUE;
@@ -200,9 +200,9 @@ class AirTable {
   /**
    *
    */
-  public static function deleteMember($eid, $airtable_id) {
+  public static function deleteMembers($eid, $records) {
     $config = ConregConfig::getConfig($eid);
-    $api_url = $config->get('airtable.api_url') . '/' . $airtable_id;
+    $api_url = $config->get('airtable.api_url');
     $api_key = $config->get('airtable.api_key');
 
     try {
@@ -212,6 +212,7 @@ class AirTable {
         'headers' => [
           'Authorization' => 'Bearer ' . $api_key,
         ],
+        'body' => Json::encode($records),
       ])->getBody()->getContents();
       return $response;
     }
