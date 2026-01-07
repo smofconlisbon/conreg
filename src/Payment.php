@@ -31,7 +31,10 @@ class Payment {
   }
 
   /**
-   * Get the payment ID of the payment. If not already created, save the payment to create it.
+   * Get the payment ID.
+   *
+   * If the payment has not already been created, this will save the payment
+   * and return the newly created ID.
    */
   public function getId() {
     return $this->savePayment();

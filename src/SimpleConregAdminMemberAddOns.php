@@ -40,13 +40,15 @@ class SimpleConregAdminMemberAddOns extends FormBase {
     }
 
     $tempstore = \Drupal::service('tempstore.private')->get('conreg');
-    // If form values submitted, use the display value that was submitted over the passed in values.
+    // If form values were submitted, use the submitted display value
+    // instead of the passed-in values.
     if (isset($form_values['selAddOn'])) {
       $selection = $form_values['selAddOn'];
     }
 
     if (empty($selection) || !array_key_exists($selection, $options)) {
-      // If still no display specified, or invalid option, default to first key in displayOptions.
+      // If still no display is specified, or the option is invalid,
+      // default to the first key in displayOptions.
       $selection = key($options);
     }
 
@@ -120,7 +122,8 @@ class SimpleConregAdminMemberAddOns extends FormBase {
    * Callback function for "display" drop down.
    */
   public function updateDisplayCallback(array $form, FormStateInterface $form_state) {
-    // Form rebuilt with required number of members before callback. Return new form.
+    // Form rebuilt with required number of members before callback.
+    // Return new form.
     return $form;
   }
 

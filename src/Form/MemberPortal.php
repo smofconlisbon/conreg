@@ -223,7 +223,8 @@ class MemberPortal extends FormBase {
    * Callback function for "display" drop down.
    */
   public function updateDisplayCallback(array $form, FormStateInterface $form_state) {
-    // Form rebuilt with required number of members before callback. Return new form.
+    // Form rebuilt with required number of members before callback.
+    // Return new form.
     return $form;
   }
 
@@ -290,7 +291,9 @@ class MemberPortal extends FormBase {
   }
 
   /**
-   * Callback for "Pay by Card" button. Sets up members to be paid and transfers to Credit Card form.
+   * Callback for "Pay by Card" button.
+   *
+   * Sets up members to be paid and transfers to Credit Card form.
    */
   public function payCard(array &$form, FormStateInterface $form_state) {
     $eid = $form_state->get('eid');

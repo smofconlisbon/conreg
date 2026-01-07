@@ -55,7 +55,8 @@ class SimpleConregAdminMemberEmail extends FormBase {
     }
     $user_email = \Drupal::currentUser()->getEmail();
     $from_options[$user_email] = $user_email;
-    // Default email to the event from email, unless different address previously selected.
+    // Default email to the event from email,
+    // unless different address previously selected.
     $from_default = $from_email;
 
     // Build list of templates.
@@ -325,7 +326,9 @@ class SimpleConregAdminMemberEmail extends FormBase {
   }
 
   /**
-   * Callback function for Template drop down - load message fields with template.
+   * Callback function for Template drop-down.
+   *
+   * Loads message fields associated with the selected template.
    */
   public function updateEmailTemplate(array $form, FormStateInterface $form_state) {
     /*$form_values = $form_state->getValues();
@@ -340,7 +343,10 @@ class SimpleConregAdminMemberEmail extends FormBase {
     $params = $message['params'];
     $form_state->set('params', $params);
 
-    $form['email']['preview']['subject']['#markup'] = $this->t('Subject: @subject', ['@subject' => $message['subject']]);
+    $form['email']['preview']['subject']['#markup'] = $this->t(
+    'Subject: @subject',
+    ['@subject' => $message['subject']]
+    );
     $form['email']['preview']['body']['#markup'] = $message['preview'];
     }*/
     return $form['email'];

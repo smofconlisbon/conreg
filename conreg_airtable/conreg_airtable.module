@@ -22,7 +22,8 @@ function conreg_airtable_convention_member_added(Member $member) {
  * Implement hook_convention_member_updated()
  *
  * Called when member changes.
- * Check if member exists on AirTable. If present, update existing member, if not add them.
+ * Check if member exists on AirTable. If present, update existing member,
+ * if not add them.
  */
 function conreg_airtable_convention_member_updated(Member $member) {
   $connection = \Drupal::database();

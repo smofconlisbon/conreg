@@ -14,7 +14,8 @@ class FieldOptionStorage {
     // Make sure the datestamp gets updated.
     $option['update_date'] = time();
 
-    // It would be great to use the upsert function, but sadly it doesn't appear to allow composite keys.
+    // It would be great to use the upsert function, but sadly
+    // it doesn't appear to allow composite keys.
     $connection = \Drupal::database();
     $select = $connection->select('conreg_member_options', 'm');
     $select->addField('m', 'optid');
@@ -70,7 +71,8 @@ class FieldOptionStorage {
 
     // Get the saved member options for comparison.
     $prevOptions = self::getMemberOptions($mid, 0);
-    // Loop through currently saved options, and remove any that are no longer required.
+    // Loop through currently saved options, and remove any
+    // that are no longer required.
     foreach ($prevOptions as $optid => $delete) {
       // If element not in options to save, update it's selected to 0.
       if (!array_key_exists($optid, $options) || $options[$optid]['option'] != 1) {
@@ -138,7 +140,8 @@ class FieldOptionStorage {
     $select->addField('m', 'is_selected');
     $select->addField('m', 'option_detail');
     $select->condition('m.mid', $mid);
-    // If selected is TRUE, only select entries that are selected, otherwise select all entries.
+    // If selected is TRUE, only select entries that are selected,
+    // otherwise select all entries.
     if ($selected) {
       $select->condition('m.is_selected', 1);
     }

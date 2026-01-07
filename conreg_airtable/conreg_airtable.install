@@ -43,7 +43,10 @@ function conreg_airtable_install() {
  */
 function conreg_airtable_schema() {
 
-  // Create table conreg_events (eid int auto_increment primary key, event_name varchar(255) not null, is_open tinyint not null default '1');.
+  // Create table conreg_events (
+  // eid int auto_increment primary key,
+  // event_name varchar(255) not null,
+  // is_open tinyint not null default '1');.
   $schema['conreg_airtable_members'] = [
     'description' => 'Stores events on the registration system.',
     'fields' => [

@@ -296,9 +296,11 @@ class ConfigDiscordForm extends ConfigFormBase {
   public function callbackGenerateInvites(array $form, FormStateInterface $form_state) {
     $eid = $form_state->get('eid');
     // $this->memberTypes = $form_state->get('memberTypes');
-    // $form['discord_invites']['replace']['result']['#markup'] = print_r($this->memberTypes, TRUE);
+    // $form['discord_invites']['replace']['result']['#markup'] =
+    // print_r($this->memberTypes, TRUE);
     // $memberNos = $this->getAwaitingMemberNos($eid);
-    // $form['discord_invites']['replace']['result']['#markup'] = print_r($memberNos, TRUE);
+    // $form['discord_invites']['replace']['result']['#markup'] =
+    // print_r($memberNos, TRUE);
     $vals = $form_state->getValues();
 
     if (empty($vals['discord_invites']['max_invites'])) {
@@ -306,7 +308,8 @@ class ConfigDiscordForm extends ConfigFormBase {
     }
     elseif (empty(trim($vals['discord_invites']['member_range']))) {
       $this->inviteAllMembers($eid, $form, $vals);
-      // $form['discord_invites']['replace']['result']['#markup'] = $this->t('Inviting all members...');
+      // $form['discord_invites']['replace']['result']['#markup'] =
+      // $this->t('Inviting all members...');
     }
     elseif (preg_match('/^([0-9]+(\-[0-9]+)?,)*[0-9]+(\-[0-9]+)?$/', $vals['discord_invites']['member_range']) == 1) {
       $this->inviteMemberRange($eid, $form, $vals);
@@ -438,7 +441,9 @@ class ConfigDiscordForm extends ConfigFormBase {
       }
     }
 
-    // Return "<p>Invite member no $memberNo; member ".$member->mid."; type ".$member->member_type."; match $match; invite code $inviteCode; new code $newCode</p>";.
+    // Return "<p>Invite member no $memberNo; member ".$member->mid.
+    // "; type ".$member->member_type.
+    // "; match $match; invite code $inviteCode; new code $newCode</p>";.
     if ($newCode || $resend) {
       $inviteUrl = Discord::INVITE_URL . $inviteCode;
       if (!$dontEmail) {

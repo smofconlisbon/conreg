@@ -154,7 +154,9 @@ class AirTable {
       ])->getBody()->getContents();
     }
     catch (ClientException $e) {
-      // \Drupal::messenger()->addMessage(t('Error adding to AirTable: '), 'error');
+      // \Drupal::messenger()->addMessage(
+      // t('Error adding to AirTable: '), 'error'
+      // );
       \Drupal::logger('conreg_airtable')->info('Client Exception inserting into Airtable: @message', ['@message' => $e->getMessage()]);
       return FALSE;
     }

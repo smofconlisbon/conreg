@@ -35,7 +35,10 @@ function conreg_planz_install() {
  * @ingroup conreg_planz
  */
 function conreg_planz_schema() {
-  // Create table conreg_planz (mid int primary key, planz_user_id varchar(255) not null, update_date int not null);.
+  // Create table conreg_planz (
+  // mid int primary key,
+  // planz_user_id varchar(255) not null,
+  // update_date int not null);.
   $schema['conreg_planz'] = [
     'description' => 'Stores events on the registration system.',
     'fields' => [

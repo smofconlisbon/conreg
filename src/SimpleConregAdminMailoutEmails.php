@@ -189,7 +189,8 @@ class SimpleConregAdminMailoutEmails extends FormBase {
    * Callback function for "display" drop down.
    */
   public function updateDisplayCallback(array $form, FormStateInterface $form_state) {
-    // Form rebuilt with required number of members before callback. Return new form.
+    // Form rebuilt with required number of members before callback.
+    // Return new form.
     return $form;
   }
 
@@ -200,7 +201,9 @@ class SimpleConregAdminMailoutEmails extends FormBase {
   }
 
   /**
-   * Convert quotes to double quotes, and wrap values containing quotes or commas in quotes for CSV output.
+   * Convert quotes to double quotes for CSV output.
+   *
+   * Wraps values containing quotes or commas in quotes.
    *
    * @param string $value
    *
@@ -287,7 +290,9 @@ class SimpleConregAdminMailoutEmails extends FormBase {
   }
 
   /**
-   * Get an array of language names indexed by language code for active languages in Drupal.
+   * Get an array of language names indexed by language code.
+   *
+   * Returns active languages in Drupal.
    *
    * @return array
    */

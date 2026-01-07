@@ -109,7 +109,8 @@ function conreg_simplenews_form_submit($form, FormStateInterface $form_state) {
     $config->set('simplenews.options', $simplenews_options);
     $config->save();
 
-    // If newsletter is active for convention members, subscribe members matching criteria.
+    // If newsletter is active for convention members,
+    // subscribe members matching criteria.
     if (isset($active) && $active) {
       // Check SimpleNews module loaded.
       if (\Drupal::moduleHandler()->moduleExists('simplenews')) {

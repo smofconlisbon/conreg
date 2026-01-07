@@ -127,7 +127,9 @@ class PlanZAdminForm extends FormBase {
   }
 
   /**
-   * Callback for member search. Search ConReg members and check if present on PlanZ/PlanZ.
+   * Callback for member search.
+   *
+   * Search ConReg members and check if present on PlanZ/PlanZ.
    *
    * @param array $form
    * @param \Drupal\Core\Form\FormStateInterface $form_state

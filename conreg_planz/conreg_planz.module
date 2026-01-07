@@ -42,7 +42,8 @@ function conreg_planz_check_user(Member $member): void {
   // Once confirmed, we'll see if user is already on PlanZ.
   $user = new PlanZUser($planz);
   if ($user->load($member->mid)) {
-    // Member is already on PlanZ, so we want to update their details, even if they've changed their preferences.
+    // Member is already on PlanZ, so we want to update their details,
+    // even if they've changed their preferences.
     $user->save($member, FALSE);
     return;
   }
@@ -60,7 +61,8 @@ function conreg_planz_check_user(Member $member): void {
     return;
   }
 
-  // Next, check at least one of the expected member options has been selected by the member.
+  // Next, check at least one of the expected member options
+  // has been selected by the member.
   $match = FALSE;
   foreach ($planz->optionFields as $optId => $optVal) {
     if ($optVal) {

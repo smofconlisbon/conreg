@@ -33,7 +33,11 @@ function conreg_discord_install() {
  * @ingroup conreg_discord
  */
 function conreg_discord_schema() {
-  // Create table conreg_discord (mid int primary key, invite_code varchar(100) not null, update_date int not null);.
+  // Create table conreg_discord (
+  // mid int primary key,
+  // invite_code varchar(100) not null,
+  // update_date int not null,
+  // some_really_long_column_name varchar(255) not null);.
   $schema['conreg_discord'] = [
     'description' => 'Stores events on the registration system.',
     'fields' => [
