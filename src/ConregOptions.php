@@ -267,7 +267,10 @@ class ConregOptions {
         // If limited number for type, calculate number left.
         $numberForType = isset($numberOfMembers[$typeCode]) && $numberOfMembers[$typeCode] ? $numberOfMembers[$typeCode] : 0;
         $numberRemaining = $typeVals['number_allowed'] - $numberForType;
-        $displayDescription = t('%description (%number remaining)', ['%description' => $type->description, '%number' => $numberRemaining]);
+        $displayDescription = t('%description (%number remaining)', [
+          '%description' => $type->description,
+          '%number' => $numberRemaining,
+        ]);
         if ($numberRemaining <= 0) {
           $soldOut = TRUE;
         }

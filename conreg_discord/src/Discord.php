@@ -45,7 +45,10 @@ class Discord {
       $response = $e->getResponse();
       $response_info = Json::decode($response->getBody()->getContents());
       $logger = \Drupal::logger('modulename');
-      Error::logException($logger, $e, 'Failed to get channel information with error: @error (@code).', ['@error' => $response_info['channel_id'][0], '@code' => $response->getStatusCode()]);
+      Error::logException($logger, $e, 'Failed to get channel information with error: @error (@code).', [
+        '@error' => $response_info['channel_id'][0],
+        '@code' => $response->getStatusCode(),
+      ]);
       return FALSE;
     }
 
@@ -78,7 +81,10 @@ class Discord {
       $response = $e->getResponse();
       $response_info = Json::decode($response->getBody()->getContents());
       $logger = \Drupal::logger('modulename');
-      Error::logException($logger, $e, 'Failed to create invite code with error: @error (@code).', ['@error' => $response_info['channel_id'][0], '@code' => $response->getStatusCode()]);
+      Error::logException($logger, $e, 'Failed to create invite code with error: @error (@code).', [
+        '@error' => $response_info['channel_id'][0],
+        '@code' => $response->getStatusCode(),
+      ]);
       return FALSE;
     }
 

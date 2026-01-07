@@ -16,7 +16,10 @@
  *   Array containing the newly added member.
  */
 function hook_convention_member_added($member) {
-  \Drupal::messenger()->addMessage(t("Member %first %last has been added.", ['first' => $member['first_name'], 'last' => $member['last_name']]));
+  \Drupal::messenger()->addMessage(t("Member %first %last has been added.", [
+    'first' => $member['first_name'],
+    'last' => $member['last_name'],
+  ]));
 }
 
 /**
@@ -26,7 +29,10 @@ function hook_convention_member_added($member) {
  *   Array containing the newly added member.
  */
 function hook_convention_member_updated($member) {
-  \Drupal::messenger()->addMessage(t("Member %first %last has been updated.", ['first' => $member['first_name'], 'last' => $member['last_name']]));
+  \Drupal::messenger()->addMessage(t("Member %first %last has been updated.", [
+    'first' => $member['first_name'],
+    'last' => $member['last_name'],
+  ]));
 }
 
 /**
@@ -36,5 +42,8 @@ function hook_convention_member_updated($member) {
  *   Array containing the newly added member.
  */
 function hook_convention_member_deleted($member) {
-  \Drupal::messenger()->addMessage(t("Member %first %last has been deleted.", ['first' => $member['first_name'], 'last' => $member['last_name']]));
+  \Drupal::messenger()->addMessage(t("Member %first %last has been deleted.", [
+    'first' => $member['first_name'],
+    'last' => $member['last_name'],
+  ]));
 }

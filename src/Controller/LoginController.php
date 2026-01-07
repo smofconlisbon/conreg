@@ -150,7 +150,12 @@ class LoginController extends ControllerBase {
     // Redirecting at the same time as login was causing trouble, so after
     // loading, load JS to reload page. Redirect will happen on reload. As
     // fallback, display link to member portal.
-    $url_object = Url::fromRoute('conreg_portal', ['eid' => $member['eid']], ['absolute' => TRUE, 'query' => ['redirect' => 'redirect']]);
+    $url_object = Url::fromRoute('conreg_portal', [
+      'eid' => $member['eid'],
+    ], [
+      'absolute' => TRUE,
+      'query' => ['redirect' => 'redirect'],
+    ]);
     $output = [
       // '#attached' => [
       //   'library' => ['conreg/conreg_login'],

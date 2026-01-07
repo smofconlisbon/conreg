@@ -54,7 +54,15 @@ class ConregConfigClickUpForm extends ConfigFormBase {
     $token = $config->get('clickup.token');
 
     $return_url = Url::fromRoute('conreg_config_clickup', [], ['absolute' => TRUE]);
-    $url = Url::fromUri('https://app.clickup.com/api', ['query' => ['client_id' => $clientId, 'redirect_uri' => $return_url->toString()]]);
+    $url = Url::fromUri(
+      'https://app.clickup.com/api',
+      [
+        'query' => [
+          'client_id' => $clientId,
+          'redirect_uri' => $return_url->toString(),
+        ],
+      ]
+    );
     $external_link = Link::fromTextAndUrl(t('Authenticate link to ClickUp'), $url);
 
     $form['conreg_authenticate'] = [
@@ -120,7 +128,10 @@ class ConregConfigClickUpForm extends ConfigFormBase {
         ];
         foreach ($team['members'] as $member) {
           $form['conreg_clickup_team_' . $team['id']]['member_' . $member['user']['id']] = [
-            '#markup' => $this->t('@id: @username', ['@id' => $member['user']['id'], '@username' => $member['user']['username']]),
+            '#markup' => $this->t('@id: @username', [
+              '@id' => $member['user']['id'],
+              '@username' => $member['user']['username'],
+            ]),
             '#prefix' => '<div>',
             '#suffix' => '</div>',
           ];

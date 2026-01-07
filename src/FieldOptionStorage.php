@@ -148,7 +148,12 @@ class FieldOptionStorage {
     // Turn result into associative array.
     $memberOptions = [];
     foreach ($entries as $entry) {
-      $memberOptions[$entry['optid']] = ['mid' => $entry['mid'], 'optid' => $entry['optid'], 'is_selected' => $entry['is_selected'], 'option_detail' => $entry['option_detail']];
+      $memberOptions[$entry['optid']] = [
+        'mid' => $entry['mid'],
+        'optid' => $entry['optid'],
+        'is_selected' => $entry['is_selected'],
+        'option_detail' => $entry['option_detail'],
+      ];
     }
 
     return $memberOptions;

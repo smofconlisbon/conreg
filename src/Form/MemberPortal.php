@@ -334,7 +334,10 @@ class MemberPortal extends FormBase {
         $payment->add(new PaymentLine(
           $mid,
           'member',
-          $this->t("Member registration for @first_name @last_name", ['@first_name' => $entry['first_name'], '@last_name' => $entry['last_name']]),
+          $this->t("Member registration for @first_name @last_name", [
+            '@first_name' => $entry['first_name'],
+            '@last_name' => $entry['last_name'],
+          ]),
           $entry['member_price'],
         ));
         $payment_amount += $entry['member_price'];

@@ -278,7 +278,13 @@ class ConfigPlanZForm extends ConfigFormBase {
     $form['email']['template_body'] = [
       '#type' => 'text_format',
       '#title' => $this->t('InviteBulk email body'),
-      '#description' => $this->t('Text for the email body. you may use the following tokens: @tokens.', ['@tokens' => ConregTokens::tokenHelp(['planz_user', 'planz_password', 'planz_url'])]),
+      '#description' => $this->t('Text for the email body. you may use the following tokens: @tokens.', [
+        '@tokens' => ConregTokens::tokenHelp([
+          'planz_user',
+          'planz_password',
+          'planz_url',
+        ]),
+      ]),
       '#default_value' => $this->planz->emailTemplateBody,
       '#format' => $this->planz->emailTemplateFormat,
     ];

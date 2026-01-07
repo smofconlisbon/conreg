@@ -176,7 +176,10 @@ class ConregClickUp {
       $response = $e->getResponse();
       $response_info = Json::decode($response->getBody()->getContents());
       $logger = \Drupal::logger('conreg_clickup');
-      Error::logException($logger, $e, 'Failed to create ClickUp task with error: @error (@code).', ['@error' => $response_info['err'], '@code' => $response_info['ECODE']]);
+      Error::logException($logger, $e, 'Failed to create ClickUp task with error: @error (@code).', [
+        '@error' => $response_info['err'],
+        '@code' => $response_info['ECODE'],
+      ]);
       return FALSE;
     }
 
@@ -223,7 +226,10 @@ class ConregClickUp {
       $response = $e->getResponse();
       $response_info = Json::decode($response->getBody()->getContents());
       $logger = \Drupal::logger('modulename');
-      Error::logException($logger, $e, 'Failed to create ClickUp task with error: @error (@code).', ['@error' => $response_info['err'], '@code' => $response_info['ECODE']]);
+      Error::logException($logger, $e, 'Failed to create ClickUp task with error: @error (@code).', [
+        '@error' => $response_info['err'],
+        '@code' => $response_info['ECODE'],
+      ]);
       return FALSE;
     }
 
@@ -290,7 +296,17 @@ class ConregClickUp {
         }
         elseif ($changed) {
           $date = new DrupalDateTime('now');
-          self::updateTask($clickUpTask, $assignees, t('@task [updated on @date]', ['@task' => $taskName, '@date' => $date->format('Y-m-d')]), $taskDescription, $status, $token);
+          self::updateTask(
+            $clickUpTask,
+            $assignees,
+            t('@task [updated on @date]', [
+              '@task' => $taskName,
+              '@date' => $date->format('Y-m-d'),
+            ]),
+              $taskDescription,
+              $status,
+              $token,
+            );
           self::updateMemberClickupOption($mid, $groupName, $clickUpTask);
         }
         // If task exists and no changes, don't save.

@@ -25,7 +25,12 @@ class MemberOption {
    *
    */
   public function saveMemberOption() {
-    FieldOptionStorage::upsertMemberOption(['mid' => $this->mid, 'optid' => $this->optionId, 'is_selected' => $this->isSelected, 'option_detail' => $this->optionDetail]);
+    FieldOptionStorage::upsertMemberOption([
+      'mid' => $this->mid,
+      'optid' => $this->optionId,
+      'is_selected' => $this->isSelected,
+      'option_detail' => $this->optionDetail,
+    ]);
   }
 
   /**

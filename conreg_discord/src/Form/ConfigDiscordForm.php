@@ -451,7 +451,13 @@ class ConfigDiscordForm extends ConfigFormBase {
                       'Member No: @member_no<br />' .
                       'Email: @email<br />' .
                       'Invite URL: @url</p>',
-                      ['@first_name' => $member->first_name, '@last_name' => $member->last_name, '@member_no' => $member->member_no, '@email' => $member->email, '@url' => $inviteUrl]);
+                      [
+                        '@first_name' => $member->first_name,
+                        '@last_name' => $member->last_name,
+                        '@member_no' => $member->member_no,
+                        '@email' => $member->email,
+                        '@url' => $inviteUrl,
+                      ]);
     }
     // If invite not sent, return false.
     return FALSE;
