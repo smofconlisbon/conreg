@@ -6,7 +6,6 @@ use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\conreg\ConregConfig;
 use Drupal\conreg\EventStorage;
-use Drupal\conreg\FieldOptions;
 use Drupal\conreg\ConregTokens;
 use Drupal\conreg\ConregOptions;
 use Drupal\conreg\Member;
@@ -464,7 +463,7 @@ class ConfigDiscordForm extends ConfigFormBase {
   }
 
   /**
-   *
+   * Get total number of members awaiting invitation.
    */
   private function getAwaitingInviteCount($eid) {
     $query = $this->getQuery($eid);
@@ -472,7 +471,7 @@ class ConfigDiscordForm extends ConfigFormBase {
   }
 
   /**
-   *
+   * Get member numbers waiting to be added to PlanZ/Zambia.
    */
   private function getAwaitingMemberNos($eid) {
     $query = $this->getQuery($eid);
@@ -481,7 +480,7 @@ class ConfigDiscordForm extends ConfigFormBase {
   }
 
   /**
-   *
+   * Get members who have not been added to PlanZ/Zambia.
    */
   private function getQuery($eid) {
     $connection = \Drupal::database();
@@ -504,10 +503,10 @@ class ConfigDiscordForm extends ConfigFormBase {
   }
 
   /**
-   *
+   * Send the member an email with login details.
    */
   public function sendInviteEmail(Member $member, $inviteUrl) {
-    // Get ConReg tokens, so we can add Zambia tokens.
+    // Get ConReg tokens, so we can add PlanZ/Zambia tokens.
     $tokens = new ConregTokens($member->eid, $member->mid);
     $tokens->addExtraTokens(['[invite_url]' => $inviteUrl]);
 

@@ -2,6 +2,7 @@
 
 /**
  * @file
+ * Module file for conreg_planz.
  */
 
 use Drupal\conreg\Member;
@@ -25,6 +26,7 @@ function conreg_planz_convention_member_updated(Member $member): void {
 
 /**
  * Called from insert and update.
+ *
  * Check if member on PlanZ. If so, push update to PlanZ member record.
  * If not, check if relevant options checked, and if create PlanZ invite.
  */

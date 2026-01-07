@@ -42,7 +42,7 @@ class ConregClickUp {
   }
 
   /**
-   *
+   * Get the ClickUp team.
    */
   public static function getTeam($token = NULL) {
     if (empty($token)) {
@@ -64,7 +64,7 @@ class ConregClickUp {
   }
 
   /**
-   *
+   * Get the ClickUp Space.
    */
   public static function getSpaces($team, $token = NULL) {
     if (empty($token)) {
@@ -86,7 +86,7 @@ class ConregClickUp {
   }
 
   /**
-   *
+   * Get the list within a space.
    */
   public static function getLists($space, $token = NULL) {
     if (empty($token)) {
@@ -108,7 +108,7 @@ class ConregClickUp {
   }
 
   /**
-   *
+   * Get folders within a space.
    */
   public static function getFolders($space, $token = NULL) {
     if (empty($token)) {
@@ -315,7 +315,7 @@ class ConregClickUp {
   }
 
   /**
-   * DB functions for ClickUp table. May move to a separate class later.
+   * Insert member into the ClickUp options table.
    */
   public static function insertMemberClickupOption($mid, $optionGroup, $clickUpTaskId) {
     $connection = \Drupal::database();
@@ -331,7 +331,7 @@ class ConregClickUp {
   }
 
   /**
-   *
+   * Update member in the ClickUp options table.
    */
   public static function updateMemberClickupOption($mid, $optionGroup, $clickUpTaskId) {
     $connection = \Drupal::database();
@@ -347,7 +347,7 @@ class ConregClickUp {
   }
 
   /**
-   *
+   * Get the member's ClickUp option.
    */
   public static function getMemberClickupOption($mid, $optionGroup) {
     $connection = \Drupal::database();
@@ -363,7 +363,7 @@ class ConregClickUp {
   }
 
   /**
-   *
+   * Get members with no tasks.
    */
   public static function getMembersWithoutTasks($eid, $optIds, $count) {
     $connection = \Drupal::database();

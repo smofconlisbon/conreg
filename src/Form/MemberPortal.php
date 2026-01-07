@@ -228,14 +228,14 @@ class MemberPortal extends FormBase {
   }
 
   /**
-   *
+   * Populate table with results of search form.
    */
   public function search(array &$form, FormStateInterface $form_state) {
     $form_state->setRebuild();
   }
 
   /**
-   *
+   * Register new members for group.
    */
   public function addMembers(array &$form, FormStateInterface $form_state) {
     $eid = $form_state->get('eid');
@@ -245,7 +245,7 @@ class MemberPortal extends FormBase {
     );
   }
 
-  /***
+  /**
    * Get the Member ID of the currently logged in user.
    */
   private function getUserLeadMid($eid) {
@@ -375,14 +375,6 @@ class MemberPortal extends FormBase {
     else {
       \Drupal::messenger()->addMessage($this->t('Nothing to pay for.'), 'warning');
     }
-  }
-
-  /**
-   *
-   */
-  public function cancelAction(array &$form, FormStateInterface $form_state) {
-    $form_state->set('action', '');
-    $form_state->setRebuild();
   }
 
   /**

@@ -10,12 +10,12 @@ use GuzzleHttp\Exception\TransferException;
 use GuzzleHttp\Exception\ClientException;
 
 /**
- *
+ * Class for managing connection with AirTable.
  */
 class AirTable {
 
   /**
-   *
+   * Test connection to AirTable.
    */
   public static function test($eid) {
     $config = ConregConfig::getConfig($eid);
@@ -40,7 +40,7 @@ class AirTable {
   }
 
   /**
-   *
+   * Add members to AirTable.
    */
   public static function addMembers($eid, $mids) {
     $config = ConregConfig::getConfig($eid);
@@ -66,7 +66,7 @@ class AirTable {
   }
 
   /**
-   *
+   * Updating members on AirTable.
    */
   public static function updateMembers($eid, $airtable_ids) {
     $config = ConregConfig::getConfig($eid);
@@ -83,7 +83,7 @@ class AirTable {
   }
 
   /**
-   *
+   * Get fields to add to AirTable.
    */
   public static function getMemberFields($mid, $airtable_id, $config, $fieldOptions) {
     $fields = new \stdClass();
@@ -117,7 +117,7 @@ class AirTable {
   }
 
   /**
-   *
+   * Remove deleted members from AirTable.
    */
   public static function removeMembers($eid, $airtable_ids) {
     $records = new \stdClass();
@@ -135,7 +135,7 @@ class AirTable {
   }
 
   /**
-   *
+   * HTTP "Post" to add members to AirTable.
    */
   public static function postMembers($eid, $records) {
     $config = ConregConfig::getConfig($eid);
@@ -167,7 +167,7 @@ class AirTable {
   }
 
   /**
-   *
+   * HTTP "Put" to update members on AirTable.
    */
   public static function putMembers($eid, $records) {
     $config = ConregConfig::getConfig($eid);
@@ -198,7 +198,7 @@ class AirTable {
   }
 
   /**
-   *
+   * HTTP "Delete" to remove members from AirTable.
    */
   public static function deleteMembers($eid, $records) {
     $config = ConregConfig::getConfig($eid);

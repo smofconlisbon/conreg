@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Warning: should not be in namespace!
+ * Module file for ConReg.
  */
 
 use Drupal\Core\Routing\RouteMatchInterface;
@@ -14,7 +14,7 @@ use Drupal\conreg\ConregEmailer;
 use Drupal\conreg\ConregConfig;
 
 /**
- *
+ * Implements hook_help().
  */
 function conreg_help($route_name, RouteMatchInterface $route_match) {
   switch ($route_name) {
@@ -28,7 +28,7 @@ function conreg_help($route_name, RouteMatchInterface $route_match) {
 }
 
 /**
- *
+ * Implements hook_mail().
  */
 function conreg_mail($key, &$message, $params) {
 
@@ -41,7 +41,7 @@ function conreg_mail($key, &$message, $params) {
 }
 
 /**
- *
+ * Implements hook_form_alter().
  */
 function conreg_form_alter(&$form, FormStateInterface $form_state, $form_id) {
 
@@ -86,7 +86,7 @@ function conreg_form_alter(&$form, FormStateInterface $form_state, $form_id) {
 }
 
 /**
- *
+ * Implements hook_simplenews_form_submit().
  */
 function conreg_simplenews_form_submit($form, FormStateInterface $form_state) {
   $form_values = $form_state->getValues();

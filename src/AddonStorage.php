@@ -73,7 +73,7 @@ class AddonStorage {
   }
 
   /**
-   *
+   * Update member add-on by payment ID.
    */
   public static function updateByPayId($entry) {
     $connection = \Drupal::database();
@@ -145,7 +145,7 @@ class AddonStorage {
   }
 
   /**
-   *
+   * Load add-on data for report.
    */
   public static function loadAddOnReport($eid, $addOn) {
     $connection = \Drupal::database();

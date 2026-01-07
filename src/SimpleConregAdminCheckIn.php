@@ -812,7 +812,7 @@ class SimpleConregAdminCheckIn extends FormBase {
   }
 
   /**
-   *
+   * Format the badge number (@todo: move to trait).
    */
   protected function showBadgeNumber(array $member, ImmutableConfig $config): string {
     if (!$member['member_no']) {

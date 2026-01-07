@@ -22,7 +22,7 @@ class MemberOption {
   }
 
   /**
-   *
+   * Save member option.
    */
   public function saveMemberOption() {
     FieldOptionStorage::upsertMemberOption([
@@ -34,13 +34,13 @@ class MemberOption {
   }
 
   /**
-   *
+   * Load specific member option (not yet implemented).
    */
   public static function loadMemberOption($mid, $optid) {
   }
 
   /**
-   *
+   * Load all options for specified member.
    */
   public static function loadAllMemberOptions($mid) {
     $memberOptions = [];

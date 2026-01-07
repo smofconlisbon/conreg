@@ -3,7 +3,7 @@
 namespace Drupal\conreg;
 
 /**
- *
+ * Storage for conreg_upgrades table.
  */
 class UpgradeStorage {
 
@@ -117,7 +117,7 @@ class UpgradeStorage {
   }
 
   /**
-   *
+   * Delete unpaid upgrades for member.
    */
   public static function deleteUnpaidByMid($mid) {
     $connection = \Drupal::database();
@@ -128,7 +128,7 @@ class UpgradeStorage {
   }
 
   /**
-   *
+   * Delete unpaid upgrades for any members registered by lead member.
    */
   public static function deleteUnpaidByLeadMid($lead_mid) {
     $connection = \Drupal::database();

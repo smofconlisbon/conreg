@@ -8,7 +8,7 @@ namespace Drupal\conreg;
 class FieldOptionStorage {
 
   /**
-   *
+   * Insert or upgrade member option.
    */
   public static function upsertMemberOption($option) {
     // Make sure the datestamp gets updated.
@@ -37,7 +37,7 @@ class FieldOptionStorage {
   }
 
   /**
-   *
+   * Insert options for a member.
    */
   public static function insertMemberOptions($mid, &$options) {
     $connection = \Drupal::database();
@@ -63,7 +63,7 @@ class FieldOptionStorage {
   }
 
   /**
-   *
+   * Update options for a member.
    */
   public static function updateMemberOptions($mid, &$options) {
     $connection = \Drupal::database();

@@ -2,6 +2,7 @@
 
 /**
  * @file
+ * Module file for conreg_airtable.
  */
 
 use Drupal\conreg\Member;

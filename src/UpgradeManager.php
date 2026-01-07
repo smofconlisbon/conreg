@@ -30,7 +30,7 @@ class UpgradeManager {
   }
 
   /**
-   *
+   * Return count of available upgrades.
    */
   public function count() {
     return count($this->upgrades);
@@ -62,7 +62,7 @@ class UpgradeManager {
   }
 
   /**
-   *
+   * Load upgrades for member.
    */
   public function loadUpgrades($mid, $isPaid) {
     $this->upgrades = [];
@@ -93,7 +93,7 @@ class UpgradeManager {
   }
 
   /**
-   *
+   * Complete paid for upgrades.
    */
   public function completeUpgrades($payment_amount, $payment_method, $payment_id) {
     foreach ($this->upgrades as $upgrade) {

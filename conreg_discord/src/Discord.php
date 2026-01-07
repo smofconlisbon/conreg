@@ -7,7 +7,7 @@ use Drupal\Core\Utility\Error;
 use GuzzleHttp\Exception\RequestException;
 
 /**
- *
+ * Class to handle communication with Discord.
  */
 class Discord {
   const BASE_URL = 'https://discordapp.com/api/';

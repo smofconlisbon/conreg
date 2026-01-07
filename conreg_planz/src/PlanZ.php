@@ -12,7 +12,7 @@ use Drupal\conreg\ConregTokens;
 // cspell:ignore permroleid permrolename
 
 /**
- *
+ * Class for adding members to PlanZ.
  */
 class PlanZ {
   public readonly string $target;

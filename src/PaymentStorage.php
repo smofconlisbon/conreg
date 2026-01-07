@@ -45,7 +45,7 @@ class PaymentStorage {
   }
 
   /**
-   *
+   * Insert payment line.
    */
   public static function insertLine($entry) {
     $return_value = NULL;
@@ -92,7 +92,7 @@ class PaymentStorage {
   }
 
   /**
-   *
+   * Update payment line record.
    */
   public static function updateLine($entry) {
     $connection = \Drupal::database();
@@ -128,7 +128,7 @@ class PaymentStorage {
   }
 
   /**
-   *
+   * Delete payment lines.
    */
   public static function deleteLine($entry) {
     $connection = \Drupal::database();
@@ -155,7 +155,7 @@ class PaymentStorage {
   }
 
   /**
-   *
+   * Load payment line matching condition.
    */
   public static function loadLine($entry = []) {
     $connection = \Drupal::database();
@@ -191,7 +191,7 @@ class PaymentStorage {
   }
 
   /**
-   *
+   * Load all lines matching criteria.
    */
   public static function loadAllLines($entry = []) {
     $connection = \Drupal::database();

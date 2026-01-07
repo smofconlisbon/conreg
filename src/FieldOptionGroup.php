@@ -24,7 +24,7 @@ class FieldOptionGroup {
   }
 
   /**
-   *
+   * Convert group line into object fields.
    */
   public function parseGroup($groupLine) {
     [$this->groupId, $this->fieldType, $this->fieldName, $this->title, $this->global, $this->public] = array_pad(explode('|', $groupLine), 6, '');
@@ -45,14 +45,14 @@ class FieldOptionGroup {
   }
 
   /**
-   *
+   * Add an option to the group.
    */
   public function addOption(FieldOption &$option) {
     $this->options[$option->optionId] = $option;
   }
 
   /**
-   *
+   * Create group form fields.
    */
   public function groupForm(&$member, $requireMandatory = TRUE) {
     $options = [
@@ -75,7 +75,7 @@ class FieldOptionGroup {
   }
 
   /**
-   *
+   * Create group check box fields.
    */
   private function groupCheckBoxes($options, &$member, $requireMandatory) {
     foreach ($this->options as $option) {
@@ -124,7 +124,7 @@ class FieldOptionGroup {
   }
 
   /**
-   *
+   * Create group text fields.
    */
   private function groupTextFields($options, &$member) {
     foreach ($this->options as $option) {
@@ -155,7 +155,7 @@ class FieldOptionGroup {
   }
 
   /**
-   *
+   * Create a new option group.
    */
   public static function newGroup($groupLine) {
     if (!empty($groupLine)) {

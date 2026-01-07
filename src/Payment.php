@@ -51,7 +51,7 @@ class Payment {
   }
 
   /**
-   *
+   * Save the payment details.
    */
   private function savePayment() {
     // If Random Key not set, generate it.
@@ -106,7 +106,7 @@ class Payment {
   }
 
   /**
-   *
+   * Load the payment with the requested ID, and return payment object.
    */
   public static function load(int $payId): Payment|null {
     if ($payEntry = PaymentStorage::load(['payid' => $payId])) {

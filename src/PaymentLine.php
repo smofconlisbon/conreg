@@ -24,7 +24,7 @@ class PaymentLine {
   }
 
   /**
-   *
+   * Save the payment line.
    */
   public function save($payId = NULL) {
     $payLine = [
@@ -48,7 +48,7 @@ class PaymentLine {
   }
 
   /**
-   *
+   * Load the line by payment line ID.
    */
   public static function load($lineId) {
     if ($payLine = PaymentStorage::loadLine(['lineid' => $lineId])) {
@@ -63,7 +63,7 @@ class PaymentLine {
   }
 
   /**
-   *
+   * Load multiple lines.
    */
   public static function loadLines($payId) {
     $lines = [];
