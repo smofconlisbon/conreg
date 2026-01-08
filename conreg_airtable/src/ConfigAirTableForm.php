@@ -120,10 +120,9 @@ class ConfigAirTableForm extends ConfigFormBase {
       }
     }
 
-    /**
-     * Field mappings for members.
-     */
-
+    //
+    // Field mappings for members.
+    //
     $form['mapping'] = [
       '#type' => 'details',
       '#title' => $this->t('Field mappings'),
@@ -178,10 +177,9 @@ class ConfigAirTableForm extends ConfigFormBase {
       ];
     }
 
-    /**
-     * Field mappings for option groups.
-     */
-
+    //
+    // Field mappings for option groups.
+    //
     $form['option_groups'] = [
       '#type' => 'details',
       '#title' => $this->t('Option Groups'),
@@ -205,10 +203,9 @@ class ConfigAirTableForm extends ConfigFormBase {
       ];
     }
 
-    /**
-     * Field mappings for option fields.
-     */
-
+    //
+    // Field mappings for option fields.
+    //
     $form['option_fields'] = [
       '#type' => 'details',
       '#title' => $this->t('Option Fields'),
@@ -232,10 +229,9 @@ class ConfigAirTableForm extends ConfigFormBase {
       ];
     }
 
-    /**
-     * Field mappings for members.
-     */
-
+    //
+    // Field mappings for members.
+    //
     $form['bulk'] = [
       '#type' => 'details',
       '#title' => $this->t('Bulk add'),

@@ -199,10 +199,9 @@ class ConfigPlanZForm extends ConfigFormBase {
       '#default_value' => $this->planz->planZUrl,
     ];
 
-    /**
-     * Field mappings for option fields.
-     */
-
+    //
+    // Field mappings for option fields.
+    //
     $form['option_fields'] = [
       '#type' => 'details',
       '#title' => $this->t('Option Fields'),
@@ -226,10 +225,9 @@ class ConfigPlanZForm extends ConfigFormBase {
       ];
     }
 
-    /**
-     * Options for auto member adding.
-     */
-
+    //
+    // Options for auto member adding.
+    //
     $form['auto'] = [
       '#type' => 'details',
       '#title' => $this->t('Automatic Member Adding'),
@@ -257,10 +255,9 @@ class ConfigPlanZForm extends ConfigFormBase {
       '#default_value' => $this->planz->autoWhenConfirmed,
     ];
 
-    /**
-     * Options for auto member adding.
-     */
-
+    //
+    // Options for auto member adding.
+    //
     $form['email'] = [
       '#type' => 'details',
       '#title' => $this->t('Email invitation'),

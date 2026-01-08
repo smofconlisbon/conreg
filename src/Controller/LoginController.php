@@ -158,7 +158,7 @@ class LoginController extends ControllerBase {
     ]);
     $output = [
       // '#attached' => [
-      //   'library' => ['conreg/conreg_login'],
+      // 'library' => ['conreg/conreg_login'],
       // ],
       '#title' => $this->t('Welcome @name!', ['@name' => $member['first_name']]),
       'link' => [

@@ -42,10 +42,9 @@ class PlanZAdminForm extends FormBase {
 
     $config = \Drupal::config('conreg.settings.' . $eid . '.planz');
     $this->planz = new PlanZ($config);
-    /**
-     * Manual member invites.
-     */
-
+    //
+    // Manual member invites.
+    //
     $form['info'] = [
       '#type' => 'markup',
       '#prefix' => '<div class="email_members">',

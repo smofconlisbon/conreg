@@ -114,10 +114,9 @@ class ConfigDiscordForm extends ConfigFormBase {
       }
     }
 
-    /**
-     * Member types to generate invites for.
-     */
-
+    //
+    // Member types to generate invites for.
+    //
     $form['member_types'] = [
       '#type' => 'details',
       '#title' => $this->t('Member Types'),
@@ -147,10 +146,9 @@ class ConfigDiscordForm extends ConfigFormBase {
     }
     $form_state->set('memberTypes', $this->memberTypes);
 
-    /**
-     * Options for auto member adding.
-     */
-
+    //
+    // Options for auto member adding.
+    //
     $form['invite_template'] = [
       '#type' => 'details',
       '#title' => $this->t('Invite Template'),
@@ -180,10 +178,9 @@ class ConfigDiscordForm extends ConfigFormBase {
       '#format' => $this->config->get('discord.template_format'),
     ];
 
-    /**
-     * Manual member invites.
-     */
-
+    //
+    // Manual member invites.
+    //
     $form['discord_invites'] = [
       '#type' => 'details',
       '#title' => $this->t('Discord Invites'),
