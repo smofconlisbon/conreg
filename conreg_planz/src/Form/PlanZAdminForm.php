@@ -131,7 +131,9 @@ class PlanZAdminForm extends FormBase {
    * Search ConReg members and check if present on PlanZ/PlanZ.
    *
    * @param array $form
+   *   The form structure.
    * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The current state of the form.
    */
   public function callbackSearch(array $form, FormStateInterface $form_state) {
     $vals = $form_state->getValues();
@@ -202,9 +204,12 @@ class PlanZAdminForm extends FormBase {
    * Callback for manual add button. Add specified members to PlanZ/PlanZ.
    *
    * @param array $form
+   *   The form structure.
    * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The current state of the form.
    *
-   * @return array The updated "Result" form element.
+   * @return array
+   *   The updated "Result" form element.
    */
   public function callbackManualAdd(array $form, FormStateInterface $form_state) {
     $eid = $form_state->get('eid');
@@ -256,11 +261,15 @@ class PlanZAdminForm extends FormBase {
    *   If true, add member even if they don't meet criteria.
    * @param bool $reset
    *   If true, reset the user's password.
+   * @param bool $resend
+   *   If true, resend the email.
    * @param bool $dontEmail
    *   If true, don't send email notification.
    * @param array $optionFields
+   *   Array of option fields.
    *
-   * @return string Returns the details of the newly added member.
+   * @return string
+   *   Returns the details of the newly added member.
    */
   private function addMemberToPlanZ(int $eid, int $memberNo, bool $override, bool $reset, bool $resend, bool $dontEmail, array $optionFields): string {
     $member = Member::loadMemberByMemberNo($eid, $memberNo);

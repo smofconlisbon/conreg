@@ -34,6 +34,7 @@ class PlanZ {
    * Constructs a new Member object.
    *
    * @param \Drupal\Core\Config\ImmutableConfig $config
+   *   The configuration object containing PlanZ settings.
    */
   public function __construct(ImmutableConfig|NULL $config = NULL) {
     $this->target = $config->get('target') ?: 'default';
@@ -56,6 +57,7 @@ class PlanZ {
    * Get the connection to the PlanZ database.
    *
    * @return \Drupal\Core\Database\Connection
+   *   The database connection object for PlanZ.
    */
   public function getPlanZConnection(): Connection {
     return Database::getConnection($this->target, 'planz');
@@ -67,7 +69,10 @@ class PlanZ {
    * @param int &$count
    *   Count of members.
    *
-   * @return boolean TRUE for valid connection, FALSE for connected but tables not found, NULL for invalid connection
+   * @return bool|null
+   *   TRUE if the connection is valid and table exists.
+   *   FALSE if the connection exists but table not found.
+   *   NULL if the connection could not be established.
    */
   public function test(int &$count) {
     try {
@@ -93,7 +98,8 @@ class PlanZ {
   /**
    * Get the permission roles present on PlanZ.
    *
-   * @return array The array of permission roles
+   * @return array
+   *   The array of permission roles
    */
   public function getPermissionRoles(): array {
     $con = $this->getPlanZConnection();
@@ -108,8 +114,10 @@ class PlanZ {
    * Create PlanZ badge ID for member.
    *
    * @param \Drupal\conreg\Member $member
+   *   The member object to generate the badge ID for.
    *
    * @return string
+   *   The generated badge ID string.
    */
   public function createBadgeId(Member $member): string {
     $memberRef = match($this->badgeIdSource) {

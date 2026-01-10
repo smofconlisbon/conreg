@@ -132,8 +132,8 @@ class Member extends \stdClass {
    * @param string $email
    *   Email of lead member.
    *
-   * @return array of member objects.
-   *   The member object.
+   * @return array
+   *   Array of member objects.
    */
   public static function loadMemberGroupByEmail(int $eid, string $email): array {
     $leadMember = self::loadMemberByEmail($eid, $email);

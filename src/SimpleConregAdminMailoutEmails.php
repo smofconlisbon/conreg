@@ -206,8 +206,10 @@ class SimpleConregAdminMailoutEmails extends FormBase {
    * Wraps values containing quotes or commas in quotes.
    *
    * @param string $value
+   *   The value to have quotes doubled.
    *
    * @return string
+   *   The quoted field for CSV output.
    */
   private function csvField(string $value): string {
     if (str_contains($value, '"')) {
@@ -225,10 +227,14 @@ class SimpleConregAdminMailoutEmails extends FormBase {
    * @param int $eid
    *   Event ID.
    * @param string $methods
+   *   Communication methods to export.
    * @param string $languages
+   *   Languages to export.
    * @param string $fields
+   *   Fields to include in exported file.
    *
    * @return \Symfony\Component\HttpFoundation\Response
+   *   Response for download file.
    */
   private function exportMemberEmail(int $eid, string $methods, string $languages, string $fields): Response {
     // Split out parameters.
@@ -292,9 +298,8 @@ class SimpleConregAdminMailoutEmails extends FormBase {
   /**
    * Get an array of language names indexed by language code.
    *
-   * Returns active languages in Drupal.
-   *
    * @return array
+   *   The active languages in Drupal.
    */
   public function getLanguageOptions(): Array {
     $languages = \Drupal::languageManager()->getLanguages();
