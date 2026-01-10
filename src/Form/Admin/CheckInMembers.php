@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\conreg;
+namespace Drupal\conreg\Form\Admin;
 
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Config\ImmutableConfig;
@@ -9,11 +9,17 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Session\AccountProxyInterface;
 use Drupal\Component\Utility\Html;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\conreg\EventStorage;
+use Drupal\conreg\ConregStorage;
+use Drupal\conreg\ConregOptions;
+use Drupal\conreg\ConregConfig;
+use Drupal\conreg\Payment;
+use Drupal\conreg\PaymentLine;
 
 /**
  * Simple form to add an entry, with all the interesting fields.
  */
-class SimpleConregAdminCheckIn extends FormBase {
+class CheckInMembers extends FormBase {
 
   /**
    * The database connection.
@@ -83,7 +89,7 @@ class SimpleConregAdminCheckIn extends FormBase {
    * {@inheritdoc}
    */
   public function getFormId() {
-    return 'conreg_admin_members';
+    return 'conreg_admin_checkin_members';
   }
 
   /**

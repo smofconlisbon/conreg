@@ -472,4 +472,27 @@ class FormBuildTest extends KernelTestBase {
     $this->assertEquals('conreg_admin_fantable', $form['#form_id']);
   }
 
+  /**
+   * Test building Manage Members form.
+   */
+  public function testAdminCheckInFormBuild() {
+    $route = $this->container
+      ->get('router.route_provider')
+      ->getRouteByName('conreg_admin_checkin');
+
+    $this->assertInstanceOf(Route::class, $route);
+    $this->assertEquals(
+      'Member Checkin',
+      $route->getDefault('_title')
+    );
+
+    $form = $this->container
+      ->get('form_builder')
+      ->getForm($route->getDefault('_form'));
+
+    $this->assertIsArray($form);
+    $this->assertArrayHasKey('#form_id', $form);
+    $this->assertEquals('conreg_admin_checkin_members', $form['#form_id']);
+  }
+
 }

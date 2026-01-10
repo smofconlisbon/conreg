@@ -382,7 +382,7 @@ conreg_admin_checkin:
   path: 'admin/members/checkin/{eid}/{lead_mid}'
   defaults:
     _title: 'Member Checkin'
-    _form: '\Drupal\conreg\SimpleConregAdminCheckIn'
+    _form: '\Drupal\conreg\Form\Admin\CheckInMembers'
     eid: 1
     lead_mid: 0
   requirements:
