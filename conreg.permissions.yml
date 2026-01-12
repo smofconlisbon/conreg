@@ -4,6 +4,10 @@
   title: Register for convention
   description: Allow users to register and view other members
 
+'view public members':
+  title: View public membership list
+  description: Allow users to view list of members who opted in
+  
 'check membership':
   title: Check membership
   description: Allow users to check if they have registered
