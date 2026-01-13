@@ -1,0 +1,5 @@
+services:
+  conreg.country:
+    class: Drupal\conreg\Service\CountryService
+    autowire: true
+  Drupal\conreg\Service\CountryServiceInterface: '@conreg.country'

@@ -31,7 +31,7 @@ class ConregOptions {
    *
    * @param int $eid
    *   The event ID.
-   * @param Drupal\Core\Config\ImmutableConfig|null $config
+   * @param \Drupal\Core\Config\ImmutableConfig|null $config
    *   The configuration settings.
    *
    * @return object
@@ -124,7 +124,7 @@ class ConregOptions {
   /**
    * Function used to convert legacy fieldsets into MemberClasses.
    *
-   * @param Drupal\Core\Config\ImmutableConfig|null $config
+   * @param \Drupal\Core\Config\ImmutableConfig|null $config
    *   The configuration settings.
    * @param string $name
    *   The name of the class.
@@ -185,7 +185,7 @@ class ConregOptions {
    *
    * @param int $eid
    *   The event ID.
-   * @param Drupal\Core\Config\ImmutableConfig|null $config
+   * @param \Drupal\Core\Config\ImmutableConfig|null $config
    *   The configuration settings.
    *
    * @return object
@@ -303,7 +303,7 @@ class ConregOptions {
    *
    * @param int $eid
    *   The event ID.
-   * @param Drupal\Core\Config\ImmutableConfig|null $config
+   * @param \Drupal\Core\Config\ImmutableConfig|null $config
    *   The configuration settings.
    *
    * @return array
@@ -423,7 +423,7 @@ class ConregOptions {
    *
    * @param int $eid
    *   The event ID.
-   * @param Drupal\Core\Config\ImmutableConfig|null $config
+   * @param \Drupal\Core\Config\ImmutableConfig|null $config
    *   The configuration settings.
    */
   public static function memberUpgrades($eid, ImmutableConfig|null &$config = NULL) {
@@ -479,7 +479,7 @@ class ConregOptions {
    *
    * @param int $eid
    *   The event ID.
-   * @param Drupal\Core\Config\ImmutableConfig|null $config
+   * @param \Drupal\Core\Config\ImmutableConfig|null $config
    *   The configuration settings.
    */
   public static function badgeTypes($eid, ImmutableConfig|null $config = NULL) {
@@ -503,7 +503,7 @@ class ConregOptions {
    *
    * @param int $eid
    *   The event ID.
-   * @param Drupal\Core\Config\ImmutableConfig|null $config
+   * @param \Drupal\Core\Config\ImmutableConfig|null $config
    *   The configuration settings.
    *
    * @return array
@@ -536,7 +536,7 @@ class ConregOptions {
    *   The member's last name.
    * @param int $maxLength
    *   The maximum length of the badge name.
-   * @param Drupal\Core\Config\ImmutableConfig|null $config
+   * @param \Drupal\Core\Config\ImmutableConfig|null $config
    *   The configuration settings.
    *
    * @return array
@@ -563,7 +563,7 @@ class ConregOptions {
    *
    * @param int $eid
    *   The event ID.
-   * @param \Drupal\Core\Config\ImmutableConfig $config
+   * @param \\Drupal\Core\Config\ImmutableConfig $config
    *   The configuration settings.
    *
    * @return array
@@ -590,7 +590,7 @@ class ConregOptions {
    *
    * @param int $eid
    *   The event ID.
-   * @param Drupal\Core\Config\ImmutableConfig|null $config
+   * @param \Drupal\Core\Config\ImmutableConfig|null $config
    *   The configuration settings.
    *
    * @return array
@@ -619,7 +619,7 @@ class ConregOptions {
    *
    * @param int $eid
    *   The event ID.
-   * @param \Drupal\Core\Config\ImmutableConfig $config
+   * @param \\Drupal\Core\Config\ImmutableConfig $config
    *   The configuration object.
    * @param bool $reset
    *   If true reset cached version.
@@ -658,7 +658,7 @@ class ConregOptions {
    *
    * @param int $eid
    *   The event ID.
-   * @param Drupal\Core\Config\ImmutableConfig|null $config
+   * @param \Drupal\Core\Config\ImmutableConfig|null $config
    *   The configuration settings.
    *
    * @return array
@@ -683,7 +683,7 @@ class ConregOptions {
    *
    * @param int $eid
    *   The event ID.
-   * @param Drupal\Core\Config\ImmutableConfig|null $config
+   * @param \Drupal\Core\Config\ImmutableConfig|null $config
    *   The configuration settings.
    * @param bool $publicOnly
    *   If true, return only public methods.

@@ -5,7 +5,7 @@ namespace Drupal\conreg\Form;
 use Drupal\Component\Utility\EmailValidatorInterface;
 use Drupal\conreg\Addons;
 use Drupal\conreg\ConregConfig;
-use Drupal\conreg\ConregCountry;
+use Drupal\conreg\Service\CountryServiceInterface;
 use Drupal\conreg\ConregOptions;
 use Drupal\conreg\EventStorage;
 use Drupal\conreg\FieldOptions;
@@ -32,7 +32,7 @@ class Registration extends FormBase {
   use AutowireTrait;
 
   /**
-   * Constructs a new EmailExampleGetFormPage.
+   * Constructs a new Registration form.
    *
    * @param \Drupal\Core\Session\AccountProxyInterface $currentUser
    *   The currently logged in user.
@@ -42,12 +42,15 @@ class Registration extends FormBase {
    *   The Drupal renderer.
    * @param \Drupal\Component\Utility\EmailValidatorInterface $emailValidator
    *   The email validator service.
+   * @param \Drupal\conreg\Service\CountryServiceInterface $countryService
+   *   The country service.
    */
   final public function __construct(
     protected AccountProxyInterface $currentUser,
     protected MailManagerInterface $mail_manager,
     protected RendererInterface $renderer,
     protected EmailValidatorInterface $emailValidator,
+    protected CountryServiceInterface $countryService,
   ) {}
 
   /**
@@ -113,7 +116,7 @@ class Registration extends FormBase {
     $defaultCountry = $config->get('reference.default_country');
     // If geoPlugin enabled in configuration, lookup country.
     if ($config->get('reference.geoplugin')) {
-      $userCountry = ConregCountry::getUserCountry();
+      $userCountry = $this->countryService->getUserCountry();
       if (!empty($userCountry)) {
         $defaultCountry = $userCountry;
       }
