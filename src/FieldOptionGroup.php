@@ -7,17 +7,64 @@ namespace Drupal\conreg;
  */
 class FieldOptionGroup {
 
+  /**
+   * Array of field options in this group.
+   *
+   * @var \Drupal\conreg\FieldOption[]
+   */
   public array $fieldOptions;
+
+  /**
+   * Group ID.
+   *
+   * @var string|int
+   */
   public $groupId;
+
+  /**
+   * Type of field (e.g., checkboxes, textfields).
+   *
+   * @var string
+   */
   public $fieldType;
+
+  /**
+   * Field name identifier.
+   *
+   * @var string
+   */
   public $fieldName;
+
+  /**
+   * Human-readable title of the field group.
+   *
+   * @var string
+   */
   public $title;
+
+  /**
+   * Array of options keyed by option ID.
+   *
+   * @var \Drupal\conreg\FieldOption[]
+   */
   public $options;
+
+  /**
+   * Whether the field group is global.
+   *
+   * @var bool|string
+   */
   public $global;
+
+  /**
+   * Whether the field group is public.
+   *
+   * @var bool|string
+   */
   public $public;
 
   /**
-   * Constructs a new FieldOption object.
+   * Constructs a new FieldOptionGroup object.
    */
   public function __construct() {
     $this->fieldOptions = [];

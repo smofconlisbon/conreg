@@ -15,19 +15,103 @@ use Drupal\conreg\ConregTokens;
  * Class for adding members to PlanZ.
  */
 class PlanZ {
+
+  /**
+   * Target database connection key.
+   *
+   * @var string
+   */
   public readonly string $target;
+
+  /**
+   * Source of badge ID.
+   *
+   * @var \Drupal\conreg_planz\BadgeIdSource
+   */
   public readonly BadgeIdSource $badgeIdSource;
+
+  /**
+   * Badge ID prefix.
+   *
+   * @var string
+   */
   public readonly string $prefix;
+
+  /**
+   * Number of digits to pad badge ID.
+   *
+   * @var int
+   */
   public readonly int $digits;
+
+  /**
+   * Whether to generate a password automatically.
+   *
+   * @var bool
+   */
   public readonly bool $generatePassword;
+
+  /**
+   * Roles to assign to PlanZ user.
+   *
+   * @var array
+   */
   public readonly array $roles;
+
+  /**
+   * Default value for interested field.
+   *
+   * @var bool
+   */
   public readonly bool $interestedDefault;
+
+  /**
+   * Base URL for PlanZ site.
+   *
+   * @var string
+   */
   public readonly string $planZUrl;
+
+  /**
+   * Option fields to copy over.
+   *
+   * @var array
+   */
   public readonly array $optionFields;
+
+  /**
+   * Whether PlanZ integration is auto-enabled.
+   *
+   * @var bool
+   */
   public readonly bool $autoEnabled;
+
+  /**
+   * Whether auto-enable occurs when confirmed.
+   *
+   * @var bool
+   */
   public readonly bool $autoWhenConfirmed;
+
+  /**
+   * Subject template for emails.
+   *
+   * @var string
+   */
   public readonly string $emailTemplateSubject;
+
+  /**
+   * Body template for emails.
+   *
+   * @var string
+   */
   public readonly string $emailTemplateBody;
+
+  /**
+   * Email format template (text/html).
+   *
+   * @var string
+   */
   public readonly string $emailTemplateFormat;
 
   /**

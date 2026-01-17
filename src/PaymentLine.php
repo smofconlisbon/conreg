@@ -3,18 +3,63 @@
 namespace Drupal\conreg;
 
 /**
- * Class to help with storage of payment lines.
+ * Provides a value object for storing payment line data.
  */
 class PaymentLine {
+
+  /**
+   * Payment ID.
+   *
+   * @var int|null
+   */
   public $payId;
+
+  /**
+   * Payment line ID.
+   *
+   * @var int|null
+   */
   public $payLineId;
+
+  /**
+   * Member ID.
+   *
+   * @var int|null
+   */
   public $mid;
+
+  /**
+   * Payment type.
+   *
+   * @var string|null
+   */
   public $type;
+
+  /**
+   * Payment line description.
+   *
+   * @var string|null
+   */
   public $lineDesc;
+
+  /**
+   * Payment amount.
+   *
+   * @var float|null
+   */
   public $amount;
 
   /**
-   * Construct upgrade manager. Store event ID and set up array.
+   * Constructs a new PaymentLine object.
+   *
+   * @param int|null $mid
+   *   Member ID.
+   * @param string|null $type
+   *   Payment type.
+   * @param string|null $lineDesc
+   *   Payment line description.
+   * @param float|null $amount
+   *   Payment amount.
    */
   public function __construct($mid = NULL, $type = NULL, $lineDesc = NULL, $amount = NULL) {
     $this->mid = $mid;
@@ -24,7 +69,13 @@ class PaymentLine {
   }
 
   /**
-   * Save the payment line.
+   * Saves the payment line.
+   *
+   * @param int|null $payId
+   *   Payment ID.
+   *
+   * @return int
+   *   The payment line ID.
    */
   public function save($payId = NULL) {
     $payLine = [
@@ -48,7 +99,13 @@ class PaymentLine {
   }
 
   /**
-   * Load the line by payment line ID.
+   * Loads a payment line by line ID.
+   *
+   * @param int $lineId
+   *   Payment line ID.
+   *
+   * @return static|null
+   *   The loaded payment line, or NULL if not found.
    */
   public static function load($lineId) {
     if ($payLine = PaymentStorage::loadLine(['lineid' => $lineId])) {
@@ -63,7 +120,13 @@ class PaymentLine {
   }
 
   /**
-   * Load multiple lines.
+   * Loads all payment lines for a payment.
+   *
+   * @param int $payId
+   *   Payment ID.
+   *
+   * @return static[]|null
+   *   Array of payment lines, or NULL if none found.
    */
   public static function loadLines($payId) {
     $lines = [];

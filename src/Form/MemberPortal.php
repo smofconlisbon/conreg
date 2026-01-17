@@ -3,7 +3,6 @@
 namespace Drupal\conreg\Form;
 
 use Drupal\conreg\AddonStorage;
-use Drupal\conreg\ConregConfig;
 use Drupal\conreg\ConregOptions;
 use Drupal\conreg\ConregStorage;
 use Drupal\conreg\Payment;

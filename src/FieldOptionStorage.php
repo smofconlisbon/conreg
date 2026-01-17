@@ -70,7 +70,7 @@ class FieldOptionStorage {
     $connection = \Drupal::database();
 
     // Get the saved member options for comparison.
-    $prevOptions = self::getMemberOptions($mid, 0);
+    $prevOptions = self::getMemberOptions($mid, selected: FALSE);
     // Loop through currently saved options, and remove any
     // that are no longer required.
     foreach ($prevOptions as $optid => $delete) {
@@ -130,7 +130,7 @@ class FieldOptionStorage {
   /**
    * Function to return a list of options for specified member.
    */
-  public static function getMemberOptions($mid, $selected = TRUE) {
+  public static function getMemberOptions(int $mid, ?int $optid = NULL, bool $selected = TRUE) {
     $connection = \Drupal::database();
 
     $select = $connection->select('conreg_member_options', 'm');
@@ -140,6 +140,10 @@ class FieldOptionStorage {
     $select->addField('m', 'is_selected');
     $select->addField('m', 'option_detail');
     $select->condition('m.mid', $mid);
+    // If optid specified, select specific option.
+    if (!is_null($optid)) {
+      $select->condition('m.optid');
+    }
     // If selected is TRUE, only select entries that are selected,
     // otherwise select all entries.
     if ($selected) {

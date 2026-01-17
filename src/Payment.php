@@ -6,14 +6,68 @@ namespace Drupal\conreg;
  * Class for handling a payment that may contain multiple lines.
  */
 class Payment {
+
+  /**
+   * Payment ID.
+   *
+   * @var int|null
+   */
   public $payId;
+
+  /**
+   * Random key for payment tracking.
+   *
+   * @var int|string|null
+   */
   public $randomKey;
+
+  /**
+   * Timestamp when payment record was created.
+   *
+   * @var int|null
+   */
   public $createdDate;
+
+  /**
+   * Stripe session ID for this payment.
+   *
+   * @var string|null
+   */
   public $sessionId;
+
+  /**
+   * Timestamp when payment was completed.
+   *
+   * @var int|null
+   */
   public $paidDate;
+
+  /**
+   * Payment method used (e.g., Stripe, PayPal).
+   *
+   * @var string|null
+   */
   public $paymentMethod;
+
+  /**
+   * Total payment amount.
+   *
+   * @var float|null
+   */
   public $paymentAmount;
+
+  /**
+   * Payment reference (e.g., transaction ID).
+   *
+   * @var string|null
+   */
   public $paymentRef;
+
+  /**
+   * Array of payment lines.
+   *
+   * @var \Drupal\conreg\PaymentLine[]
+   */
   public $paymentLines;
 
   /**

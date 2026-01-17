@@ -10,16 +10,59 @@ use GuzzleHttp\Exception\RequestException;
  * Class to handle communication with Discord.
  */
 class Discord {
+
+  /**
+   * Discord API base URL.
+   */
   const BASE_URL = 'https://discordapp.com/api/';
+
+  /**
+   * Discord invite base URL.
+   */
   const INVITE_URL = 'https://discordapp.com/invite/';
+
+  /**
+   * Discord bot token.
+   *
+   * @var string
+   */
   public $token;
+
+  /**
+   * Discord channel ID.
+   *
+   * @var string
+   */
   public $channelId;
+
+  /**
+   * Discord channel object.
+   *
+   * @var object|null
+   */
   public $channel;
+
+  /**
+   * Generated invite code.
+   *
+   * @var string|null
+   */
   public $inviteCode;
+
+  /**
+   * Status or error message.
+   *
+   * @var string
+   */
   public $message;
 
   /**
-   * Constructs a new Member object.
+   * Constructs a new Discord object.
+   *
+   * @param string $token
+   *   The Discord bot token.
+   * @param string $channelId
+   *   The Discord channel ID.
    */
   public function __construct($token, $channelId) {
     $this->token = $token;
@@ -28,6 +71,9 @@ class Discord {
 
   /**
    * Gets the channel object.
+   *
+   * @return bool
+   *   TRUE on success, FALSE on failure.
    */
   public function getChannel() {
     $client = \Drupal::httpClient();
@@ -57,6 +103,9 @@ class Discord {
 
   /**
    * Gets an invite to the channel.
+   *
+   * @return bool
+   *   TRUE on success, FALSE on failure.
    */
   public function getChannelInvite() {
     $client = \Drupal::httpClient();

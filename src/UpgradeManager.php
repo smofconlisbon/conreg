@@ -6,11 +6,26 @@ namespace Drupal\conreg;
  * Class for managing member upgrades.
  */
 class UpgradeManager {
+
+  /**
+   * Lead member ID for this set of upgrades.
+   *
+   * @var int|null
+   */
   public $leadMid;
+
+  /**
+   * Array of Upgrade objects for this lead member.
+   *
+   * @var \Drupal\conreg\Upgrade[]
+   */
   public $upgrades;
 
   /**
    * Construct upgrade manager. Store event ID and set up array.
+   *
+   * @param int $eid
+   *   Event ID, defaults to 1.
    */
   public function __construct(public $eid = 1) {
     $this->upgrades = [];
@@ -18,6 +33,9 @@ class UpgradeManager {
 
   /**
    * Add a new upgrade to upgrade manager.
+   *
+   * @param \Drupal\conreg\Upgrade $upgrade
+   *   Upgrade object to add.
    */
   public function add(Upgrade $upgrade) {
     if (empty($this->leadMid)) {
@@ -30,14 +48,20 @@ class UpgradeManager {
   }
 
   /**
-   * Return count of available upgrades.
+   * Count the number of upgrades.
+   *
+   * @return int
+   *   Number of upgrades.
    */
   public function count() {
     return count($this->upgrades);
   }
 
   /**
-   * Loop through all members, add up total price, and return to caller.
+   * Loop through all upgrades, sum total price, and return.
+   *
+   * @return float
+   *   Total upgrade price.
    */
   public function getTotalPrice() {
     $total = 0;
@@ -49,6 +73,9 @@ class UpgradeManager {
 
   /**
    * Save all upgrades to conreg_upgrades table.
+   *
+   * @return int|null
+   *   Lead member ID.
    */
   public function saveUpgrades() {
     UpgradeStorage::deleteUnpaidByLeadMid($this->leadMid);
@@ -62,7 +89,15 @@ class UpgradeManager {
   }
 
   /**
-   * Load upgrades for member.
+   * Load upgrades for a member.
+   *
+   * @param int $mid
+   *   Member ID.
+   * @param int $isPaid
+   *   Filter for paid/unpaid upgrades.
+   *
+   * @return bool
+   *   TRUE if upgrades loaded, FALSE otherwise.
    */
   public function loadUpgrades($mid, $isPaid) {
     $this->upgrades = [];
@@ -93,7 +128,14 @@ class UpgradeManager {
   }
 
   /**
-   * Complete paid for upgrades.
+   * Complete all upgrades after payment.
+   *
+   * @param float $payment_amount
+   *   Payment amount received.
+   * @param string $payment_method
+   *   Payment method.
+   * @param string $payment_id
+   *   Payment reference ID.
    */
   public function completeUpgrades($payment_amount, $payment_method, $payment_id) {
     foreach ($this->upgrades as $upgrade) {

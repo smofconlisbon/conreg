@@ -16,6 +16,12 @@ use Drupal\conreg\ConregTokens;
  * Configure conreg settings for this site.
  */
 class ConfigPlanZForm extends ConfigFormBase {
+
+  /**
+   * PlanZ configuration helper/service.
+   *
+   * @var \Drupal\conreg_planz\PlanZ
+   */
   private PlanZ $planz;
 
   /**

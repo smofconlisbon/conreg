@@ -9,17 +9,76 @@ class Upgrade {
 
   /**
    * The event ID.
+   *
+   * @var int|null
    */
   public $leadMid;
+
+  /**
+   * Original member type.
+   *
+   * @var string|null
+   */
   public $fromType;
+
+  /**
+   * Original number of days.
+   *
+   * @var int|null
+   */
   public $fromDays;
+
+  /**
+   * Upgraded member type.
+   *
+   * @var string|null
+   */
   public $toType;
+
+  /**
+   * Upgraded number of days.
+   *
+   * @var int|null
+   */
   public $toDays;
+
+  /**
+   * Badge type after upgrade.
+   *
+   * @var string|null
+   */
   public $toBadgeType;
+
+  /**
+   * Price for the upgrade.
+   *
+   * @var float|null
+   */
   public $upgradePrice;
 
   /**
    * Construct the upgrade object.
+   *
+   * @param int $eid
+   *   Event ID.
+   * @param int|null $mid
+   *   Member ID.
+   * @param int|null $upgid
+   *   Upgrade ID (optional).
+   * @param int|null $lead_mid
+   *   Reference to lead member ID.
+   * @param string|null $fromType
+   *   Original member type.
+   * @param int|null $fromDays
+   *   Original number of days.
+   * @param string|null $toType
+   *   Upgraded member type.
+   * @param int|null $toDays
+   *   Upgraded number of days.
+   * @param string|null $toBadgeType
+   *   Badge type after upgrade.
+   * @param float|null $upgradePrice
+   *   Upgrade price.
    */
   public function __construct(
     public $eid = 1,

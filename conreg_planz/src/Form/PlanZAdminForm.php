@@ -15,6 +15,12 @@ use Drupal\conreg\Member;
  * Configure conreg settings for this site.
  */
 class PlanZAdminForm extends FormBase {
+
+  /**
+   * PlanZ service wrapper.
+   *
+   * @var \Drupal\conreg_planz\PlanZ
+   */
   private PlanZ $planz;
 
   /**

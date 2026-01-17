@@ -15,8 +15,26 @@ use Drupal\conreg_discord\Discord;
  * Configure conreg settings for this site.
  */
 class ConfigDiscordForm extends ConfigFormBase {
+
+  /**
+   * ConReg configuration object for the current event.
+   *
+   * @var \Drupal\conreg\ConregConfig
+   */
   private $config;
+
+  /**
+   * Discord API helper.
+   *
+   * @var \Drupal\conreg_discord\Discord|null
+   */
   private $discord;
+
+  /**
+   * Enabled member types for Discord invitations.
+   *
+   * @var array
+   */
   private $memberTypes;
 
   /**
