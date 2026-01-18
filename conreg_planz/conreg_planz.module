@@ -11,17 +11,17 @@ use Drupal\conreg_planz\PlanZUser;
 use Drupal\conreg_planz\BadgeIdSource;
 
 /**
- * Implement hook_convention_member_inserted to add PlanZ for member.
+ * Implements hook_convention_member_inserted().
  */
 function conreg_planz_convention_member_inserted(Member $member): void {
-  conreg_planz_check_user($member);
+  _conreg_planz_check_user($member);
 }
 
 /**
- * Implement hook_convention_member_updated to add PlanZ for member.
+ * Implements hook_convention_member_updated().
  */
 function conreg_planz_convention_member_updated(Member $member): void {
-  conreg_planz_check_user($member);
+  _conreg_planz_check_user($member);
 }
 
 /**
@@ -30,7 +30,7 @@ function conreg_planz_convention_member_updated(Member $member): void {
  * Check if member on PlanZ. If so, push update to PlanZ member record.
  * If not, check if relevant options checked, and if create PlanZ invite.
  */
-function conreg_planz_check_user(Member $member): void {
+function _conreg_planz_check_user(Member $member): void {
   // First, make sure member is paid and approved, and not deleted.
   if (!$member->is_paid || $member->is_deleted) {
     return;

@@ -9,21 +9,14 @@ use Drupal\conreg\Member;
 use Drupal\conreg_airtable\AirTable;
 
 /**
- * Implement hook_convention_member_added()
- *
- * Called when new member created.
- * Add new member to AirTable.
+ * Implements hook_convention_member_added().
  */
 function conreg_airtable_convention_member_added(Member $member) {
   AirTable::addMembers($member->eid, [$member->mid]);
 }
 
 /**
- * Implement hook_convention_member_updated()
- *
- * Called when member changes.
- * Check if member exists on AirTable. If present, update existing member,
- * if not add them.
+ * Implements hook_convention_member_updated().
  */
 function conreg_airtable_convention_member_updated(Member $member) {
   $connection = \Drupal::database();
@@ -41,10 +34,7 @@ function conreg_airtable_convention_member_updated(Member $member) {
 }
 
 /**
- * Implement hook_convention_member_deleted()
- *
- * Called when new member deleted.
- * Remove member to from AirTable.
+ * Implements hook_convention_member_deleted().
  */
 function conreg_airtable_convention_member_deleted(Member $member) {
   $connection = \Drupal::database();
