@@ -23,17 +23,6 @@ function conreg_airtable_requirements($phase) {
 }
 
 /**
- * Implements hook_install().
- *
- * Creates some default entries on this module custom table.
- *
- * @see hook_install()
- * @ingroup conreg_airtable
- */
-function conreg_airtable_install() {
-}
-
-/**
  * Implements hook_schema().
  *
  * Defines the database tables used by this module.

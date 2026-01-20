@@ -16,17 +16,6 @@ function conreg_planz_requirements($phase) {
 }
 
 /**
- * Implements hook_install().
- *
- * Creates some default entries on this module custom table.
- *
- * @see hook_install()
- * @ingroup conreg_planz
- */
-function conreg_planz_install() {
-}
-
-/**
  * Implements hook_schema().
  *
  * Defines the database tables used by this module.

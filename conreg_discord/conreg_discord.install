@@ -14,17 +14,6 @@ function conreg_discord_requirements($phase) {
 }
 
 /**
- * Implements hook_install().
- *
- * Creates some default entries on this module custom table.
- *
- * @see hook_install()
- * @ingroup conreg_discord
- */
-function conreg_discord_install() {
-}
-
-/**
  * Implements hook_schema().
  *
  * Defines the database tables used by this module.
