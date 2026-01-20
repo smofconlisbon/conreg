@@ -24,7 +24,7 @@ class ConregConfigClickUpForm extends ConfigFormBase {
    */
   protected function getEditableConfigNames() {
     return [
-      'conreg_clickup.settings',
+      'conreg.clickup',
     ];
   }
 
@@ -32,17 +32,16 @@ class ConregConfigClickUpForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
-    $config = \Drupal::config('conreg.clickup');
+    $config = $this->config('conreg.clickup');
 
     $clientId = $config->get('clickup.client_id');
     $clientSecret = $config->get('clickup.client_secret');
 
     // Check if code returned from ClickUp...
-    $code = \Drupal::request()->query->get('code');
+    $code = $this->getRequest()->query->get('code');
     if (!empty($code)) {
       $token = ConregClickUp::getToken($clientId, $clientSecret, $code);
 
-      $config = \Drupal::getContainer()->get('config.factory')->getEditable('conreg.clickup');
       $config->set('clickup.token', $token);
       $config->save();
 
@@ -229,10 +228,10 @@ class ConregConfigClickUpForm extends ConfigFormBase {
               NULL,
               $message);
     if (!empty($taskId)) {
-      \Drupal::messenger()->addMessage($this->t('Task has been created with ID of @id', ['@id' => $taskId]));
+      $this->messenger()->addMessage($this->t('Task has been created with ID of @id', ['@id' => $taskId]));
     }
     else {
-      \Drupal::messenger()->addMessage($message);
+      $this->messenger()->addMessage($message);
     }
 
     $form_state->setRebuild();
@@ -244,7 +243,7 @@ class ConregConfigClickUpForm extends ConfigFormBase {
   public function submitForm(array &$form, FormStateInterface $form_state) {
 
     $vals = $form_state->getValues();
-    $config = \Drupal::getContainer()->get('config.factory')->getEditable('conreg.clickup');
+    $config = $this->config('conreg.clickup');
     $config->set('clickup.client_id', $vals['conreg_clickup']['client_id']);
     $config->set('clickup.client_secret', $vals['conreg_clickup']['client_secret']);
     $config->set('clickup.token', $vals['conreg_clickup']['token']);

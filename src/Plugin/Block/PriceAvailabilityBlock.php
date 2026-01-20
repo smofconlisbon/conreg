@@ -106,8 +106,10 @@ final class PriceAvailabilityBlock extends BlockBase implements ContainerFactory
     }
     $build['content'] = [
       '#cache' => [
-        'tags' => ['event:' . $eid . ':type'],
-        'tags' => ['event:' . $eid . ':remaining'],
+        'tags' => [
+          'event:' . $eid . ':type',
+          'event:' . $eid . ':remaining',
+        ],
       ],
       '#markup' => $price_text,
     ];

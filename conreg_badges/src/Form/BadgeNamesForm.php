@@ -10,8 +10,8 @@ use Drupal\Core\Url;
 use Drupal\Core\Link;
 use Drupal\conreg\ConregConfig;
 use Drupal\conreg\ConregOptions;
-use Drupal\conreg\ConregStorage;
-use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\conreg\Service\MemberStorage;
+use Drupal\Core\DependencyInjection\AutowireTrait;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -19,33 +19,20 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class BadgeNamesForm extends FormBase {
 
-  /**
-   * The current user account.
-   *
-   * @var \Drupal\Core\Session\AccountInterface
-   */
-  protected $account;
+  use AutowireTrait;
 
   /**
    * Construct the badge names form.
    *
+   * @param \Drupal\conreg\Service\MemberStorage $memberStorage
+   *   The member storage service.
    * @param \Drupal\Core\Session\AccountInterface $account
    *   The current user account.
    */
-  public function __construct(AccountInterface $account) {
-    $this->account = $account;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public static function create(ContainerInterface $container) {
-    // Instantiates this form class.
-    return new static(
-      // Load the service required to construct this class.
-      $container->get('current_user')
-    );
-  }
+  public function __construct(
+    protected MemberStorage $memberStorage,
+    protected AccountInterface $account,
+  ) {}
 
   /**
    * {@inheritdoc}
@@ -346,7 +333,7 @@ class BadgeNamesForm extends FormBase {
     if (!is_null($updated)) {
       $options['update_since'] = $updated;
     }
-    foreach (ConregStorage::adminMemberBadges($eid, 0, $options) as $entry) {
+    foreach ($this->memberStorage->adminMemberBadges($eid, 0, $options) as $entry) {
       $row = [];
       if ($showMemberNo) {
         $row['member_no'] =

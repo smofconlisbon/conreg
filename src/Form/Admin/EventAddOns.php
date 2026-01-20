@@ -199,7 +199,7 @@ class EventAddOns extends ConfigFormBase {
 
     $vals = $form_state->getValues();
 
-    $config = \Drupal::getContainer()->get('config.factory')->getEditable('conreg.settings.' . $eid);
+    $config = $this->configFactory()->getEditable('conreg.settings.' . $eid);
     // If new add-on populated, create an empty array.
     if (!empty($vals['new_addon']['addon_name'])) {
       $config->set('add-ons.' . $vals['new_addon']['addon_name'], []);

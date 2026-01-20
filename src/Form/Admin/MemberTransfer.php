@@ -3,21 +3,30 @@
 namespace Drupal\conreg\Form\Admin;
 
 use Drupal\conreg\ConregOptions;
-use Drupal\conreg\ConregStorage;
 use Drupal\conreg\EventStorage;
+use Drupal\conreg\Service\MemberStorage;
 use Drupal\Core\DependencyInjection\AutowireTrait;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\TempStore\PrivateTempStoreFactory;
 
 /**
- * Simple form to add an entry, with all the interesting fields.
+ * Form to transfer a member between events.
  */
 class MemberTransfer extends FormBase {
 
   use AutowireTrait;
 
+  /**
+   * Constructor for member transfer form.
+   *
+   * @param \Drupal\conreg\Service\MemberStorage $memberStorage
+   *   The member storage service.
+   * @param \Drupal\Core\TempStore\PrivateTempStoreFactory $tempStoreFactory
+   *   Private user storage area.
+   */
   final public function __construct(
+    protected MemberStorage $memberStorage,
     protected PrivateTempStoreFactory $tempStoreFactory,
   ) {}
 
@@ -36,7 +45,7 @@ class MemberTransfer extends FormBase {
     $form_state->set('eid', $eid);
 
     if (isset($mid)) {
-      $member = ConregStorage::load(['eid' => $eid, 'mid' => $mid, 'is_deleted' => 0]);
+      $member = $this->memberStorage->load(['eid' => $eid, 'mid' => $mid, 'is_deleted' => 0]);
     }
     else {
       $member = [];
@@ -189,7 +198,7 @@ class MemberTransfer extends FormBase {
         'mid' => $mid,
       ];
       // Update the member record.
-      ConregStorage::update($entry);
+      $this->memberStorage->update($entry);
     }
 
     // Get session state to return to correct page.

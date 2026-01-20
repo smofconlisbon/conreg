@@ -58,9 +58,8 @@ class ConfigPlanZForm extends ConfigFormBase {
       return parent::buildForm($form, $form_state);
     }
 
-    $config = \Drupal::config('conreg.settings.' . $eid . '.planz');
     $fieldOptions = FieldOptions::getFieldOptions($eid);
-    $this->planz = new PlanZ($config);
+    $this->planz = new PlanZ($this->config('conreg.settings.' . $eid . '.planz'));
 
     $form['#attached'] = [
       'library' => ['conreg/conreg_admin'],
@@ -302,7 +301,7 @@ class ConfigPlanZForm extends ConfigFormBase {
     $eid = $form_state->get('eid');
 
     $vals = $form_state->getValues();
-    $config = \Drupal::getContainer()->get('config.factory')->getEditable('conreg.settings.' . $eid . '.planz');
+    $config = $this->configFactory()->getEditable('conreg.settings.' . $eid . '.planz');
     $config->set('target', $vals['authenticate']['target']);
     $config->set('badge_id_source', $vals['members']['badge_id_source']);
     $config->set('prefix', $vals['members']['prefix']);

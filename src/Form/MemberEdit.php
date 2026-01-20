@@ -4,18 +4,35 @@ namespace Drupal\conreg\Form;
 
 use Drupal\conreg\Addons;
 use Drupal\conreg\ConregOptions;
-use Drupal\conreg\ConregStorage;
 use Drupal\conreg\FieldOptions;
 use Drupal\conreg\Member;
+use Drupal\conreg\Service\MemberStorage;
+use Drupal\Core\DependencyInjection\AutowireTrait;
 use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\HtmlCommand;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Render\RendererInterface;
 
 /**
  * Allow member to update their own membership details.
  */
 class MemberEdit extends FormBase {
+
+  use AutowireTrait;
+
+  /**
+   * Construct the form.
+   *
+   * @param \Drupal\conreg\MemberStorage $memberStorage
+   *   The member storage service.
+   * @param \Drupal\Core\Render\RendererInterface $renderer
+   *   The renderer service.
+   */
+  public function __construct(
+    protected MemberStorage $memberStorage,
+    protected RendererInterface $renderer,
+  ) {}
 
   /**
    * {@inheritdoc}
@@ -63,11 +80,11 @@ class MemberEdit extends FormBase {
     $curMemberClass = $memberClasses->classes[$curMemberClassRef];
 
     // Check out who is editing.
-    $user = \Drupal::currentUser();
+    $user = $this->currentUser();
     $email = $user->getEmail();
 
     // Get the member with the matching email address.
-    $owner = ConregStorage::load([
+    $owner = $this->memberStorage->load([
       'eid' => $eid,
       'email' => $email,
       'mid' => $member->lead_mid,
@@ -76,7 +93,7 @@ class MemberEdit extends FormBase {
     // If couldn't find member with matching Lead MID, check on MID, as editor
     // may not be group leader.
     if (!is_array($owner)) {
-      $owner = ConregStorage::load([
+      $owner = $this->memberStorage->load([
         'eid' => $eid,
         'email' => $email,
         'mid' => $mid,
@@ -341,7 +358,7 @@ class MemberEdit extends FormBase {
     foreach ($addons as $addOnId) {
       if (!empty($form['member']['add_on'][$addOnId]['extra'])) {
         $id = '#member_addon_' . $addOnId . '_info';
-        $ajax_response->addCommand(new HtmlCommand($id, \Drupal::service('renderer')->render($form['member']['add_on'][$addOnId]['extra']['info'])));
+        $ajax_response->addCommand(new HtmlCommand($id, $this->renderer->render($form['member']['add_on'][$addOnId]['extra']['info'])));
       }
     }
 

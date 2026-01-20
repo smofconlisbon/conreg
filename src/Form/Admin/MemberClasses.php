@@ -3,23 +3,19 @@
 namespace Drupal\conreg\Form\Admin;
 
 use Drupal\Core\Cache\CacheTagsInvalidator;
+use Drupal\Core\DependencyInjection\AutowireTrait;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\conreg\EventStorage;
 use Drupal\conreg\ConregOptions;
-use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
 /**
  * Configure conreg settings for this site.
  */
 class MemberClasses extends ConfigFormBase {
 
-  /**
-   * The cache invalidator.
-   *
-   * @var \Drupal\Core\Cache\CacheTagsInvalidator
-   */
-  protected CacheTagsInvalidator $cacheInvalidator;
+  use AutowireTrait;
 
   /**
    * Constructor for member lookup form.
@@ -27,20 +23,10 @@ class MemberClasses extends ConfigFormBase {
    * @param \Drupal\Core\Cache\CacheTagsInvalidator $cacheInvalidator
    *   The cache invalidator.
    */
-  public function __construct(CacheTagsInvalidator $cacheInvalidator) {
-    $this->cacheInvalidator = $cacheInvalidator;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public static function create(ContainerInterface $container) {
-    // Instantiates this form class.
-    return new static(
-      // Load the service required to construct this class.
-      $container->get('cache_tags.invalidator')
-    );
-  }
+  public function __construct(
+    #[Autowire('cache_tags.invalidator')]
+    protected CacheTagsInvalidator $cacheInvalidator,
+  ) {}
 
   /**
    * {@inheritdoc}
@@ -473,7 +459,7 @@ class MemberClasses extends ConfigFormBase {
     $vals = $form_state->getValues();
     $cloneTo = $vals['clone_to'];
     if (array_key_exists($cloneTo, $memberClasses->classes)) {
-      \Drupal::messenger()->addMessage($this->t('@class already exists. Choose a different name.', ['@class' => $cloneTo]), 'error');
+      $this->messenger()->addMessage($this->t('@class already exists. Choose a different name.', ['@class' => $cloneTo]), 'error');
     }
     else {
       $memberClasses->classes[$cloneTo] = clone $memberClasses->classes[$cloneMemberClassID];

@@ -11,7 +11,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 /**
  * Deriver class to add extra links to the navigation menus.
  */
-class BadgesMenuDeriver extends DeriverBase implements ContainerDeriverInterface {
+final class BadgesMenuDeriver extends DeriverBase implements ContainerDeriverInterface {
 
   use StringTranslationTrait;
 

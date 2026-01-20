@@ -2,6 +2,8 @@
 
 namespace Drupal\conreg;
 
+use Drupal\conreg\Service\MemberStorage;
+use Drupal\Core\DependencyInjection\AutowireTrait;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 
@@ -9,6 +11,18 @@ use Drupal\Core\Form\FormStateInterface;
  * Simple form to add an entry, with all the interesting fields.
  */
 class SimpleConregAdminMemberEmail extends FormBase {
+
+  use AutowireTrait;
+
+  /**
+   * Construct the form.
+   *
+   * @param \Drupal\conreg\Service\MemberStorage $memberStorage
+   *   The member storage service.
+   */
+  public function __construct(
+    protected MemberStorage $memberStorage,
+  ) {}
 
   /**
    * {@inheritdoc}
@@ -25,11 +39,11 @@ class SimpleConregAdminMemberEmail extends FormBase {
     $form_state->set('eid', $eid);
 
     // Look up email address for member.
-    $members = ConregStorage::loadAll(['eid' => $eid, 'mid' => $mid, 'is_deleted' => 0]);
+    $members = $this->memberStorage->loadAll(['eid' => $eid, 'mid' => $mid, 'is_deleted' => 0]);
     $email = $members[0]['email'];
 
     // Get any additional paid members registered by email address.
-    $members = ConregStorage::loadAll(['eid' => $eid, 'email' => $email, 'is_paid' => 1, 'is_deleted' => 0]);
+    $members = $this->memberStorage->loadAll(['eid' => $eid, 'email' => $email, 'is_paid' => 1, 'is_deleted' => 0]);
     $mids = [$mid];
     if (count($members)) {
       foreach ($members as $member) {

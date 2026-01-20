@@ -1,20 +1,21 @@
 <?php
 
-namespace Drupal\conreg;
+namespace Drupal\conreg\Form\Admin;
 
+use Drupal\conreg\ConregTokens;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 
 /**
  * Configure conreg settings for this site.
  */
-class ConregConfigEmailTemplates extends ConfigFormBase {
+class EmailTemplates extends ConfigFormBase {
 
   /**
    * {@inheritdoc}
    */
   public function getFormId() {
-    return 'conreg_config';
+    return 'conreg_email_templates';
   }
 
   /**
@@ -22,7 +23,7 @@ class ConregConfigEmailTemplates extends ConfigFormBase {
    */
   protected function getEditableConfigNames() {
     return [
-      'conreg.settings',
+      'conreg.email_templates',
     ];
   }
 
@@ -85,7 +86,7 @@ class ConregConfigEmailTemplates extends ConfigFormBase {
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $vals = $form_state->getValues();
 
-    $config = \Drupal::getContainer()->get('config.factory')->getEditable('conreg.email_templates');
+    $config = $this->config('conreg.email_templates');
     $count = 0;
     foreach ($vals['templates'] as $template) {
       if (!empty($template['subject']) || !empty($template['body']['value'])) {

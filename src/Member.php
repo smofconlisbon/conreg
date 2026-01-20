@@ -6,6 +6,8 @@ use Drupal\Core\StringTranslation\StringTranslationTrait;
 
 /**
  * Store a member's details.
+ *
+ * @phpcsSuppress DrupalPractice.Objects.GlobalDrupal
  */
 class Member extends \stdClass {
 
@@ -61,7 +63,7 @@ class Member extends \stdClass {
    *   Loaded member object.
    */
   public static function loadMember(int $mid): Member {
-    $member = self::newMember(ConregStorage::load(['mid' => $mid]));
+    $member = self::newMember(\Drupal::service('conreg.member.storage')->load(['mid' => $mid]));
 
     // Add member options to member object.
     $member->options = MemberOption::loadAllMemberOptions($mid);
@@ -81,7 +83,7 @@ class Member extends \stdClass {
    *   Loaded member object.
    */
   public static function loadMemberByMemberNo(int $eid, int $memberNo): Member|null {
-    $member = self::newMember(ConregStorage::load([
+    $member = self::newMember(\Drupal::service('conreg.member.storage')->load([
       'eid' => $eid,
       'member_no' => $memberNo,
       'is_deleted' => 0,
@@ -107,7 +109,7 @@ class Member extends \stdClass {
    *   The member object.
    */
   public static function loadMemberByEmail(int $eid, string $email): Member|NULL {
-    $row = ConregStorage::load([
+    $row = \Drupal::service('conreg.member.storage')->load([
       'eid' => $eid,
       'email' => $email,
       'is_deleted' => 0,
@@ -141,7 +143,7 @@ class Member extends \stdClass {
       return [];
     }
     // Load all members in group.
-    $rows = ConregStorage::loadAll([
+    $rows = \Drupal::service('conreg.member.storage')->loadAll([
       'eid' => $eid,
       'lead_mid' => $leadMember->mid,
       'is_deleted' => 0,
@@ -165,6 +167,7 @@ class Member extends \stdClass {
   public function saveMember(): int {
     // Check if language set, and get current active language if not.
     if (empty($this->language)) {
+      // @phpstan-ignore globalDrupalDependencyInjection.useDependencyInjection
       $this->language = \Drupal::languageManager()->getCurrentLanguage()->getId();
     }
     // Transfer object members into array.
@@ -174,10 +177,12 @@ class Member extends \stdClass {
         $entry[$field] = $value;
       }
     }
+    // @phpstan-ignore globalDrupalDependencyInjection.useDependencyInjection
+    $storage = \Drupal::service('conreg.member.storage');
     $entry['update_date'] = time();
     // If no mid set, inserting new member.
     if (empty($this->mid)) {
-      $new_mid = ConregStorage::insert($entry);
+      $new_mid = $storage->insert($entry);
       if (isset($new_mid)) {
         $this->mid = $new_mid;
         $this->updateOptionMids();
@@ -187,21 +192,24 @@ class Member extends \stdClass {
         $this->lead_mid = $new_mid;
         // Update first member with own member ID as lead member ID.
         $update = ['mid' => $this->mid, 'lead_mid' => $this->lead_mid];
-        ConregStorage::update($update);
+        $storage->update($update);
       }
       // Update member options.
       $this->saveMemberOptions();
       // Invoke member added hook.
+      // @phpstan-ignore globalDrupalDependencyInjection.useDependencyInjection
       \Drupal::moduleHandler()->invokeAll('convention_member_added', ['member' => $this]);
     }
     else {
       // Updating an existing member.
-      ConregStorage::update($entry);
+      $storage->update($entry);
       // Update member options.
       $this->saveMemberOptions();
       // Invoke member updated hook.
+      // @phpstan-ignore globalDrupalDependencyInjection.useDependencyInjection
       \Drupal::moduleHandler()->invokeAll('convention_member_updated', ['member' => $this]);
     }
+    // @phpstan-ignore globalDrupalDependencyInjection.useDependencyInjection
     \Drupal::service('cache_tags.invalidator')->invalidateTags([
       'event:' . $this->eid . ':members',
       'event:' . $this->eid . ':remaining',
@@ -232,10 +240,13 @@ class Member extends \stdClass {
       'mid' => $this->mid,
     ];
     // Update the member record.
-    if (ConregStorage::update($entry)) {
+    // @phpstan-ignore globalDrupalDependencyInjection.useDependencyInjection
+    if (\Drupal::service('conreg.member.storage')->update($entry)) {
       // Invoke member deleted hook.
+      // @phpstan-ignore globalDrupalDependencyInjection.useDependencyInjection
       \Drupal::moduleHandler()->invokeAll('convention_member_deleted', ['member' => $this]);
     }
+    // @phpstan-ignore globalDrupalDependencyInjection.useDependencyInjection
     \Drupal::service('cache_tags.invalidator')->invalidateTags(['event:' . $this->eid . ':members']);
   }
 

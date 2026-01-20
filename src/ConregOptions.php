@@ -208,7 +208,7 @@ class ConregOptions {
     $numberOfMembers = [];
     if ($showRemaining) {
       // Get the number of members by type.
-      foreach (ConregStorage::adminMemberSummaryLoad($eid) as $entry) {
+      foreach (\Drupal::service('conreg.member.storage')->adminMemberSummaryLoad($eid) as $entry) {
         $numberOfMembers[$entry['member_type']] = $entry['num'];
       }
     }

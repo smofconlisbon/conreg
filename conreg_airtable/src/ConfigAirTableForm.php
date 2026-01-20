@@ -2,22 +2,36 @@
 
 namespace Drupal\conreg_airtable;
 
-use Drupal\Core\Form\ConfigFormBase;
-use Drupal\Core\Form\FormStateInterface;
 use Drupal\conreg\ConregConfig;
 use Drupal\conreg\EventStorage;
 use Drupal\conreg\FieldOptions;
+use Drupal\Core\Database\Connection;
+use Drupal\Core\DependencyInjection\AutowireTrait;
+use Drupal\Core\Form\ConfigFormBase;
+use Drupal\Core\Form\FormStateInterface;
 
 /**
  * Configure conreg settings for this site.
  */
 class ConfigAirTableForm extends ConfigFormBase {
 
+  use AutowireTrait;
+
+  /**
+   * Construct the form.
+   *
+   * @param \Drupal\Core\Database\Connection $connection
+   *   The database connection.
+   */
+  public function __construct(
+    protected Connection $connection,
+  ) {}
+
   /**
    * {@inheritdoc}
    */
   public function getFormId() {
-    return 'conreg_config_clickup_options';
+    return 'conreg_config_airtable';
   }
 
   /**
@@ -277,8 +291,7 @@ class ConfigAirTableForm extends ConfigFormBase {
   public function submitBulkAdd(array &$form, FormStateInterface $form_state) {
     $eid = $form_state->get('eid');
 
-    $connection = \Drupal::database();
-    $query = $connection->select('conreg_members', 'm');
+    $query = $this->connection->select('conreg_members', 'm');
     $query->leftJoin('conreg_airtable_members', 'a', 'a.mid = m.mid');
     $query->addField('m', 'mid');
     $query->condition('m.eid', $eid);
@@ -308,8 +321,7 @@ class ConfigAirTableForm extends ConfigFormBase {
   public function submitBulkUpdate(array &$form, FormStateInterface $form_state) {
     $eid = $form_state->get('eid');
 
-    $connection = \Drupal::database();
-    $query = $connection->select('conreg_members', 'm');
+    $query = $this->connection->select('conreg_members', 'm');
     $query->join('conreg_airtable_members', 'a', 'a.mid = m.mid');
     $query->addField('m', 'mid');
     $query->addField('a', 'airtable_id');
@@ -340,7 +352,7 @@ class ConfigAirTableForm extends ConfigFormBase {
     $eid = $form_state->get('eid');
 
     $vals = $form_state->getValues();
-    $config = \Drupal::getContainer()->get('config.factory')->getEditable('conreg.settings.' . $eid);
+    $config = $this->configFactory()->getEditable('conreg.settings.' . $eid);
     $config->set('airtable.api_url', $vals['airtable_authenticate']['api_url']);
     $config->set('airtable.api_key', $vals['airtable_authenticate']['api_key']);
     foreach ($vals['mapping'] as $key => $val) {

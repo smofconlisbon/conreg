@@ -6,24 +6,26 @@ use Stripe\Event;
 use Stripe\Stripe;
 use Drupal\conreg\Addons;
 use Drupal\conreg\ConregOptions;
-use Drupal\conreg\ConregStorage;
 use Drupal\conreg\EventStorage;
 use Drupal\conreg\Member;
 use Drupal\conreg\Payment;
 use Drupal\conreg\PaymentStorage;
+use Drupal\conreg\Service\MemberStorage;
 use Drupal\conreg\UpgradeManager;
+use Drupal\Core\DependencyInjection\AutowireTrait;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Language\LanguageManagerInterface;
 use Drupal\Core\Mail\MailManagerInterface;
 use Drupal\Core\Url;
 use Stripe\Checkout\Session;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Simple form to add an entry, with all the interesting fields.
  */
 class Checkout extends FormBase {
+
+  use AutowireTrait;
 
   /**
    * The event ID.
@@ -42,25 +44,18 @@ class Checkout extends FormBase {
   /**
    * Constructs a new EmailExampleGetFormPage.
    *
+   * @param \Drupal\conreg\MemberStorage $memberStorage
+   *   The member storage service.
    * @param \Drupal\Core\Mail\MailManagerInterface $mailManager
    *   The mail manager.
    * @param \Drupal\Core\Language\LanguageManagerInterface $languageManager
    *   The language manager.
    */
   public function __construct(
+    protected MemberStorage $memberStorage,
     protected MailManagerInterface $mailManager,
     protected LanguageManagerInterface $languageManager,
   ) {}
-
-  /**
-   * {@inheritdoc}
-   */
-  public static function create(ContainerInterface $container) {
-    return new static(
-      $container->get('plugin.manager.mail'),
-      $container->get('language_manager'),
-    );
-  }
 
   /**
    * {@inheritdoc}
@@ -277,7 +272,7 @@ class Checkout extends FormBase {
           $member->is_paid = 1;
           if ($this->autoApprove) {
             $member->is_approved = 1;
-            $max_member = ConregStorage::loadMaxMemberNo($this->eid);
+            $max_member = $this->memberStorage->loadMaxMemberNo($this->eid);
             $max_member++;
             $member->member_no = $max_member;
           }
@@ -317,7 +312,7 @@ class Checkout extends FormBase {
           $member->is_paid = 1;
           if ($this->autoApprove) {
             $member->is_approved = 1;
-            $max_member = ConregStorage::loadMaxMemberNo($this->eid);
+            $max_member = $this->memberStorage->loadMaxMemberNo($this->eid);
             $max_member++;
             $member->member_no = $max_member;
           }

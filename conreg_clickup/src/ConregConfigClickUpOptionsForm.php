@@ -2,17 +2,30 @@
 
 namespace Drupal\conreg_clickup;
 
+use Drupal\conreg\ConregConfig;
+use Drupal\conreg\EventStorage;
+use Drupal\conreg\FieldOptions;
+use Drupal\conreg\Service\MemberStorage;
+use Drupal\Core\DependencyInjection\AutowireTrait;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\conreg\ConregStorage;
-use Drupal\conreg\EventStorage;
-use Drupal\conreg\ConregConfig;
-use Drupal\conreg\FieldOptions;
 
 /**
  * Configure conreg settings for this site.
  */
 class ConregConfigClickUpOptionsForm extends ConfigFormBase {
+
+  use AutowireTrait;
+
+  /**
+   * Construct the form.
+   *
+   * @param \Drupal\conreg\Service\MemberStorage $memberStorage
+   *   The member storage service.
+   */
+  public function __construct(
+    protected MemberStorage $memberStorage,
+  ) {}
 
   /**
    * {@inheritdoc}
@@ -224,13 +237,13 @@ class ConregConfigClickUpOptionsForm extends ConfigFormBase {
     $groupName = $form_state->getValue(['new_group', 'group_name']);
 
     if (!empty($vals['new_group']['group_name'])) {
-      $config = \Drupal::getContainer()->get('config.factory')->getEditable('conreg.settings.' . $eid);
+      $config = $this->configFactory()->getEditable('conreg.settings.' . $eid);
       $configGroupName = 'clickup_option_groups.' . $groupName;
       // Only add group if not already present.
       if (empty($config->get($configGroupName))) {
         $config->set($configGroupName, []);
         $config->save();
-        \Drupal::messenger()->addMessage($this->t('Option group @name has been added.', ['@name' => $groupName]));
+        $this->messenger()->addMessage($this->t('Option group @name has been added.', ['@name' => $groupName]));
       }
       $form_state->setValue(['groups', $groupName, '#value'], '');
     }
@@ -249,18 +262,18 @@ class ConregConfigClickUpOptionsForm extends ConfigFormBase {
     $buttonGroups = $form_state->get('buttonGroups');
     $group = $buttonGroups[$form_state->getTriggeringElement()['#name']];
     $members = ConregClickUp::getMembersWithoutTasks($eid, $groupOptions[$group], FALSE);
-    \Drupal::messenger()->addMessage($this->t('Creating tasks for @name.', ['@name' => $group]));
+    $this->messenger()->addMessage($this->t('Creating tasks for @name.', ['@name' => $group]));
     $i = 0;
     foreach ($members as $member) {
       if ($i++ >= 10) {
         break;
       }
-      $memberRec = ConregStorage::load(['mid' => $member['mid']]);
+      $memberRec = $this->memberStorage->load(['mid' => $member['mid']]);
       $optionVals = FieldOptions::getMemberOptionValues($member['mid']);
       ConregClickUp::createMemberTasks($eid, $member['mid'], $optionVals, $config);
-      \Drupal::messenger()->addMessage($this->t('Tasks created for member @name.', ['@name' => $memberRec['first_name'] . ' ' . $memberRec['last_name']]));
+      $this->messenger()->addMessage($this->t('Tasks created for member @name.', ['@name' => $memberRec['first_name'] . ' ' . $memberRec['last_name']]));
     }
-    \Drupal::messenger()->addMessage($this->t('Created tasks for @number members.', ['@number' => $i]));
+    $this->messenger()->addMessage($this->t('Created tasks for @number members.', ['@number' => $i]));
 
     $form_state->setRebuild();
   }
@@ -272,7 +285,7 @@ class ConregConfigClickUpOptionsForm extends ConfigFormBase {
     $eid = $form_state->get('eid');
 
     $vals = $form_state->getValues();
-    $config = \Drupal::getContainer()->get('config.factory')->getEditable('conreg.settings.' . $eid);
+    $config = $this->configFactory()->getEditable('conreg.settings.' . $eid);
     foreach ($vals['groups'] as $groupName => $groupVals) {
       $config->set('clickup_option_groups.' . $groupName . '.list_id', $groupVals['list_id']);
       $config->set('clickup_option_groups.' . $groupName . '.task_title', $groupVals['task_title']);

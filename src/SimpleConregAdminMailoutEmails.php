@@ -2,17 +2,35 @@
 
 namespace Drupal\conreg;
 
-use Symfony\Component\HttpFoundation\Response;
+use Drupal\Component\Utility\Html;
+use Drupal\conreg\Service\MemberStorage;
+use Drupal\Core\DependencyInjection\AutowireTrait;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
 use Drupal\Core\Link;
-use Drupal\Component\Utility\Html;
+use Drupal\Core\Language\LanguageManagerInterface;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Simple form to add an entry, with all the interesting fields.
  */
 class SimpleConregAdminMailoutEmails extends FormBase {
+
+  use AutowireTrait;
+
+  /**
+   * Construct the form.
+   *
+   * @param \Drupal\conreg\Service\MemberStorage $memberStorage
+   *   The member storage service.
+   * @param \Drupal\Core\Language\LanguageManagerInterface $languageManager
+   *   THe language manager service.
+   */
+  public function __construct(
+    protected MemberStorage $memberStorage,
+    protected LanguageManagerInterface $languageManager,
+  ) {}
 
   /**
    * {@inheritdoc}
@@ -151,7 +169,7 @@ class SimpleConregAdminMailoutEmails extends FormBase {
 
       if (!empty($methods) && !empty($languages)) {
         // Fetch all entries for selected option or group.
-        $mailoutMembers = ConregStorage::adminMailoutListLoad($eid, $methods, $languages);
+        $mailoutMembers = $this->memberStorage->adminMailoutListLoad($eid, $methods, $languages);
 
         // Now loop through the combined results.
         foreach ($mailoutMembers as $entry) {
@@ -257,7 +275,7 @@ class SimpleConregAdminMailoutEmails extends FormBase {
     }
 
     // Fetch all entries for selected option or group.
-    $mailoutMembers = ConregStorage::adminMailoutListLoad($eid, $methods, $languages);
+    $mailoutMembers = $this->memberStorage->adminMailoutListLoad($eid, $methods, $languages);
 
     $config = $this->config('conreg.settings.' . $eid);
     $methodOptions = ConregOptions::communicationMethod($eid, $config, TRUE);
@@ -267,7 +285,7 @@ class SimpleConregAdminMailoutEmails extends FormBase {
 
     if (!empty($methods) && !empty($languages)) {
       // Fetch all entries for selected option or group.
-      $mailoutMembers = ConregStorage::adminMailoutListLoad($eid, $methods, $languages);
+      $mailoutMembers = $this->memberStorage->adminMailoutListLoad($eid, $methods, $languages);
 
       // Now loop through the combined results.
       foreach ($mailoutMembers as $entry) {
@@ -302,7 +320,7 @@ class SimpleConregAdminMailoutEmails extends FormBase {
    *   The active languages in Drupal.
    */
   public function getLanguageOptions(): Array {
-    $languages = \Drupal::languageManager()->getLanguages();
+    $languages = $this->languageManager->getLanguages();
     $langOptions = [];
     foreach ($languages as $language) {
       $langOptions[$language->getId()] = $language->getName();

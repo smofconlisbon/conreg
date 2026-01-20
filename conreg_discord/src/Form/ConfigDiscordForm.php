@@ -2,26 +2,33 @@
 
 namespace Drupal\conreg_discord\Form;
 
-use Drupal\Core\Form\ConfigFormBase;
-use Drupal\Core\Form\FormStateInterface;
 use Drupal\conreg\ConregConfig;
 use Drupal\conreg\EventStorage;
 use Drupal\conreg\ConregTokens;
 use Drupal\conreg\ConregOptions;
 use Drupal\conreg\Member;
 use Drupal\conreg_discord\Discord;
+use Drupal\Core\Config\ImmutableConfig;
+use Drupal\Core\Database\Connection;
+use Drupal\Core\DependencyInjection\AutowireTrait;
+use Drupal\Core\Form\ConfigFormBase;
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Language\LanguageManagerInterface;
+use Drupal\Core\Mail\MailManagerInterface;
 
 /**
  * Configure conreg settings for this site.
  */
 class ConfigDiscordForm extends ConfigFormBase {
 
+  use AutowireTrait;
+
   /**
    * ConReg configuration object for the current event.
    *
-   * @var \Drupal\conreg\ConregConfig
+   * @var \Drupal\Core\Config\ImmutableConfig
    */
-  private $config;
+  private ImmutableConfig $config;
 
   /**
    * Discord API helper.
@@ -36,6 +43,22 @@ class ConfigDiscordForm extends ConfigFormBase {
    * @var array
    */
   private $memberTypes;
+
+  /**
+   * Construct the form.
+   *
+   * @param \Drupal\Core\Database\Connection $connection
+   *   The database connection.
+   * @param \Drupal\Core\Mail\MailManagerInterface $mailManager
+   *   The mail manager service.
+   * @param \Drupal\Core\Language\LanguageManagerInterface $languageManager
+   *   The language manager service.
+   */
+  public function __construct(
+    protected Connection $connection,
+    protected MailManagerInterface $mailManager,
+    protected LanguageManagerInterface $languageManager,
+  ) {}
 
   /**
    * {@inheritdoc}
@@ -288,7 +311,7 @@ class ConfigDiscordForm extends ConfigFormBase {
     $eid = $form_state->get('eid');
 
     $vals = $form_state->getValues();
-    $config = \Drupal::getContainer()->get('config.factory')->getEditable('conreg.settings.' . $eid);
+    $config = $this->configFactory()->getEditable('conreg.settings.' . $eid);
     $config->set('discord.token', $vals['discord_authenticate']['token']);
     $config->set('discord.channel_id', $vals['discord_authenticate']['channel_id']);
     foreach ($vals['member_types'] as $code => $val) {
@@ -400,8 +423,6 @@ class ConfigDiscordForm extends ConfigFormBase {
           }
         }
       }
-      // Log an event to show a member check occurred.
-      // \Drupal::logger('conreg_discord')->info("Manual Add pressed.");.
     }
     $form['discord_invites']['replace']['result']['#markup'] = implode("\n", $output);
     $form['discord_invites']['replace']['result']['#markup'] .= '<p>Invites sent: ' . $count . '</p>';
@@ -411,7 +432,6 @@ class ConfigDiscordForm extends ConfigFormBase {
    * Handle generate and send an invitation.
    */
   private function inviteToDiscord($eid, $memberNo, $override, $resend, $regenerate, $dontEmail) {
-    $connection = \Drupal::database();
 
     // Get the member details.
     $member = Member::loadMemberByMemberNo($eid, $memberNo);
@@ -430,7 +450,7 @@ class ConfigDiscordForm extends ConfigFormBase {
     }
 
     // Check if the member has been sent a Discord invite already.
-    $query = $connection->select('conreg_discord', 'd');
+    $query = $this->connection->select('conreg_discord', 'd');
     $query->addField('d', 'invite_code');
     $query->condition('d.mid', $member->mid);
     $inviteCode = $query->execute()->fetchField();
@@ -442,7 +462,7 @@ class ConfigDiscordForm extends ConfigFormBase {
         $inviteCode = $this->discord->inviteCode;
         $newCode = TRUE;
         if (!empty($inviteCode)) {
-          $connection->upsert('conreg_discord')
+          $this->connection->upsert('conreg_discord')
             ->fields([
               'mid' => $member->mid,
               'invite_code' => $inviteCode,
@@ -503,13 +523,11 @@ class ConfigDiscordForm extends ConfigFormBase {
    * Get members who have not been added to PlanZ/Zambia.
    */
   private function getQuery($eid) {
-    $connection = \Drupal::database();
-
-    $subquery = $connection->select('conreg_discord', 'd');
+    $subquery = $this->connection->select('conreg_discord', 'd');
     $subquery->addExpression('NULL');
     $subquery->where("m.mid = d.mid");
 
-    $query = $connection->select('conreg_members', 'm');
+    $query = $this->connection->select('conreg_members', 'm');
     $query->condition('m.eid', $eid);
     $query->condition('m.is_paid', 1);
     $query->condition('m.is_approved', 1);
@@ -538,10 +556,10 @@ class ConfigDiscordForm extends ConfigFormBase {
     $module = "conreg";
     $key = "template";
     $to = $member->email;
-    $language_code = \Drupal::languageManager()->getDefaultLanguage()->getId();
+    $language_code = $this->languageManager->getDefaultLanguage()->getId();
     // Send confirmation email to member.
     if (!empty($member->email)) {
-      \Drupal::service('plugin.manager.mail')->mail($module, $key, $to, $language_code, $params);
+      $this->mailManager->mail($module, $key, $to, $language_code, $params);
     }
   }
 

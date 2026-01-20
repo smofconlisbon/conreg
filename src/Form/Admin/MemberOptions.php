@@ -1,69 +1,31 @@
 <?php
 
-namespace Drupal\conreg;
+namespace Drupal\conreg\Form\Admin;
 
+use Drupal\Core\DependencyInjection\AutowireTrait;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Session\AccountProxyInterface;
 use Drupal\Core\TempStore\PrivateTempStoreFactory;
 use Drupal\Component\Utility\Html;
-use Symfony\Component\DependencyInjection\ContainerInterface;
-use Symfony\Component\HttpFoundation\Request;
+use Drupal\conreg\FieldOptions;
+use Drupal\conreg\FieldOptionStorage;
 
 /**
  * Simple form to add an entry, with all the interesting fields.
  */
-class SimpleConregAdminMemberOptions extends FormBase {
+class MemberOptions extends FormBase {
 
-  /**
-   * The database connection.
-   *
-   * @var \Drupal\Core\Session\AccountProxyInterface
-   */
-  protected AccountProxyInterface $currentUser;
-
-  /**
-   * The HTTP request.
-   *
-   * @var Symfony\Component\HttpFoundation\Request
-   */
-  protected Request $request;
-
-  /**
-   * Storage for private data.
-   *
-   * @var \Drupal\Core\TempStore\PrivateTempStoreFactory
-   */
-  protected PrivateTempStoreFactory $privateTempStoreFactory;
+  use AutowireTrait;
 
   /**
    * Constructor for member lookup form.
    *
-   * @param \Drupal\Core\Session\AccountProxyInterface $currentUser
-   *   The database connection.
    * @param \Drupal\Core\TempStore\PrivateTempStoreFactory $privateTempStoreFactory
    *   The store for private data.
-   * @param \Symfony\Component\HttpFoundation\Request $request
-   *   The HTTP request.
    */
-  public function __construct(AccountProxyInterface $currentUser, PrivateTempStoreFactory $privateTempStoreFactory, Request $request) {
-    $this->currentUser = $currentUser;
-    $this->privateTempStoreFactory = $privateTempStoreFactory;
-    $this->request = $request;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public static function create(ContainerInterface $container) {
-    // Instantiates this form class.
-    return new static(
-      // Load the service required to construct this class.
-      $container->get('current_user'),
-      $container->get('tempstore.private'),
-      $container->get('request_stack')->getCurrentRequest()
-    );
-  }
+  public function __construct(
+    protected PrivateTempStoreFactory $privateTempStoreFactory,
+  ) {}
 
   /**
    * {@inheritdoc}
@@ -98,7 +60,7 @@ class SimpleConregAdminMemberOptions extends FormBase {
       }
       else {
         // Entry is option.
-        if ($this->currentUser->hasPermission('view field option ' . $val['optid'] . ' event ' . $eid)) {
+        if ($this->currentUser()->hasPermission('view field option ' . $val['optid'] . ' event ' . $eid)) {
           // Only display if user has permission to see option.
           if (!$groupAdded) {
             $options[$groupId] = $groupTitle;
@@ -121,8 +83,9 @@ class SimpleConregAdminMemberOptions extends FormBase {
       return $form;
     }
 
-    $group = $this->request->query->get('group');
-    $option = $this->request->query->get('option');
+    $request = $this->getRequest();
+    $group = $request->query->get('group');
+    $option = $request->query->get('option');
 
     $tempstore = $this->privateTempStoreFactory->get('conreg');
     // If form values submitted, use the display value that was submitted over
@@ -225,7 +188,7 @@ class SimpleConregAdminMemberOptions extends FormBase {
       // Group heading selected.
       $selOption = [];
       foreach ($groupList as $groupOption) {
-        if ($groupOption['group_id'] == $selGroup && !empty($groupOption['option_id']) && $this->currentUser->hasPermission('view field option ' . $groupOption['optid'] . ' event ' . $eid)) {
+        if ($groupOption['group_id'] == $selGroup && !empty($groupOption['option_id']) && $this->currentUser()->hasPermission('view field option ' . $groupOption['optid'] . ' event ' . $eid)) {
           $selOption[] = $groupOption['option_id'];
           $displayOpts[] = $groupOption['option_id'];
           $headers['option_' . $groupOption['option_id']] = [

@@ -6,7 +6,6 @@ use Drupal\Component\Serialization\Json;
 use Drupal\Core\Datetime\DrupalDateTime;
 use Drupal\Core\Utility\Error;
 use Drupal\conreg\ConregConfig;
-use Drupal\conreg\ConregStorage;
 use Drupal\conreg\FieldOptions;
 use GuzzleHttp\Exception\RequestException;
 
@@ -252,7 +251,7 @@ class ConregClickUp {
     }
 
     // Load the member record and get name.
-    $member = ConregStorage::load(['eid' => $eid, 'mid' => $mid]);
+    $member = \Drupal::service('conreg.member.storage')->load(['eid' => $eid, 'mid' => $mid]);
     $memberName = $member['first_name'] . ' ' . $member['last_name'];
 
     $optionTitles = FieldOptions::getFieldOptionsTitles($eid, $config);

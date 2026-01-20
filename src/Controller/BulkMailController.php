@@ -2,12 +2,10 @@
 
 namespace Drupal\conreg\Controller;
 
-use Drupal\Core\Controller\ControllerBase;
-use Drupal\Core\Language\LanguageManagerInterface;
-use Drupal\Core\Mail\MailManagerInterface;
 use Drupal\conreg\ConregConfig;
-use Drupal\conreg\ConregStorage;
-use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\conreg\Service\MemberStorage;
+use Drupal\Core\Controller\ControllerBase;
+use Drupal\Core\Mail\MailManagerInterface;
 
 /**
  * Returns responses for ConReg - Simple Convention Registration routes.
@@ -15,41 +13,17 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class BulkMailController extends ControllerBase {
 
   /**
-   * The language manager.
-   *
-   * @var \Drupal\Core\Language\LanguageManagerInterface
-   */
-  protected $languageManager;
-
-  /**
-   * Mail manager service.
-   *
-   * @var \Drupal\Core\Mail\MailManagerInterface
-   */
-  protected $mailManager;
-
-  /**
    * The controller constructor.
    *
-   * @param \Drupal\Core\Language\LanguageManagerInterface $language_manager
-   *   The language manager.
-   * @param \Drupal\Core\Mail\MailManagerInterface $mail_manager
+   * @param \Drupal\conreg\Service\MemberStorage $memberStorage
+   *   The member storage service.
+   * @param \Drupal\Core\Mail\MailManagerInterface $mailManager
    *   Mail manager service.
    */
-  public function __construct(LanguageManagerInterface $language_manager, MailManagerInterface $mail_manager) {
-    $this->languageManager = $language_manager;
-    $this->mailManager = $mail_manager;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public static function create(ContainerInterface $container) {
-    return new static(
-      $container->get('language_manager'),
-      $container->get('plugin.manager.mail')
-    );
-  }
+  public function __construct(
+    protected MemberStorage $memberStorage,
+    protected MailManagerInterface $mailManager,
+  ) {}
 
   /**
    * Send an email to a member when triggered by bulk emailer.
@@ -62,7 +36,7 @@ class BulkMailController extends ControllerBase {
    */
   public function bulkSend(int $mid): array {
     // Look up email address for member.
-    $member = ConregStorage::load([
+    $member = $this->memberStorage->load([
       'mid' => $mid,
       'is_deleted' => 0,
     ]);
@@ -77,7 +51,7 @@ class BulkMailController extends ControllerBase {
     $module = "conreg";
     $key = "template";
     $to = $member["email"];
-    $language_code = $this->languageManager->getDefaultLanguage()->getId();
+    $language_code = $this->languageManager()->getDefaultLanguage()->getId();
 
     // Send confirmation email to member.
     if (!empty($member["email"])) {

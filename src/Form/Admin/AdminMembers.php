@@ -4,31 +4,36 @@ namespace Drupal\conreg\Form\Admin;
 
 use Drupal\Component\Utility\Html;
 use Drupal\conreg\ConregOptions;
-use Drupal\conreg\ConregStorage;
 use Drupal\conreg\EventStorage;
 use Drupal\conreg\Member;
+use Drupal\conreg\Service\MemberStorage;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\AlertCommand;
 use Drupal\Core\Ajax\HtmlCommand;
 use Drupal\Core\Cache\CacheTagsInvalidator;
-use Drupal\Core\Datetime\DateFormatter;
+use Drupal\Core\Datetime\DateFormatterInterface;
 use Drupal\Core\Datetime\DrupalDateTime;
+use Drupal\Core\DependencyInjection\AutowireTrait;
 use Drupal\Core\Link;
 use Drupal\Core\Url;
 use Drupal\Core\Render\RendererInterface;
 use Drupal\Core\TempStore\PrivateTempStoreFactory;
-use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
 /**
  * Simple form to add an entry, with all the interesting fields.
  */
 class AdminMembers extends FormBase {
 
+  use AutowireTrait;
+
   /**
    * Constructs a new EmailExampleGetFormPage.
    *
+   * @param \Drupal\conreg\MemberStorage $memberStorage
+   *   The member storage service.
    * @param \Drupal\Core\Datetime\DateFormatter $dateFormatter
    *   The date formatter.
    * @param \Drupal\Core\TempStore\PrivateTempStoreFactory $privateTempStoreFactory
@@ -39,23 +44,13 @@ class AdminMembers extends FormBase {
    *   The cache tag invalidator service.
    */
   public function __construct(
-    protected DateFormatter $dateFormatter,
+    protected MemberStorage $memberStorage,
+    protected DateFormatterInterface $dateFormatter,
     protected PrivateTempStoreFactory $privateTempStoreFactory,
     protected RendererInterface $renderer,
+    #[Autowire('cache_tags.invalidator')]
     protected CacheTagsInvalidator $cacheTagInvalidator,
   ) {}
-
-  /**
-   * {@inheritdoc}
-   */
-  public static function create(ContainerInterface $container) {
-    return new static(
-      $container->get('date.formatter'),
-      $container->get('tempstore.private'),
-      $container->get('renderer'),
-      $container->get('cache_tags.invalidator'),
-    );
-  }
 
   /**
    * {@inheritdoc}
@@ -261,7 +256,7 @@ class AdminMembers extends FormBase {
 
     $datefrom = isset($form_values['datefrom'])  && preg_match('/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/', $form_values['datefrom']) ? DrupalDateTime::createFromFormat('Y-m-d\TH:i:sT', $form_values['datefrom'] . "T00:00:00Z") : NULL;
     $dateto = isset($form_values['dateto'])  && preg_match('/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/', $form_values['dateto']) ? DrupalDateTime::createFromFormat('Y-m-d\TH:i:sT', $form_values['dateto'] . "T00:00:00Z") : NULL;
-    [$pages, $entries] = ConregStorage::adminMemberListLoad(
+    [$pages, $entries] = $this->memberStorage->adminMemberListLoad(
       $eid,
       $display,
       $display != 'custom' || empty(trim($search)) ? NULL : $search,
@@ -279,7 +274,7 @@ class AdminMembers extends FormBase {
       // because we're in AJAX callback. For now just show last page.
       $page = $pages;
       // Refetch page data.
-      [$pages, $entries] = ConregStorage::adminMemberListLoad(
+      [$pages, $entries] = $this->memberStorage->adminMemberListLoad(
         $eid,
         $display,
         $display != 'custom' || empty(trim($search)) ? NULL : $search,
@@ -459,7 +454,6 @@ class AdminMembers extends FormBase {
    * {@inheritdoc}
    */
   public function validateForm(array &$form, FormStateInterface $form_state) {
-    // $saved_members = ConregStorage::loadAllMemberNos($eid);
   }
 
   /**
@@ -468,7 +462,7 @@ class AdminMembers extends FormBase {
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $eid = $form_state->get('eid');
     $form_values = $form_state->getValues();
-    $max_member = ConregStorage::loadMaxMemberNo($eid);
+    $max_member = $this->memberStorage->loadMaxMemberNo($eid);
     foreach ($form_values["table"] as $mid => $memberLine) {
       $member = Member::loadMember($mid);
       if (($memberLine["is_approved"] != $member->is_approved) ||

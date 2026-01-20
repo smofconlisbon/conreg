@@ -5,6 +5,8 @@ namespace Drupal\conreg\Plugin\Mail;
 use Drupal\Core\Mail\MailFormatHelper;
 use Drupal\Core\Mail\MailInterface;
 use Drupal\Core\Site\Settings;
+use Psr\Http\Message\RequestInterface;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\Mime\Header\UnstructuredHeader;
 
 // cspell:ignore windir
@@ -18,7 +20,24 @@ use Symfony\Component\Mime\Header\UnstructuredHeader;
  *   description = @Translation("Sends the message as HTML, using PHP's native mail() function.")
  * )
  */
-class SimpleConregPhpMail implements MailInterface {
+final class SimpleConregPhpMail implements MailInterface {
+
+  /**
+   * Constructor for mail plugin.
+   *
+   * @param \Psr\Http\Message\RequestInterface $request
+   *   The HTTP request.
+   */
+  public function __construct(
+    protected RequestInterface $request,
+  ) {}
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container) {
+    return new static($container->get('request'));
+  }
 
   /**
    * Concatenates and wraps the email body for plain-text mails.
@@ -77,12 +96,10 @@ class SimpleConregPhpMail implements MailInterface {
     // but some MTAs incorrectly replace LF with CRLF. See #234403.
     $mail_headers = implode("\n", $mimeHeaders);
 
-    $request = \Drupal::request();
-
     // We suppress warnings and notices from mail() because of issues on some
     // hosts. The return value of this method will still indicate whether mail
     // was sent successfully.
-    if (!$request->server->has('WINDIR') && strpos($request->server->get('SERVER_SOFTWARE'), 'Win32') === FALSE) {
+    if (!$this->request->server->has('WINDIR') && strpos($this->request->server->get('SERVER_SOFTWARE'), 'Win32') === FALSE) {
       // On most non-Windows systems, the "-f" option to the sendmail command
       // is used to set the Return-Path. There is no space between -f and
       // the value of the return path.

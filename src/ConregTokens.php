@@ -131,7 +131,7 @@ class ConregTokens {
       // Check if random_key set. If not set, generate it.
       if (empty($this->vals['random_key'])) {
         $rand_key = mt_rand();
-        ConregStorage::update([
+        \Drupal::service('conreg.member.storage')->update([
           'mid' => $this->vals['mid'],
           'random_key' => $rand_key,
         ]);
@@ -155,7 +155,7 @@ class ConregTokens {
       // If member is not group lead, we need to get payment URL and possibly
       // email from leader.
       if ($this->vals['mid'] != $this->vals['lead_mid']) {
-        $leader = ConregStorage::load([
+        $leader = \Drupal::service('conreg.member.storage')->load([
           'eid' => $eid,
           'mid' => $this->vals['lead_mid'],
           'is_deleted' => 0,
@@ -217,7 +217,7 @@ class ConregTokens {
     $timeNow = \Drupal::time()->getRequestTime();
 
     // First check previous expiry time.
-    $result = ConregStorage::load(['mid' => $mid]);
+    $result = \Drupal::service('conreg.member.storage')->load(['mid' => $mid]);
     $expiryTime = $result['login_exp_date'];
     // Check if previous expiry date is more than 24 hours in the future.
     // 24*3600.
@@ -231,7 +231,7 @@ class ConregTokens {
     // have the same expiry.
     // 7*24*3600 - seconds in a week.
     $expiryTime = $timeNow + 604800 + rand(0, 3600);
-    ConregStorage::update(['mid' => $mid, 'login_exp_date' => $expiryTime]);
+    \Drupal::service('conreg.member.storage')->update(['mid' => $mid, 'login_exp_date' => $expiryTime]);
     return $expiryTime;
   }
 
@@ -561,13 +561,13 @@ class ConregTokens {
    *   Array of members in group.
    */
   protected function loadMemberGroup(int $eid, int $mid): array {
-    $members = ConregStorage::loadAll([
+    $members = \Drupal::service('conreg.member.storage')->loadAll([
       'eid' => $eid,
       'mid' => $mid,
       'is_deleted' => 0,
     ]);
     // Get all members registered by subject member.
-    $groupMembers = ConregStorage::loadAll([
+    $groupMembers = \Drupal::service('conreg.member.storage')->loadAll([
       'eid' => $eid,
       'lead_mid' => $mid,
       'is_deleted' => 0,

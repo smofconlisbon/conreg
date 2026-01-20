@@ -2,52 +2,35 @@
 
 namespace Drupal\conreg\Form\Admin;
 
-use Drupal\Core\Cache\Cache;
-use Drupal\Core\Config\ImmutableConfig;
-use Drupal\Core\Form\FormBase;
-use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Session\AccountProxyInterface;
 use Drupal\Component\Utility\Html;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\conreg\EventStorage;
-use Drupal\conreg\ConregStorage;
 use Drupal\conreg\ConregOptions;
 use Drupal\conreg\ConregConfig;
 use Drupal\conreg\Payment;
 use Drupal\conreg\PaymentLine;
+use Drupal\conreg\Service\MemberStorage;
+use Drupal\Core\Cache\Cache;
+use Drupal\Core\Config\ImmutableConfig;
+use Drupal\Core\DependencyInjection\AutowireTrait;
+use Drupal\Core\Form\FormBase;
+use Drupal\Core\Form\FormStateInterface;
 
 /**
  * Simple form to add an entry, with all the interesting fields.
  */
 class CheckInMembers extends FormBase {
 
-  /**
-   * The database connection.
-   *
-   * @var \Drupal\Core\Session\AccountProxyInterface
-   */
-  protected AccountProxyInterface $currentUser;
+  use AutowireTrait;
 
   /**
-   * Constructor for member lookup form.
+   * Construct the form.
    *
-   * @param \Drupal\Core\Session\AccountProxyInterface $currentUser
-   *   The database connection.
+   * @param \Drupal\conreg\Service\MemberStorage $memberStorage
+   *   The member storage service.
    */
-  public function __construct(AccountProxyInterface $currentUser) {
-    $this->currentUser = $currentUser;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public static function create(ContainerInterface $container) {
-    // Instantiates this form class.
-    return new static(
-      // Load the service required to construct this class.
-      $container->get('current_user')
-    );
-  }
+  public function __construct(
+    protected MemberStorage $memberStorage,
+  ) {}
 
   /**
    * Add a summary by check-in status to render array.
@@ -63,7 +46,7 @@ class CheckInMembers extends FormBase {
       $this->t('Number of members'),
     ];
     $total = 0;
-    foreach (ConregStorage::adminMemberCheckInSummaryLoad($eid) as $entry) {
+    foreach ($this->memberStorage->adminMemberCheckInSummaryLoad($eid) as $entry) {
       // Replace type code with description.
       $status = trim($entry['is_checked_in']);
       if (isset($descriptions[$status])) {
@@ -111,7 +94,7 @@ class CheckInMembers extends FormBase {
     // If lead_mid passed in, form is returning from credit cart payment. Set up
     // for check in of paid member(s).
     if ($lead_mid) {
-      $result = ConregStorage::loadAll([
+      $result = $this->memberStorage->loadAll([
         'eid' => $eid,
         'lead_mid' => $lead_mid,
         'is_paid' => 1,
@@ -209,7 +192,7 @@ class CheckInMembers extends FormBase {
 
     // Only check database if search filled in.
     if (!empty($search)) {
-      $entries = ConregStorage::adminMemberCheckInListLoad($eid, $search);
+      $entries = $this->memberStorage->adminMemberCheckInListLoad($eid, $search);
 
       foreach ($entries as $entry) {
         $mid = $entry['mid'];
@@ -317,7 +300,7 @@ class CheckInMembers extends FormBase {
       '#sticky' => TRUE,
     ];
 
-    $entries = ConregStorage::adminMemberUnpaidListLoad($eid);
+    $entries = $this->memberStorage->adminMemberUnpaidListLoad($eid);
 
     foreach ($entries as $entry) {
       $mid = $entry['mid'];
@@ -440,7 +423,7 @@ class CheckInMembers extends FormBase {
     ];
     $total_price = 0;
     foreach ($toPay as $mid) {
-      if ($member = ConregStorage::load(['mid' => $mid])) {
+      if ($member = $this->memberStorage->load(['mid' => $mid])) {
         $form['member' . $mid] = [
           '#type' => 'markup',
           '#markup' => $this->t('Member @first @last to pay @symbol@total',
@@ -501,9 +484,9 @@ class CheckInMembers extends FormBase {
       '#prefix' => '<div><h3>',
       '#suffix' => '</h3></div>',
     ];
-    $maxMemberNo = ConregStorage::loadMaxMemberNo($eid);
+    $maxMemberNo = $this->memberStorage->loadMaxMemberNo($eid);
     foreach ($toPay as $mid) {
-      if ($member = ConregStorage::load(['mid' => $mid])) {
+      if ($member = $this->memberStorage->load(['mid' => $mid])) {
         $update = ['mid' => $mid];
         if (!(isset($member['is_confirmed']) && $member['is_approved'])) {
           $update['is_approved'] = 1;
@@ -518,7 +501,7 @@ class CheckInMembers extends FormBase {
           // Add to update record so it will be saved.
           $update['member_no'] = $member_no;
         }
-        ConregStorage::update($update);
+        $this->memberStorage->update($update);
         $form['member' . $mid] = [
           '#type' => 'markup',
           '#markup' => $this->t('Badge number @memberno for @first @last',
@@ -615,12 +598,12 @@ class CheckInMembers extends FormBase {
       'update_date' => time(),
     ];
     // Insert to database table.
-    $return = ConregStorage::insert($entry);
+    $return = $this->memberStorage->insert($entry);
 
     if ($return) {
       // Update member with own member ID as lead member ID.
       $update = ['mid' => $return, 'lead_mid' => $return];
-      $return = ConregStorage::update($update);
+      $return = $this->memberStorage->update($update);
       // Clear form fields.
       $form_state->setUserInput([]);
     }
@@ -677,7 +660,7 @@ class CheckInMembers extends FormBase {
     $toPay = $form_state->get("toPay");
     // Loop through selected members to get lead and total price.
     foreach ($toPay as $mid) {
-      if ($member = ConregStorage::load(['mid' => $mid])) {
+      if ($member = $this->memberStorage->load(['mid' => $mid])) {
         // Make first member lead member.
         if ($lead_mid == 0) {
           $lead_mid = $mid;
@@ -695,7 +678,7 @@ class CheckInMembers extends FormBase {
         'payment_id' => $form_values['payment_id'],
         'is_paid' => 1,
       ];
-      ConregStorage::update($update);
+      $this->memberStorage->update($update);
     }
     $form_state->set('action', 'checkIn');
     $form_state->setRebuild();
@@ -708,7 +691,7 @@ class CheckInMembers extends FormBase {
     $eid = $form_state->get("eid");
     $config = $this->config('conreg.settings.' . $eid);
     $toPay = $form_state->get("toPay");
-    $uid = $this->currentUser->id();
+    $uid = $this->currentUser()->id();
     // Loop through members and mark checked in.
     foreach ($toPay as $mid) {
       $update = [
@@ -717,8 +700,8 @@ class CheckInMembers extends FormBase {
         'check_in_date' => time(),
         'check_in_by' => $uid,
       ];
-      ConregStorage::update($update);
-      if ($member = ConregStorage::load(['mid' => $mid])) {
+      $this->memberStorage->update($update);
+      if ($member = $this->memberStorage->load(['mid' => $mid])) {
         $this->messenger()->addMessage($this->t("Member %badge_no - %badge_name checked in.", [
           '%badge_no' => $this->showBadgeNumber($member, $config),
           '%badge_name' => $member['badge_name'],
@@ -743,7 +726,7 @@ class CheckInMembers extends FormBase {
     // Loop through selected members to get lead and total price.
     foreach ($form_values["unpaid"] as $mid => $member) {
       if (isset($member["is_selected"]) && $member["is_selected"]) {
-        if ($member = ConregStorage::load(['mid' => $mid])) {
+        if ($member = $this->memberStorage->load(['mid' => $mid])) {
           // Add member to payment.
           $payment->add(new PaymentLine($mid,
             'member',
@@ -769,7 +752,7 @@ class CheckInMembers extends FormBase {
           'lead_mid' => $lead_mid,
           'payment_amount' => $payment_amount,
         ];
-        ConregStorage::update($update);
+        $this->memberStorage->update($update);
       }
     }
     if ($lead_mid) {
@@ -796,8 +779,8 @@ class CheckInMembers extends FormBase {
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $eid = $form_state->get('eid');
     $form_values = $form_state->getValues();
-    $saved_members = ConregStorage::loadAllMemberNos($eid);
-    $uid = $this->currentUser->id();
+    $saved_members = $this->memberStorage->loadAllMemberNos($eid);
+    $uid = $this->currentUser()->id();
     foreach ($form_values["table"] as $mid => $member) {
       if ($member["is_checked_in"] != $saved_members[$mid]["is_checked_in"]) {
         if ($member["is_checked_in"]) {
@@ -811,7 +794,7 @@ class CheckInMembers extends FormBase {
         else {
           $entry = ['mid' => $mid, 'is_checked_in' => $member["is_checked_in"]];
         }
-        ConregStorage::update($entry);
+        $this->memberStorage->update($entry);
       }
     }
     Cache::invalidateTags(['simple-conreg-member-list']);

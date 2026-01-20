@@ -4,14 +4,13 @@ namespace Drupal\conreg\Form\Admin;
 
 use Drupal\Component\Datetime\TimeInterface;
 use Drupal\conreg\ConregOptions;
-use Drupal\conreg\ConregStorage;
 use Drupal\conreg\FieldOptions;
 use Drupal\conreg\Member;
+use Drupal\conreg\Service\MemberStorage;
 use Drupal\Core\Datetime\DrupalDateTime;
 use Drupal\Core\DependencyInjection\AutowireTrait;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Session\AccountProxyInterface;
 use Drupal\Core\TempStore\PrivateTempStoreFactory;
 
 /**
@@ -24,15 +23,15 @@ class AdminMemberEdit extends FormBase {
   /**
    * Constructor for admin member edit form.
    *
-   * @param \Drupal\Core\Session\AccountProxyInterface $currentUser
-   *   The current user.
+   * @param \Drupal\conreg\MemberStorage $memberStorage
+   *   The member storage service.
    * @param \Drupal\Core\TempStore\PrivateTempStore $tempStoreFactory
    *   Temporary store for user session data.
    * @param \Drupal\Component\Datetime\TimeInterface $time
    *   The time interface.
    */
   public function __construct(
-    protected AccountProxyInterface $currentUser,
+    protected MemberStorage $memberStorage,
     protected PrivateTempStoreFactory $tempStoreFactory,
     protected TimeInterface $time,
   ) {}
@@ -418,7 +417,7 @@ class AdminMemberEdit extends FormBase {
     }
 
     // Get the maximum member number from the database.
-    $max_member = ConregStorage::loadMaxMemberNo($eid);
+    $max_member = $this->memberStorage->loadMaxMemberNo($eid);
     // Check if approved has been checked.
     if ($form_values['member']["is_approved"]) {
       if (empty($form_values['member']["member_no"])) {
@@ -514,7 +513,7 @@ class AdminMemberEdit extends FormBase {
     $member->is_checked_in = $form_values['member']['is_checked_in'];
 
     if (!empty($form_values["member"]["is_checked_in"])) {
-      $uid = $this->currentUser->id();
+      $uid = $this->currentUser()->id();
       $member->check_in_date = time();
       $member->check_in_by = $uid;
     }

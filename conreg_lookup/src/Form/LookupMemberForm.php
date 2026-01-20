@@ -7,6 +7,7 @@ use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\AlertCommand;
 use Drupal\Core\Ajax\HtmlCommand;
 use Drupal\Core\Database\Connection;
+use Drupal\Core\DependencyInjection\AutowireTrait;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Cache\Cache;
@@ -14,33 +15,13 @@ use Drupal\Core\Render\RendererInterface;
 use Drupal\Core\TempStore\PrivateTempStoreFactory;
 use Drupal\conreg\ConregOptions;
 use Drupal\conreg\EventStorage;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Simple form to add an entry, with all the interesting fields.
  */
 class LookupMemberForm extends FormBase {
 
-  /**
-   * The renderer object.
-   *
-   * @var \Drupal\Core\Render\RendererInterface
-   */
-  protected RendererInterface $renderer;
-
-  /**
-   * The database connection.
-   *
-   * @var \Drupal\Core\Database\Connection
-   */
-  protected Connection $database;
-
-  /**
-   * Storage for private data.
-   *
-   * @var \Drupal\Core\TempStore\PrivateTempStoreFactory
-   */
-  protected PrivateTempStoreFactory $privateTempStoreFactory;
+  use AutowireTrait;
 
   /**
    * Constructor for member lookup form.
@@ -52,24 +33,11 @@ class LookupMemberForm extends FormBase {
    * @param \Drupal\Core\TempStore\PrivateTempStoreFactory $privateTempStoreFactory
    *   The store for private data.
    */
-  public function __construct(RendererInterface $renderer, Connection $database, PrivateTempStoreFactory $privateTempStoreFactory) {
-    $this->renderer = $renderer;
-    $this->database = $database;
-    $this->privateTempStoreFactory = $privateTempStoreFactory;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public static function create(ContainerInterface $container) {
-    // Instantiates this form class.
-    return new static(
-      // Load the service required to construct this class.
-      $container->get('renderer'),
-      $container->get('database'),
-      $container->get('tempstore.private')
-    );
-  }
+  public function __construct(
+    protected RendererInterface $renderer,
+    protected Connection $database,
+    protected PrivateTempStoreFactory $privateTempStoreFactory,
+  ) {}
 
   /**
    * {@inheritdoc}

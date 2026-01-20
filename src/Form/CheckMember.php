@@ -3,8 +3,8 @@
 namespace Drupal\conreg\Form;
 
 use Drupal\conreg\ConregConfig;
-use Drupal\conreg\ConregStorage;
 use Drupal\conreg\EventStorage;
+use Drupal\conreg\Service\MemberStorage;
 use Drupal\Core\DependencyInjection\AutowireTrait;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
@@ -21,12 +21,15 @@ class CheckMember extends FormBase {
   /**
    * Constructs a new EmailExampleGetFormPage.
    *
+   * @param \Drupal\conreg\Service\MemberStorage $memberStorage
+   *   The member storage service.
    * @param \Drupal\Core\Mail\MailManagerInterface $mailManager
    *   The mail manager service.
    * @param \Drupal\Core\Language\LanguageManagerInterface $languageManager
    *   The language manager service.
    */
   public function __construct(
+    protected MemberStorage $memberStorage,
     protected MailManagerInterface $mailManager,
     protected LanguageManagerInterface $languageManager,
   ) {}
@@ -53,7 +56,7 @@ class CheckMember extends FormBase {
         '#prefix' => '<h3>',
         '#suffix' => '</h3>',
       ];
-      return parent::buildForm($form, $form_state);
+      return $form;
     }
 
     // Get config for event and fieldset.
@@ -65,7 +68,7 @@ class CheckMember extends FormBase {
         '#prefix' => '<h3>',
         '#suffix' => '</h3>',
       ];
-      return parent::buildForm($form, $form_state);
+      return $form;
     }
 
     $form = [
@@ -119,7 +122,7 @@ class CheckMember extends FormBase {
     $params['subject'] = $config->get('member_check.confirm_subject');
 
     // Get all members registered by email address.
-    $members = ConregStorage::loadAll([
+    $members = $this->memberStorage->loadAll([
       'eid' => $eid,
       'email' => $form_values['email'],
       'is_paid' => 1,

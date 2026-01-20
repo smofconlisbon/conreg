@@ -4,12 +4,11 @@ namespace Drupal\conreg\Controller;
 
 use Drupal\conreg\ConregConfig;
 use Drupal\conreg\ConregOptions;
-use Drupal\conreg\ConregStorage;
 use Drupal\conreg\EventStorage;
+use Drupal\conreg\Service\MemberStorage;
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Datetime\DateHelper;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
@@ -18,32 +17,17 @@ use Symfony\Component\HttpFoundation\Request;
 class ConregController extends ControllerBase {
 
   /**
-   * The HTTP request.
-   *
-   * @var \Symfony\Component\HttpFoundation\Request
-   */
-  protected Request $request;
-
-  /**
    * Constructor for member lookup form.
    *
+   * @param \Drupal\conreg\Service\MemberStorage $memberStorage
+   *   The member storage service.
    * @param \Symfony\Component\HttpFoundation\Request $request
    *   The HTTP request.
    */
-  public function __construct(Request $request) {
-    $this->request = $request;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public static function create(ContainerInterface $container) {
-    // Instantiates this form class.
-    return new static(
-      // Load the service required to construct this class.
-      $container->get('request_stack')->getCurrentRequest()
-    );
-  }
+  public function __construct(
+    protected MemberStorage $memberStorage,
+    protected Request $request,
+  ) {}
 
   /**
    * Display simple thank you page.
@@ -149,7 +133,7 @@ class ConregController extends ControllerBase {
     }
     $total = 0;
 
-    foreach (ConregStorage::adminPublicListLoad($eid) as $entry) {
+    foreach ($this->memberStorage->adminPublicListLoad($eid) as $entry) {
       // Sanitize each entry.
       $badge_type = trim($entry['badge_type']);
       $member_no = sprintf("%0" . $digits . "d", $entry['member_no']);
@@ -220,7 +204,7 @@ class ConregController extends ControllerBase {
         $this->t('Number of members'),
       ];
       $total = 0;
-      foreach (ConregStorage::adminMemberCountrySummaryLoad($eid) as $entry) {
+      foreach ($this->memberStorage->adminMemberCountrySummaryLoad($eid) as $entry) {
         if (!empty($entry['country'])) {
           // Sanitize each entry.
           $entry['country'] = trim($countryOptions[$entry['country']]);
@@ -256,7 +240,7 @@ class ConregController extends ControllerBase {
       '#empty' => $this->t('No entries available.'),
     ];
     $total = 0;
-    foreach (ConregStorage::adminMemberSummaryLoad($eid) as $entry) {
+    foreach ($this->memberStorage->adminMemberSummaryLoad($eid) as $entry) {
       // Replace type code with description.
       $content['summary'][] = [
         ['#markup' => isset($types->types[$entry['member_type']]) ? $types->types[$entry['member_type']]->name : $entry['member_type']],
@@ -294,7 +278,7 @@ class ConregController extends ControllerBase {
       '#empty' => $this->t('No entries available.'),
     ];
     $total = 0;
-    foreach (ConregStorage::adminMemberBadgeSummaryLoad($eid) as $entry) {
+    foreach ($this->memberStorage->adminMemberBadgeSummaryLoad($eid) as $entry) {
       // Replace type code with description.
       $content['badge_summary'][] = [
         ['#markup' => $types[trim($entry['badge_type'])] ?? $entry['badge_type']],
@@ -328,7 +312,7 @@ class ConregController extends ControllerBase {
       $dayTotals[$key] = 0;
     }
     $total = 0;
-    foreach (ConregStorage::adminMemberDaysSummaryLoad($eid) as $entry) {
+    foreach ($this->memberStorage->adminMemberDaysSummaryLoad($eid) as $entry) {
       // Sanitize each entry.
       foreach (explode('|', $entry['days']) as $day) {
         $dayTotals[$day] += $entry['num'];
@@ -382,7 +366,7 @@ class ConregController extends ControllerBase {
       '#empty' => $this->t('No entries available.'),
     ];
     $total = 0;
-    foreach (ConregStorage::adminMemberPaymentMethodSummaryLoad($eid) as $entry) {
+    foreach ($this->memberStorage->adminMemberPaymentMethodSummaryLoad($eid) as $entry) {
       // Sanitize each entry.
       $rows[] = [
         ['#markup' => $entry['payment_method']],
@@ -422,7 +406,7 @@ class ConregController extends ControllerBase {
     ];
     $total = 0;
     $total_amount = 0;
-    foreach (ConregStorage::adminMemberAmountPaidSummaryLoad($eid) as $entry) {
+    foreach ($this->memberStorage->adminMemberAmountPaidSummaryLoad($eid) as $entry) {
       // Calculate total received at that rate.
       $total_paid = $entry['member_price'] * $entry['num'];
       // Sanitize each entry.
@@ -472,7 +456,7 @@ class ConregController extends ControllerBase {
     ];
     $total = 0;
     $total_amount = 0;
-    foreach (ConregStorage::adminMemberAmountPaidByTypeSummaryLoad($eid) as $entry) {
+    foreach ($this->memberStorage->adminMemberAmountPaidByTypeSummaryLoad($eid) as $entry) {
       // Replace type code with description.
       if (isset($types->types[$entry['member_type']])) {
         $entry['member_type'] = (isset($types->types[$entry['member_type']]) ? $types->types[$entry['member_type']]->name : $entry['member_type']);
@@ -536,7 +520,7 @@ class ConregController extends ControllerBase {
     ];
     $total = 0;
     $total_amount = 0;
-    foreach (ConregStorage::adminMemberByDateSummaryLoad($eid) as $entry) {
+    foreach ($this->memberStorage->adminMemberByDateSummaryLoad($eid) as $entry) {
       // Convert month to name.
       $entry['month'] = $months[$entry['month']];
       $total += $entry['num'];
@@ -723,7 +707,7 @@ class ConregController extends ControllerBase {
       'joined' => $this->t('Date joined'),
     ];
 
-    foreach (ConregStorage::adminPaidMemberListLoad($eid, $direction, $order) as $entry) {
+    foreach ($this->memberStorage->adminPaidMemberListLoad($eid, $direction, $order) as $entry) {
       if (!empty($entry['member_no'])) {
         $entry['member_no'] = $entry['badge_type'] . sprintf("%0" . $digits . "d", $entry['member_no']);
       }
@@ -861,7 +845,7 @@ class ConregController extends ControllerBase {
 
     $total = 0;
 
-    foreach (ConregStorage::adminMemberAddOns($eid) as $entry) {
+    foreach ($this->memberStorage->adminMemberAddOns($eid) as $entry) {
       $total += $entry['add_on_price'];
       $rows[] = $entry;
     }
@@ -909,7 +893,7 @@ class ConregController extends ControllerBase {
       $this->t('Parent email'),
     ];
 
-    foreach (ConregStorage::adminMemberChildMembers($eid) as $entry) {
+    foreach ($this->memberStorage->adminMemberChildMembers($eid) as $entry) {
       // Sanitize each entry.
       $rows[] = $entry;
     }

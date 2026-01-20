@@ -17,9 +17,9 @@ use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\HtmlCommand;
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Config\ImmutableConfig;
+use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Mail\MailManagerInterface;
 use Drupal\Core\Render\RendererInterface;
 use Drupal\Core\Session\AccountProxyInterface;
 use Drupal\Core\Url;
@@ -36,21 +36,21 @@ class Registration extends FormBase {
    *
    * @param \Drupal\Core\Session\AccountProxyInterface $currentUser
    *   The currently logged in user.
-   * @param \Drupal\Core\Mail\MailManagerInterface $mail_manager
-   *   The mail manager.
    * @param \Drupal\Core\Render\RendererInterface $renderer
    *   The Drupal renderer.
    * @param \Drupal\Component\Utility\EmailValidatorInterface $emailValidator
    *   The email validator service.
    * @param \Drupal\conreg\Service\CountryServiceInterface $countryService
    *   The country service.
+   * @param \Drupal\Core\Extension\ModuleHandlerInterface $moduleHandler
+   *   The module handler service.
    */
   final public function __construct(
     protected AccountProxyInterface $currentUser,
-    protected MailManagerInterface $mail_manager,
     protected RendererInterface $renderer,
     protected EmailValidatorInterface $emailValidator,
     protected CountryServiceInterface $countryService,
+    protected ModuleHandlerInterface $moduleHandler,
   ) {}
 
   /**
@@ -1166,14 +1166,13 @@ class Registration extends FormBase {
         $payment->add(new PaymentLine(
           $result,
           'member',
-          $this->t("Member registration to @event_name for @first_name @last_name",
-            [
-              '@event_name' => $event['event_name'],
-              '@first_name' => $entry['first_name'],
-              '@last_name' => $entry['last_name'],
-            ]),
-            $memberPrices[$cnt]->basePriceMinusFree,
-          ));
+          $this->t("Member registration to @event_name for @first_name @last_name", [
+            '@event_name' => $event['event_name'],
+            '@first_name' => $entry['first_name'],
+            '@last_name' => $entry['last_name'],
+          ]),
+          $memberPrices[$cnt]->basePriceMinusFree,
+        ));
         // Add confirmation.
         $this->messenger()->addMessage($this->t(
           'Thank you for registering @first_name @last_name.',
@@ -1189,7 +1188,7 @@ class Registration extends FormBase {
       }
 
       // Check Simplenews module loaded.
-      if (\Drupal::moduleHandler()->moduleExists('simplenews')) {
+      if ($this->moduleHandler->moduleExists('simplenews')) {
         // Get Drupal SimpleNews subscription manager.
         /** @var \Drupal\simplenews\Subscription\SubscriptionManagerInterface */
         $subscription_manager = \Drupal::service('simplenews.subscription_manager');

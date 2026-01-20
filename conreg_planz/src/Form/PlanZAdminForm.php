@@ -2,12 +2,14 @@
 
 namespace Drupal\conreg_planz\Form;
 
-use Drupal\conreg_planz\PlanZ;
-use Drupal\conreg_planz\PlanZUser;
-use Drupal\Core\Form\FormBase;
-use Drupal\Core\Form\FormStateInterface;
 use Drupal\conreg\FieldOptions;
 use Drupal\conreg\Member;
+use Drupal\conreg_planz\PlanZ;
+use Drupal\conreg_planz\PlanZUser;
+use Drupal\Core\Database\Connection;
+use Drupal\Core\DependencyInjection\AutowireTrait;
+use Drupal\Core\Form\FormBase;
+use Drupal\Core\Form\FormStateInterface;
 
 // cspell:ignore badgeid
 
@@ -16,12 +18,24 @@ use Drupal\conreg\Member;
  */
 class PlanZAdminForm extends FormBase {
 
+  use AutowireTrait;
+
   /**
    * PlanZ service wrapper.
    *
    * @var \Drupal\conreg_planz\PlanZ
    */
   private PlanZ $planz;
+
+  /**
+   * Construct the form.
+   *
+   * @param \Drupal\Core\Database\Connection $connection
+   *   The database connection.
+   */
+  public function __construct(
+    protected Connection $connection,
+  ) {}
 
   /**
    * {@inheritdoc}
@@ -46,7 +60,7 @@ class PlanZAdminForm extends FormBase {
     // Store Event ID in form state.
     $form_state->set('eid', $eid);
 
-    $config = \Drupal::config('conreg.settings.' . $eid . '.planz');
+    $config = $this->config('conreg.settings.' . $eid . '.planz');
     $this->planz = new PlanZ($config);
     //
     // Manual member invites.
@@ -152,8 +166,7 @@ class PlanZAdminForm extends FormBase {
       '#markup' => $this->t('Search results for @terms.', ['@terms' => $vals['member_search']]),
     ];
 
-    $connection = \Drupal::database();
-    $select = $connection->select('conreg_members', 'm');
+    $select = $this->connection->select('conreg_members', 'm');
     // Select these specific fields for the output.
     $select->addField('m', 'member_no');
     $select->addField('m', 'first_name');
@@ -168,7 +181,7 @@ class PlanZAdminForm extends FormBase {
     $select->condition("is_deleted", FALSE);
     foreach (explode(' ', $vals['member_search']) as $word) {
       // Escape search word to prevent dangerous characters.
-      $esc_word = '%' . $connection->escapeLike($word) . '%';
+      $esc_word = '%' . $this->connection->escapeLike($word) . '%';
       $likes = $select->orConditionGroup()
         ->condition('m.first_name', $esc_word, 'LIKE')
         ->condition('m.last_name', $esc_word, 'LIKE')
@@ -219,7 +232,7 @@ class PlanZAdminForm extends FormBase {
    */
   public function callbackManualAdd(array $form, FormStateInterface $form_state) {
     $eid = $form_state->get('eid');
-    $config = \Drupal::config('conreg.settings.' . $eid . '.planz');
+    $config = $this->config('conreg.settings.' . $eid . '.planz');
 
     $fieldOptions = FieldOptions::getFieldOptions($eid);
     $optionFields = [];
@@ -244,8 +257,6 @@ class PlanZAdminForm extends FormBase {
             $output[] = $this->addMemberToPlanZ($eid, $num, $vals['override'], $vals['reset'], $vals['resend'], $vals['dont_email'], $optionFields);
           }
         }
-        // Log an event to show a member check occurred.
-        // \Drupal::logger('conreg_planz')->info("Manual Add pressed.");.
       }
       $form['result']['#markup'] = implode("\n", $output);
     }
@@ -303,17 +314,13 @@ class PlanZAdminForm extends FormBase {
         $this->planz->sendInviteEmail($user);
       }
 
-      return $this->t('<p>Member: @first_name @last_name<br />' .
-                      'Badge id: @badgeid.<br />' .
-                      'Password: @password<br />' .
-                      'URL: @url</p>',
-                      [
-                        '@first_name' => $member->first_name,
-                        '@last_name' => $member->last_name,
-                        '@badgeid' => $user->badgeId,
-                        '@password' => $user->password ?? '',
-                        '@url' => $this->planz->planZUrl,
-                      ]);
+      return $this->t('<p>Member: @first_name @last_name<br />Badge id: @badgeid.<br />Password: @password<br />URL: @url</p>', [
+        '@first_name' => $member->first_name,
+        '@last_name' => $member->last_name,
+        '@badgeid' => $user->badgeId,
+        '@password' => $user->password ?? '',
+        '@url' => $this->planz->planZUrl,
+      ]);
     }
 
     // If this point reached, member not added, so return empty string.

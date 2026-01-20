@@ -7,13 +7,26 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Component\Utility\Html;
 use Drupal\conreg\ConregConfig;
 use Drupal\conreg\ConregOptions;
-use Drupal\conreg\ConregStorage;
 use Drupal\conreg\FieldOptionStorage;
+use Drupal\conreg\Service\MemberStorage;
+use Drupal\Core\DependencyInjection\AutowireTrait;
 
 /**
  * Simple form to add an entry, with all the interesting fields.
  */
 class BadgePrint extends FormBase {
+
+  use AutowireTrait;
+
+  /**
+   * Construct the form.
+   *
+   * @param \Drupal\conreg\Service\MemberStorage $memberStorage
+   *   The member storage service.
+   */
+  public function __construct(
+    protected MemberStorage $memberStorage,
+  ) {}
 
   /**
    * {@inheritdoc}
@@ -196,7 +209,7 @@ class BadgePrint extends FormBase {
     if ($select_by_memberno) {
       $options['member_range'] = $form_values['view']['number']['member_no_range'] ?? '';
     }
-    foreach (ConregStorage::adminMemberBadges($eid, $max_num_badges, $options) as $member) {
+    foreach ($this->memberStorage->adminMemberBadges($eid, $max_num_badges, $options) as $member) {
       $badge_type = $badgeTypes[$member['badge_type']] ?? $member['badge_type'];
       $member_no = $member['badge_type'] . sprintf("%0" . $digits . "d", $member['member_no']);
       $badge_name = Html::escape($member['badge_name']);

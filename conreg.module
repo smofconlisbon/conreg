@@ -8,7 +8,6 @@
 use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\conreg\EventStorage;
-use Drupal\conreg\ConregStorage;
 use Drupal\conreg\ConregOptions;
 use Drupal\conreg\ConregEmailer;
 use Drupal\conreg\ConregConfig;
@@ -115,7 +114,7 @@ function conreg_simplenews_form_submit($form, FormStateInterface $form_state) {
       // Check SimpleNews module loaded.
       if (\Drupal::moduleHandler()->moduleExists('simplenews')) {
         // Get unique convention member email addresses.
-        $members = ConregStorage::adminSimplenewsSubscribeListLoad($eid);
+        $members = \Drupal::service('conreg.member.storage')->adminSimplenewsSubscribeListLoad($eid);
 
         // Loop through convention members.
         foreach ($members as $member) {

@@ -116,7 +116,7 @@ class Upgrade {
    */
   public function getLead() {
     if (empty($this->leadMid) && !empty($this->mid)) {
-      if ($member = ConregStorage::load(['mid' => $this->mid])) {
+      if ($member = \Drupal::service('conreg.member.storage')->load(['mid' => $this->mid])) {
         $this->leadMid = $member['lead_mid'];
       }
     }
@@ -181,7 +181,7 @@ class Upgrade {
     ];
     UpgradeStorage::update($update);
     // Fetch member record.
-    if ($member = ConregStorage::load(['mid' => $this->mid])) {
+    if ($member = \Drupal::service('conreg.member.storage')->load(['mid' => $this->mid])) {
       // Update member type, days and price.
       $member['member_type'] = $this->toType;
       $member['days'] = $this->toDays;
@@ -190,7 +190,7 @@ class Upgrade {
       $member['member_total'] = $member['member_price'] + $member['add_on_price'] + $this->upgradePrice;
       $member['update_date'] = time();
       // Save updated member.
-      ConregStorage::update($member);
+      \Drupal::service('conreg.member.storage')->update($member);
     }
   }
 

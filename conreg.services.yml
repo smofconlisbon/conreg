@@ -3,3 +3,8 @@ services:
     class: Drupal\conreg\Service\CountryService
     autowire: true
   Drupal\conreg\Service\CountryServiceInterface: '@conreg.country'
+
+  conreg.member.storage:
+    class: Drupal\conreg\Service\MemberStorage
+    autowire: true
+  Drupal\conreg\Service\MemberStorage: '@conreg.member.storage'

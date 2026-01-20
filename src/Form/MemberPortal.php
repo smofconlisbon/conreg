@@ -4,11 +4,12 @@ namespace Drupal\conreg\Form;
 
 use Drupal\conreg\AddonStorage;
 use Drupal\conreg\ConregOptions;
-use Drupal\conreg\ConregStorage;
 use Drupal\conreg\Payment;
 use Drupal\conreg\PaymentLine;
+use Drupal\conreg\Service\MemberStorage;
 use Drupal\conreg\Upgrade;
 use Drupal\conreg\UpgradeManager;
+use Drupal\Core\DependencyInjection\AutowireTrait;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
@@ -18,6 +19,18 @@ use Drupal\Component\Utility\Html;
  * Simple form to add an entry, with all the interesting fields.
  */
 class MemberPortal extends FormBase {
+
+  use AutowireTrait;
+
+  /**
+   * Construct the form.
+   *
+   * @param \Drupal\conreg\Service\MemberStorage $memberStorage
+   *   The member storage service.
+   */
+  public function __construct(
+    protected MemberStorage $memberStorage,
+  ) {}
 
   /**
    * {@inheritdoc}
@@ -38,8 +51,7 @@ class MemberPortal extends FormBase {
     $upgrades = ConregOptions::memberUpgrades($eid, $config);
     $days = ConregOptions::days($eid, $config);
 
-    $user = \Drupal::currentUser();
-    $email = $user->getEmail();
+    $email = $this->currentUser()->getEmail();
 
     $form = [
       '#attached' => [
@@ -57,11 +69,11 @@ class MemberPortal extends FormBase {
       'badge_name' => ['data' => $this->t('Badge name'), 'field' => 'm.badge_name'],
       'member_type' => ['data' => $this->t('Member type'), 'class' => [RESPONSIVE_PRIORITY_LOW]],
       'days' => ['data' => $this->t('Days'), 'class' => [RESPONSIVE_PRIORITY_LOW]],
-      $this->t('Paid'),
-      $this->t('Edit'),
+      'is_paid' => $this->t('Paid'),
+      'link' => $this->t('Edit'),
     ];
 
-    $entries = ConregStorage::adminMemberPortalListLoad($eid, $email, TRUE);
+    $entries = $this->memberStorage->adminMemberPortalListLoad($eid, $email, TRUE);
 
     // Only show table if members found.
     if (count($entries)) {
@@ -140,7 +152,7 @@ class MemberPortal extends FormBase {
     }
 
     // Load all members for email address (paid and unpaid)...
-    $entries = ConregStorage::adminMemberPortalListLoad($eid, $email);
+    $entries = $this->memberStorage->adminMemberPortalListLoad($eid, $email);
 
     // Default to keep unpaid grid hidden.
     $display_unpaid = FALSE;
@@ -249,9 +261,8 @@ class MemberPortal extends FormBase {
    * Get the Member ID of the currently logged in user.
    */
   private function getUserLeadMid($eid) {
-    $user = \Drupal::currentUser();
-    $user_email = $user->getEmail();
-    if ($member = ConregStorage::load(['eid' => $eid, 'email' => $user_email])) {
+    $user_email = $this->currentUser()->getEmail();
+    if ($member = $this->memberStorage->load(['eid' => $eid, 'email' => $user_email])) {
       return $member['mid'];
     }
   }
@@ -272,7 +283,7 @@ class MemberPortal extends FormBase {
         // Only save upgrade if price is not null.
         if (isset($upgrade->upgradePrice)) {
           $mgr->Add($upgrade);
-          $member = ConregStorage::load(['mid' => $mid]);
+          $member = $this->memberStorage->load(['mid' => $mid]);
           $payment->add(new PaymentLine(
             $mid,
             'upgrade',
@@ -309,7 +320,7 @@ class MemberPortal extends FormBase {
     // Loop through selected members to get lead and total price.
     foreach ($form_values['unpaid'] ?? [] as $mid => $member) {
       if (isset($member['is_selected']) && $member['is_selected']) {
-        if ($member = ConregStorage::load(['mid' => $mid])) {
+        if ($member = $this->memberStorage->load(['mid' => $mid])) {
           // Make first member lead member.
           if (empty($lead_mid)) {
             $lead_mid = $mid;
@@ -320,11 +331,10 @@ class MemberPortal extends FormBase {
     }
 
     // Get the user email address.
-    $user = \Drupal::currentUser();
-    $email = $user->getEmail();
+    $email = $this->currentUser()->getEmail();
 
     // Load all members for email address (paid and unpaid)...
-    $entries = ConregStorage::adminMemberPortalListLoad($eid, $email);
+    $entries = $this->memberStorage->adminMemberPortalListLoad($eid, $email);
 
     foreach ($entries as $entry) {
       $mid = $entry['mid'];
@@ -365,17 +375,13 @@ class MemberPortal extends FormBase {
 
     // Assuming there are members/upgrades to pay for, redirect to payment form.
     if ($payment_amount > 0 || $upgrade_price > 0) {
-      // Get the Lead Member key...
-      // $member = ConregStorage::load(['mid' => $lead_mid]);
-      // $lead_key = $member['random_key'];
-      // Redirect to payment form.
       $payment->save();
       $form_state->setRedirect('conreg_portal_checkout',
         ['payid' => $payment->payId, 'key' => $payment->randomKey]
       );
     }
     else {
-      \Drupal::messenger()->addMessage($this->t('Nothing to pay for.'), 'warning');
+      $this->messenger()->addMessage($this->t('Nothing to pay for.'), 'warning');
     }
   }
 

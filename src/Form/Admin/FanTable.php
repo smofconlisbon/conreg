@@ -2,22 +2,22 @@
 
 namespace Drupal\conreg\Form\Admin;
 
-use Drupal\Core\Form\FormBase;
-use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Language\LanguageManagerInterface;
-use Drupal\Core\Mail\MailManagerInterface;
 use Drupal\Component\Utility\Html;
 use Drupal\conreg\Addons;
 use Drupal\conreg\ConregConfig;
 use Drupal\conreg\ConregOptions;
-use Drupal\conreg\ConregStorage;
 use Drupal\conreg\EventStorage;
 use Drupal\conreg\Member;
 use Drupal\conreg\Payment;
 use Drupal\conreg\PaymentLine;
+use Drupal\conreg\Service\MemberStorage;
 use Drupal\conreg\Upgrade;
 use Drupal\conreg\UpgradeManager;
 use Drupal\Core\DependencyInjection\AutowireTrait;
+use Drupal\Core\Form\FormBase;
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Language\LanguageManagerInterface;
+use Drupal\Core\Mail\MailManagerInterface;
 
 /**
  * Simple form to add an entry, with all the interesting fields.
@@ -29,12 +29,15 @@ class FanTable extends FormBase {
   /**
    * Constructs a new EmailExampleGetFormPage.
    *
+   * @param \Drupal\conreg\MemberStorage $memberStorage
+   *   The member storage service.
    * @param \Drupal\Core\Mail\MailManagerInterface $mailManager
    *   The mail manager.
    * @param \Drupal\Core\Language\LanguageManagerInterface $languageManager
    *   The language manager.
    */
   public function __construct(
+    protected MemberStorage $memberStorage,
     protected MailManagerInterface $mailManager,
     protected LanguageManagerInterface $languageManager,
   ) {}
@@ -140,7 +143,7 @@ class FanTable extends FormBase {
 
     // Only check database if search filled in.
     if (!empty($search)) {
-      $entries = ConregStorage::adminMemberCheckInListLoad($eid, $search);
+      $entries = $this->memberStorage->adminMemberCheckInListLoad($eid, $search);
 
       foreach ($entries as $entry) {
         $mid = $entry['mid'];
@@ -233,7 +236,7 @@ class FanTable extends FormBase {
       '#sticky' => TRUE,
     ];
 
-    $entries = ConregStorage::adminMemberUnpaidListLoad($eid);
+    $entries = $this->memberStorage->adminMemberUnpaidListLoad($eid);
 
     foreach ($entries as $entry) {
       $mid = $entry['mid'];
@@ -312,7 +315,7 @@ class FanTable extends FormBase {
     $headers = [];
     $rows = [];
     $total = 0;
-    foreach (ConregStorage::adminMemberSummaryLoad($eid) as $entry) {
+    foreach ($this->memberStorage->adminMemberSummaryLoad($eid) as $entry) {
       // Replace type code with description.
       $headers[] = isset($types->types[$entry['member_type']]) ? $types->types[$entry['member_type']]->name : $entry['member_type'];
       $rows[] = ['#markup' => $entry['num']];
@@ -433,11 +436,11 @@ class FanTable extends FormBase {
         // Only save upgrade if price is not null.
         if (isset($upgrade->upgradePrice)) {
           $mgr->Add($upgrade);
-          $member = ConregStorage::load(['mid' => $mid]);
+          $member = $this->memberStorage->load(['mid' => $mid]);
           $payment->add(new PaymentLine(
             $mid,
             'upgrade',
-            t("Upgrade for @first_name @last_name", [
+            $this->t("Upgrade for @first_name @last_name", [
               '@first_name' => $member['first_name'],
               '@last_name' => $member['last_name'],
             ]),
@@ -547,7 +550,7 @@ class FanTable extends FormBase {
               $member->payment_method = $form_values['payment_method'];
               if ($form_state->get('auto_approve')) {
                 $member->is_approved = 1;
-                $max_member = ConregStorage::loadMaxMemberNo($eid);
+                $max_member = $this->memberStorage->loadMaxMemberNo($eid);
                 $max_member++;
                 $member->member_no = $max_member;
               }
@@ -571,7 +574,7 @@ class FanTable extends FormBase {
     $upgradePay = [];
     foreach ($toPay as $mid) {
       // Check for member payments.
-      if ($member = ConregStorage::load(['mid' => $mid, 'is_paid' => 0])) {
+      if ($member = $this->memberStorage->load(['mid' => $mid, 'is_paid' => 0])) {
         // Make first member lead member.
         if ($lead_mid == 0) {
           $lead_mid = $mid;
@@ -589,7 +592,7 @@ class FanTable extends FormBase {
     $mgr->completeUpgrades($payment_amount, $form_values['payment_method'], $form_values['payment_id']);
 
     // Get next member number.
-    $max_member_no = ConregStorage::loadMaxMemberNo($eid);
+    $max_member_no = $this->memberStorage->loadMaxMemberNo($eid);
     // Loop again to update members.
     foreach ($memberPay as $mid) {
       $update = [
@@ -602,7 +605,7 @@ class FanTable extends FormBase {
         'member_no' => ++$max_member_no,
         'is_approved' => 1,
       ];
-      ConregStorage::update($update);
+      $this->memberStorage->update($update);
     }
     // Loop again to update upgrades.
     foreach ($upgradePay as $mid => $upgid) {

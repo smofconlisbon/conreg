@@ -197,8 +197,8 @@ conreg_config_addons:
 conreg_config_email_templates:
   path: 'admin/config/conreg/email/templates'
   defaults:
-    _title: 'Simple Convention Email Templates'
-    _form: '\Drupal\conreg\ConregConfigEmailTemplates'
+    _title: 'ConReg Email Templates'
+    _form: '\Drupal\conreg\Form\Admin\EmailTemplates'
   requirements:
     _permission: 'configure convention email templates'
 
@@ -225,7 +225,7 @@ conreg_admin_member_options:
   path: 'admin/members/options/{eid}/{option}'
   defaults:
     _title: 'Member Options'
-    _form: '\Drupal\conreg\SimpleConregAdminMemberOptions'
+    _form: '\Drupal\conreg\Form\Admin\MemberOptions'
     eid: 1
     option: 0
   requirements:

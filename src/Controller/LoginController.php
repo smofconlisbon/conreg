@@ -3,15 +3,12 @@
 namespace Drupal\conreg\Controller;
 
 use Drupal\Component\Datetime\TimeInterface;
-use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\conreg\ConregConfig;
+use Drupal\conreg\Service\MemberStorage;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Language\LanguageManagerInterface;
-use Drupal\Core\Session\AccountProxyInterface;
 use Drupal\Core\Url;
-use Drupal\conreg\ConregStorage;
-use Drupal\conreg\ConregConfig;
 use Drupal\user\Entity\User;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Returns responses for ConReg - Simple Convention Registration routes.
@@ -19,63 +16,20 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class LoginController extends ControllerBase {
 
   /**
-   * The time service.
-   *
-   * @var \Drupal\Component\Datetime\TimeInterface
-   */
-  protected $time;
-
-  /**
-   * The config factory.
-   *
-   * @var \Drupal\Core\Config\ConfigFactoryInterface
-   */
-  protected $configFactory;
-
-  /**
-   * The language manager.
-   *
-   * @var \Drupal\Core\Language\LanguageManagerInterface
-   */
-  protected $languageManager;
-
-  /**
-   * The currently logged in user.
-   *
-   * @var \Drupal\Core\Session\AccountProxyInterface|null
-   */
-  protected $currentUser;
-
-  /**
    * The controller constructor.
    *
+   * @param \Drupal\conreg\Service\MemberStorage $memberStorage
+   *   The member storage service.
    * @param \Drupal\Component\Datetime\TimeInterface $time
    *   The time service.
-   * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
-   *   The config factory.
    * @param \Drupal\Core\Language\LanguageManagerInterface $language_manager
    *   The language manager.
-   * @param \Drupal\user\UserInterface $current_user
-   *   The currently logged in user.
    */
-  public function __construct(TimeInterface $time, ConfigFactoryInterface $config_factory, LanguageManagerInterface $language_manager, AccountProxyInterface $current_user) {
-    $this->time = $time;
-    $this->configFactory = $config_factory;
-    $this->languageManager = $language_manager;
-    $this->currentUser = $current_user;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public static function create(ContainerInterface $container) {
-    return new static(
-      $container->get('datetime.time'),
-      $container->get('config.factory'),
-      $container->get('language_manager'),
-      $container->get('current_user')
-    );
-  }
+  public function __construct(
+    protected MemberStorage $memberStorage,
+    protected TimeInterface $time,
+    protected LanguageManagerInterface $language_manager,
+  ) {}
 
   /**
    * Check valid member credentials, login and redirect to member portal.
@@ -83,7 +37,7 @@ class LoginController extends ControllerBase {
   public function memberLoginAndRedirect($mid, $key, $expiry) {
 
     // Check member credentials valid.
-    $member = ConregStorage::load([
+    $member = $this->memberStorage->load([
       'mid' => $mid,
       'random_key' => $key,
       'login_exp_date' => $expiry,
@@ -106,9 +60,10 @@ class LoginController extends ControllerBase {
 
     // Check if user already exists.
     $user = user_load_by_mail($member['email']);
+    $currentUser = $this->currentUser();
 
     // Check if user already logged in. If so, redirect to member portal.
-    if ($this->currentUser && $user && $user->id() == $this->currentUser->id()) {
+    if ($currentUser && $user && $user->id() == $currentUser->id()) {
       // Redirect to member portal.
       return $this->redirect('conreg_portal', ['eid' => $member['eid']], ['absolute' => TRUE]);
     }
@@ -124,7 +79,7 @@ class LoginController extends ControllerBase {
       $user->set("preferred_langcode", $language);
       $user->set("preferred_admin_langcode", $language);
       // Set the user timezone to the site default timezone.
-      $dateConfig = $this->configFactory->get('system.date');
+      $dateConfig = $this->config('system.date');
       $config_data_default_timezone = $dateConfig->get('timezone.default');
       $user->set('timezone', $config_data_default_timezone ?: @date_default_timezone_get());
       // NOTE: login will fail silently if not activated!

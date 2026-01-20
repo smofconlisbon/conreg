@@ -3,25 +3,21 @@
 namespace Drupal\conreg\Form\Admin;
 
 use Drupal\Component\Utility\Html;
-use Drupal\Core\Cache\CacheTagsInvalidator;
-use Drupal\Core\Form\ConfigFormBase;
-use Drupal\Core\Form\FormStateInterface;
 use Drupal\conreg\EventStorage;
 use Drupal\conreg\ConregOptions;
 use Drupal\conreg\ConregTokens;
-use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\Core\Cache\CacheTagsInvalidator;
+use Drupal\Core\DependencyInjection\AutowireTrait;
+use Drupal\Core\Form\ConfigFormBase;
+use Drupal\Core\Form\FormStateInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
 /**
  * Configure conreg settings for this site.
  */
 class MemberTypes extends ConfigFormBase {
 
-  /**
-   * The cache invalidator.
-   *
-   * @var \Drupal\Core\Cache\CacheTagsInvalidator
-   */
-  protected CacheTagsInvalidator $cacheInvalidator;
+  use AutowireTrait;
 
   /**
    * Constructor for member lookup form.
@@ -29,20 +25,10 @@ class MemberTypes extends ConfigFormBase {
    * @param \Drupal\Core\Cache\CacheTagsInvalidator $cacheInvalidator
    *   The cache invalidator.
    */
-  public function __construct(CacheTagsInvalidator $cacheInvalidator) {
-    $this->cacheInvalidator = $cacheInvalidator;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public static function create(ContainerInterface $container) {
-    // Instantiates this form class.
-    return new static(
-      // Load the service required to construct this class.
-      $container->get('cache_tags.invalidator')
-    );
-  }
+  public function __construct(
+    #[Autowire('cache_tags.invalidator')]
+    protected CacheTagsInvalidator $cacheInvalidator,
+  ) {}
 
   /**
    * {@inheritdoc}
@@ -380,7 +366,7 @@ class MemberTypes extends ConfigFormBase {
     $this->updateMemberTypes($memberTypes, $vals, $eid);
     ConregOptions::saveMemberTypes($eid, $memberTypes);
 
-    \Drupal::service('cache_tags.invalidator')->invalidateTags(['event:' . $eid . ':type']);
+    $this->cacheInvalidator->invalidateTags(['event:' . $eid . ':type']);
 
     parent::submitForm($form, $form_state);
   }
