@@ -103,7 +103,7 @@ class MemberEdit extends FormBase {
     if (!is_array($owner)) {
       // Member not in database. Display error.
       $form['error'] = [
-        '#markup' => $this->t('Sorry, you don\'t have permission to do that.'),
+        '#markup' => $this->t("Sorry, you don't have permission to do that."),
         '#prefix' => '<h3>',
         '#suffix' => '</h3>',
       ];

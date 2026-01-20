@@ -253,7 +253,7 @@ class ConfigDiscordForm extends ConfigFormBase {
 
     $form['discord_invites']['override'] = [
       '#type' => 'checkbox',
-      '#title' => $this->t('Override member types - all members in range will be added. Leave unchecked unless you need to invite a member who wouldn\'t normally get one.'),
+      '#title' => $this->t("Override member types - all members in range will be added. Leave unchecked unless you need to invite a member who wouldn't normally get one."),
     ];
 
     $form['discord_invites']['resend'] = [
@@ -268,7 +268,7 @@ class ConfigDiscordForm extends ConfigFormBase {
 
     $form['discord_invites']['dont_email'] = [
       '#type' => 'checkbox',
-      '#title' => $this->t('Don\'t email - if checked no emails will be sent, invite info will display on page. Only use for members who have difficulty receiving emails.'),
+      '#title' => $this->t("Don't email - if checked no emails will be sent, invite info will display on page. Only use for members who have difficulty receiving emails."),
     ];
 
     $form['discord_invites']['replace'] = [
@@ -486,17 +486,13 @@ class ConfigDiscordForm extends ConfigFormBase {
         $this->sendInviteEmail($member, $inviteUrl);
       }
 
-      return $this->t('<p>Member Name: @first_name @last_name<br />' .
-                      'Member No: @member_no<br />' .
-                      'Email: @email<br />' .
-                      'Invite URL: @url</p>',
-                      [
-                        '@first_name' => $member->first_name,
-                        '@last_name' => $member->last_name,
-                        '@member_no' => $member->member_no,
-                        '@email' => $member->email,
-                        '@url' => $inviteUrl,
-                      ]);
+      return $this->t('<p>Member Name: @first_name @last_name<br />Member No: @member_no<br />Email: @email<br />Invite URL: @url</p>', [
+        '@first_name' => $member->first_name,
+        '@last_name' => $member->last_name,
+        '@member_no' => $member->member_no,
+        '@email' => $member->email,
+        '@url' => $inviteUrl,
+      ]);
     }
     // If invite not sent, return false.
     return FALSE;

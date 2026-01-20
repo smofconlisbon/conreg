@@ -457,22 +457,23 @@ class ConregTokens {
       // If any member add-ons, add them.
       foreach ($cur_member['addons'] as $addon) {
         if (!empty($addon->label) && !empty($addon->option)) {
-          $addOnName = $addon->label;
-          $this->display .= '<tr><td>' . $this->t("Add-on: @addon", ['@addon' => $addOnName]) . '</td><td>' . $addon->option . '</td></tr>';
-          $this->plainDisplay .= $this->t("Add-on: @addon", ['@addon' => $addOnName]) . ":\t" . $addon->option . "\n";
+          $addOnName = $this->t("Add-on: @addon", ['@addon' => $addon->label]);
+          $this->display .= '<tr><td>' . $addOnName . '</td><td>' . $addon->option . '</td></tr>';
+          $this->plainDisplay .= $addOnName . ":\t" . $addon->option . "\n";
         }
         if (!empty($addon->info) && !empty($addon->info)) {
           $this->display .= '<tr><td>' . $addon->info . '</td><td>' . $addon->info . '</td></tr>';
           $this->plainDisplay .= $addon->info . ":\t" . $addon->info . "\n";
         }
         if (!empty($addon->free) && !empty($addon->amount)) {
-          $addOnName = $addon->free;
-          $this->display .= '<tr><td>' . $this->t("Add-on: @addon", ['@addon' => $addOnName]) . '</td><td>' . $addon->amount . '</td></tr>';
-          $this->plainDisplay .= $this->t("Add-on: @addon", ['@addon' => $addOnName]) . ":\t" . $addon->amount . "\n";
+          $addOnFree = $this->t("Add-on: @addon", ['@addon' => $addon->free]);
+          $this->display .= '<tr><td>' . $addOnFree . '</td><td>' . $addon->amount . '</td></tr>';
+          $this->plainDisplay .= $addOnFree . ":\t" . $addon->amount . "\n";
         }
         if (!empty($addon->amount)) {
-          $this->display .= '<tr><td>' . $this->t("@addon price", ['@addon' => $addOnName]) . '</td><td>' . $addon->amount . '</td></tr>';
-          $this->plainDisplay .= $this->t("@addon price", ['@addon' => $addOnName]) . ":\t" . $addon->amount . "\n";
+          $addOnPrice = $this->t("@addon price", ['@addon' => $addOnName]);
+          $this->display .= '<tr><td>' . $addOnPrice . '</td><td>' . $addon->amount . '</td></tr>';
+          $this->plainDisplay .= $addOnPrice . ":\t" . $addon->amount . "\n";
         }
       }
       if (!empty($cur_member['add_on_price'])) {

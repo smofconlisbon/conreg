@@ -116,7 +116,7 @@ class PlanZAdminForm extends FormBase {
 
     $form['dont_email'] = [
       '#type' => 'checkbox',
-      '#title' => $this->t('Don\'t email - if checked no emails will be sent, member info will display on page. Only use for members who have difficulty receiving emails.'),
+      '#title' => $this->t("Don't email - if checked no emails will be sent, member info will display on page. Only use for members who have difficulty receiving emails."),
     ];
 
     $form['manual_add'] = [

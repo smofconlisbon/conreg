@@ -232,7 +232,7 @@ class ConfigAirTableForm extends ConfigFormBase {
       '#type' => 'markup',
       '#prefix' => '<div class="conreg_info">',
       '#suffix' => '</div>',
-      '#markup' => $this->t('Option fields will map an individual option and it\'s details to an AirTable column.'),
+      '#markup' => $this->t("Option fields will map an individual option and it's details to an AirTable column."),
     ];
 
     foreach ($fieldOptions->options as $option) {
@@ -258,7 +258,7 @@ class ConfigAirTableForm extends ConfigFormBase {
       '#type' => 'markup',
       '#prefix' => '<div class="conreg_info">',
       '#suffix' => '</div>',
-      '#markup' => $this->t('This button will add all members who aren\'t already on AirTable. Useful if you add AirTable to a convention with existing members.'),
+      '#markup' => $this->t("This button will add all members who aren't already on AirTable. Useful if you add AirTable to a convention with existing members."),
     ];
 
     $form['bulk']['submit_add'] = [

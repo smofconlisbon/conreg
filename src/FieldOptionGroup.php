@@ -104,7 +104,7 @@ class FieldOptionGroup {
   public function groupForm(&$member, $requireMandatory = TRUE) {
     $options = [
       '#type' => 'fieldset',
-      '#title' => t($this->title),
+      '#title' => $this->title,
       '#attributes' => [
         'class' => ['field-option-group'],
       ],

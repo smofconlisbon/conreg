@@ -262,17 +262,19 @@ class SimpleConregAdminMailoutEmails extends FormBase {
     $showMethod = str_contains($fields, "M");
     $showLanguage = str_contains($fields, "L");
 
-    $headerRow = '';
+    $headerCells = [];
     if ($showName) {
-      $headerRow .= $this->t('First name') . ',' . $this->t('Last name') . ',';
+      $headerCells[] = $this->t('First name');
+      $headerCells[] = $this->t('Last name');
     }
-    $headerRow .= $this->t('Email');
+    $headerCells[] = $this->t('Email');
     if ($showMethod) {
-      $headerRow .= ',' . t('Communication method');
+      $headerCells[] = t('Communication method');
     }
     if ($showLanguage) {
-      $headerRow .= ',' . t('Language');
+      $headerCells[] = t('Language');
     }
+    $headerRow = implode(',', $headerCells);
 
     // Fetch all entries for selected option or group.
     $mailoutMembers = $this->memberStorage->adminMailoutListLoad($eid, $methods, $languages);
