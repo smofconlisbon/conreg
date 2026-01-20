@@ -35,7 +35,7 @@ class SimpleConregAdminMailoutEmails extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function getFormID() {
+  public function getFormId() {
     return 'conreg_admin_mailout_emails';
   }
 

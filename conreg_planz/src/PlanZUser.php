@@ -95,7 +95,7 @@ class PlanZUser {
     $this->badgeId = $badgeId;
 
     // Get the PlanZ connection to get the Participant table.
-    $planZCon = $this->planz->getPlanZConnection();
+    $planZCon = $this->planz->getConnection();
     $select = $planZCon->select('Participants', 'P');
     $select->addField('P', 'pubsname');
     $select->addField('P', 'sortedpubsname');
@@ -128,7 +128,7 @@ class PlanZUser {
     $member = Member::loadMember($mid);
 
     // Get the PlanZ connection to get the Participant table.
-    $planZCon = $this->planz->getPlanZConnection();
+    $planZCon = $this->planz->getConnection();
     $select = $planZCon->select('CongoDump', 'C');
     $select->addField('C', 'badgeid');
     $select->condition('C.email', $member->email);
@@ -183,7 +183,7 @@ class PlanZUser {
       $this->saveConregPlanZ();
     }
 
-    $planZCon = $this->planz->getPlanZConnection();
+    $planZCon = $this->planz->getConnection();
 
     // Always save latest member details to PlanZ.
     $this->saveCongoDump($planZCon, $member);

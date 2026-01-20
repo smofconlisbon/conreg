@@ -27,7 +27,7 @@ class SimpleConregAdminMemberEmail extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function getFormID() {
+  public function getFormId() {
     return 'conreg_admin_member_email';
   }
 

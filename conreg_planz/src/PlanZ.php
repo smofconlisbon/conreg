@@ -143,7 +143,7 @@ class PlanZ {
    * @return \Drupal\Core\Database\Connection
    *   The database connection object for PlanZ.
    */
-  public function getPlanZConnection(): Connection {
+  public function getConnection(): Connection {
     return Database::getConnection($this->target, 'planz');
   }
 
@@ -160,7 +160,7 @@ class PlanZ {
    */
   public function test(int &$count) {
     try {
-      $con = $this->getPlanZConnection();
+      $con = $this->getConnection();
       $count = $con->select('CongoDump', 'C')
         ->fields('C')
         ->countQuery()
@@ -186,7 +186,7 @@ class PlanZ {
    *   The array of permission roles
    */
   public function getPermissionRoles(): array {
-    $con = $this->getPlanZConnection();
+    $con = $this->getConnection();
     $select = $con->select('PermissionRoles', 'P');
     $select->addField('P', 'permroleid');
     $select->addField('P', 'permrolename');
