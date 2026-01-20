@@ -396,6 +396,19 @@ conreg.settings.*:
           type: text
           label: 'The options withing an option group'
 
+conreg.email_templates:
+  type: config_object
+  label: 'ConReg settings'
+  mapping:
+    template1subject:
+      type: string
+    template1body:
+      type: string
+    template1format:
+      type: string
+    count:
+      type: integer
+
 block.settings.conreg_price_availability:
   type: block_settings
   label: 'Price and Availability block'

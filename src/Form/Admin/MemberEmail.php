@@ -1,16 +1,21 @@
 <?php
 
-namespace Drupal\conreg;
+namespace Drupal\conreg\Form\Admin;
 
+use Drupal\conreg\ConregEmailer;
+use Drupal\conreg\ConregTokens;
 use Drupal\conreg\Service\MemberStorage;
 use Drupal\Core\DependencyInjection\AutowireTrait;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Language\LanguageManagerInterface;
+use Drupal\Core\Mail\MailManagerInterface;
+use Drupal\Core\TempStore\PrivateTempStoreFactory;
 
 /**
  * Simple form to add an entry, with all the interesting fields.
  */
-class SimpleConregAdminMemberEmail extends FormBase {
+class MemberEmail extends FormBase {
 
   use AutowireTrait;
 
@@ -19,9 +24,18 @@ class SimpleConregAdminMemberEmail extends FormBase {
    *
    * @param \Drupal\conreg\Service\MemberStorage $memberStorage
    *   The member storage service.
+   * @param \Drupal\Core\TempStore\PrivateTempStoreFactory $tempStoreFactory
+   *   The private temporary storage.
+   * @param \Drupal\Core\Language\LanguageManagerInterface $languageManager
+   *   The language manager.
+   * @param \Drupal\Core\Mail\MailManagerInterface $mailManager
+   *   The mail manager.
    */
   public function __construct(
     protected MemberStorage $memberStorage,
+    protected PrivateTempStoreFactory $tempStoreFactory,
+    protected LanguageManagerInterface $languageManager,
+    protected MailManagerInterface $mailManager,
   ) {}
 
   /**
@@ -67,7 +81,7 @@ class SimpleConregAdminMemberEmail extends FormBase {
     if (!empty($copy_to)) {
       $from_options[$copy_to] = $copy_to;
     }
-    $user_email = \Drupal::currentUser()->getEmail();
+    $user_email = $this->currentUser()->getEmail();
     $from_options[$user_email] = $user_email;
     // Default email to the event from email,
     // unless different address previously selected.
@@ -99,7 +113,7 @@ class SimpleConregAdminMemberEmail extends FormBase {
     $form_state->set('default_template', $default_template);
 
     // If form submitted, use submitted values, otherwise use defaults.
-    if (empty($params['from'] = $form_values['email']['message']['from_email'])) {
+    if ($form_values && empty($params['from'] = $form_values['email']['message']['from_email'])) {
       $params['from'] = $from_default;
     }
 
@@ -263,9 +277,7 @@ class SimpleConregAdminMemberEmail extends FormBase {
       ],
     ];
 
-    if (empty($template = $form_values['template']['template_select'])) {
-      $template = 1;
-    }
+    $template = $form_values['template']['template_select'] ?? 1;
     $form['email']['message']['subject' . $template] = [
       '#type' => 'textfield',
       '#title' => $this->t('Message subject'),
@@ -284,7 +296,7 @@ class SimpleConregAdminMemberEmail extends FormBase {
       '#description' => $this->t('Text for the email body. you may use the following tokens: @tokens.', ['@tokens' => ConregTokens::tokenHelp()]),
       '#default_value' => $params['body'],
       // '#value' => $params['body'],
-      '#format' => $params['format'],
+      '#format' => $params['format'] ?? '',
       '#ajax' => [
         'wrapper' => 'preview',
         'callback' => [$this, 'updateEmailPreview'],
@@ -301,7 +313,7 @@ class SimpleConregAdminMemberEmail extends FormBase {
     ];
 
     $form['email']['preview']['from'] = [
-      '#markup' => $this->t('From: @from_email', ['@from_email' => $params['from']]),
+      '#markup' => $this->t('From: @from_email', ['@from_email' => $params['from'] ?? '']),
       '#prefix' => '<div class="field">',
       '#suffix' => '</div>',
     ];
@@ -379,7 +391,7 @@ class SimpleConregAdminMemberEmail extends FormBase {
   public function submitCancel(array &$form, FormStateInterface $form_state) {
     $eid = $form_state->get('eid');
     // Get session state to return to correct page.
-    $tempstore = \Drupal::service('tempstore.private')->get('conreg');
+    $tempstore = $this->tempStoreFactory->get('conreg');
     $display = $tempstore->get('display');
     $page = $tempstore->get('page');
     // Redirect to member list.
@@ -402,13 +414,13 @@ class SimpleConregAdminMemberEmail extends FormBase {
     $module = "conreg";
     $key = "template";
     $to = $params["to"];
-    $language_code = \Drupal::languageManager()->getDefaultLanguage()->getId();
+    $language_code = $this->languageManager->getDefaultLanguage()->getId();
     // Get session state to return to correct page.
-    $tempstore = \Drupal::service('tempstore.private')->get('conreg');
+    $tempstore = $this->tempStoreFactory->get('conreg');
     $display = $tempstore->get('display');
     $page = $tempstore->get('page');
     // Send confirmation email to member.
-    \Drupal::service('plugin.manager.mail')->mail($module, $key, $to, $language_code, $params);
+    $this->mailManager->mail($module, $key, $to, $language_code, $params);
 
     // Redirect to member list.
     $form_state->setRedirect('conreg_admin_members', ['eid' => $eid, 'display' => $display, 'page' => $page]);

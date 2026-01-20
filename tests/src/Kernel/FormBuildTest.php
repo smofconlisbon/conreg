@@ -37,6 +37,7 @@ class FormBuildTest extends KernelTestBase {
     $this->installSchema('conreg', [
       'conreg_events',
       'conreg_members',
+      'conreg_member_addons',
       'conreg_member_options',
     ]);
     $this->installConfig(['conreg']);
@@ -69,6 +70,18 @@ class FormBuildTest extends KernelTestBase {
       ->insert('conreg_members')
       ->fields($fields)
       ->execute();
+  }
+
+  /**
+   * Set up email template. Temporary, until can be moved into saved config.
+   */
+  protected function createEmailTemplate() {
+    $config = $this->container->get('config.factory')->getEditable('conreg.email_templates');
+    $config->set('template1subject', 'Thank you for joining [event_name]');
+    $config->set('template1body', '<p>Hi [first_name],</p><p>This is to confirm you have joined [event_name].</p><p>Your member details are: [member_details]</p>');
+    $config->set('template1format', 'basic_html');
+    $config->set('count', '1');
+    $config->save();
   }
 
   /**
@@ -493,6 +506,32 @@ class FormBuildTest extends KernelTestBase {
     $this->assertIsArray($form);
     $this->assertArrayHasKey('#form_id', $form);
     $this->assertEquals('conreg_admin_checkin_members', $form['#form_id']);
+  }
+
+  /**
+   * Test building Email Member form.
+   */
+  public function testAdminMemberEmailFormBuild() {
+    $this->createTestMember();
+    $this->createEmailTemplate();
+
+    $route = $this->container
+      ->get('router.route_provider')
+      ->getRouteByName('conreg_admin_members_email');
+
+    $this->assertInstanceOf(Route::class, $route);
+    $this->assertEquals(
+      'Member Administration - Email Member',
+      $route->getDefault('_title')
+    );
+
+    $form = $this->container
+      ->get('form_builder')
+      ->getForm($route->getDefault('_form'), 1, 1);
+
+    $this->assertIsArray($form);
+    $this->assertArrayHasKey('#form_id', $form);
+    $this->assertEquals('conreg_admin_member_email', $form['#form_id']);
   }
 
 }

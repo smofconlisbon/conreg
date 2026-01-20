@@ -353,7 +353,7 @@ conreg_admin_members_email:
   path: 'admin/members/email/{eid}/{mid}'
   defaults:
     _title: 'Member Administration - Email Member'
-    _form: '\Drupal\conreg\SimpleConregAdminMemberEmail'
+    _form: '\Drupal\conreg\Form\Admin\MemberEmail'
     eid: 1
   requirements:
     _permission: 'manage convention members'

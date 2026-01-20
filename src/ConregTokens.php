@@ -328,7 +328,7 @@ class ConregTokens {
       $members[$index]['is_approved'] = $yesNoOptions[$val['is_approved']]->render();
       $members[$index]['is_paid'] = $yesNoOptions[$val['is_paid']]->render();
       $members[$index]['is_deleted'] = $yesNoOptions[$val['is_deleted']]->render();
-      $members[$index]['display'] = $displayOptions[$val['display']];
+      $members[$index]['display'] = $displayOptions[$val['display']] ?? '';
       $members[$index]['member_price'] = $this->symbol . $val['member_price'];
       $members[$index]['member_total'] = $this->symbol . $val['member_total'];
       $members[$index]['payment_amount'] = $this->symbol . $payAmount;
@@ -340,7 +340,7 @@ class ConregTokens {
       if (!empty($val['communication_method'])) {
         $members[$index]['communication_method'] = $communicationOptions[$val['communication_method']];
       }
-      $members[$index]['country'] = $countryOptions[$val['country']];
+      $members[$index]['country'] = $countryOptions[$val['country']] ?? '';
     }
   }
 
