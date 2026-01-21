@@ -4,6 +4,11 @@ services:
     autowire: true
   Drupal\conreg\Service\CountryServiceInterface: '@conreg.country'
 
+  conreg.stripe_service:
+    class: Drupal\conreg\Service\StripeService
+    autowire: true
+  Drupal\conreg\Service\StripeServiceInterface: '@conreg.stripe_service'
+
   conreg.member.storage:
     class: Drupal\conreg\Service\MemberStorage
     autowire: true

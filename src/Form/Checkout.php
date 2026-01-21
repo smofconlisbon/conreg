@@ -2,8 +2,6 @@
 
 namespace Drupal\conreg\Form;
 
-use Stripe\Event;
-use Stripe\Stripe;
 use Drupal\conreg\Addons;
 use Drupal\conreg\ConregOptions;
 use Drupal\conreg\EventStorage;
@@ -11,6 +9,7 @@ use Drupal\conreg\Member;
 use Drupal\conreg\Payment;
 use Drupal\conreg\PaymentStorage;
 use Drupal\conreg\Service\MemberStorage;
+use Drupal\conreg\Service\StripeServiceInterface;
 use Drupal\conreg\UpgradeManager;
 use Drupal\Core\DependencyInjection\AutowireTrait;
 use Drupal\Core\Form\FormBase;
@@ -18,7 +17,6 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Language\LanguageManagerInterface;
 use Drupal\Core\Mail\MailManagerInterface;
 use Drupal\Core\Url;
-use Stripe\Checkout\Session;
 
 /**
  * Simple form to add an entry, with all the interesting fields.
@@ -42,7 +40,7 @@ class Checkout extends FormBase {
   private bool $autoApprove;
 
   /**
-   * Constructs a new EmailExampleGetFormPage.
+   * Constructs a new Checkout form.
    *
    * @param \Drupal\conreg\MemberStorage $memberStorage
    *   The member storage service.
@@ -50,11 +48,14 @@ class Checkout extends FormBase {
    *   The mail manager.
    * @param \Drupal\Core\Language\LanguageManagerInterface $languageManager
    *   The language manager.
+   * @param \Drupal\conreg\Service\StripeServiceInterface $stripeService
+   *   The Stripe service.
    */
   public function __construct(
     protected MemberStorage $memberStorage,
     protected MailManagerInterface $mailManager,
     protected LanguageManagerInterface $languageManager,
+    protected StripeServiceInterface $stripeService,
   ) {}
 
   /**
@@ -109,7 +110,7 @@ class Checkout extends FormBase {
     $this->autoApprove = $config->get('payments.auto_approve') ?: FALSE;
 
     // Set Stripe secret key from event settings.
-    Stripe::setApiKey($config->get('payments.private_key'));
+    $this->stripeService->setApiKey($this->eid);
 
     $this->processStripeMessages($config);
 
@@ -156,9 +157,9 @@ class Checkout extends FormBase {
       $types = empty($config->get('payments.types')) ? ['card'] : explode('|', $config->get('payments.types'));
 
       // Set up Stripe Session.
-      $session = Session::create([
+      $session = $this->stripeService->createCheckoutSession([
         'payment_method_types' => $types,
-        'mode' => Session::MODE_PAYMENT,
+        'mode' => 'payment',
         'customer_email' => $email,
         'line_items' => $items,
         'success_url' => $success,
@@ -228,13 +229,10 @@ class Checkout extends FormBase {
    */
   private function processStripeMessages($config) {
     // Check events on Stripe.
-    $events = Event::all([
-      'type' => 'checkout.session.completed',
-      'created' => [
-        // Check for events created in the last 24 hours.
-        'gte' => time() - 24 * 60 * 60,
-      ],
-    ]);
+    $events = $this->stripeService->getEvents(
+      'checkout.session.completed',
+      time() - 24 * 60 * 60
+    );
 
     // Loop through received events and mark payments complete.
     foreach ($events->data as $event) {
