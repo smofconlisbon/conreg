@@ -120,9 +120,10 @@ class MemberTypes extends ConfigFormBase {
         '#required' => TRUE,
       ];
       $form[$typeRef]['type']['description'] = [
-        '#type' => 'textfield',
+        '#type' => 'text_format',
         '#title' => $this->t('Type description'),
         '#default_value' => $type->description,
+        '#format' => $type->descriptionFormat ?? 'basic_html',
         '#required' => TRUE,
       ];
       $form[$typeRef]['type']['price'] = [
@@ -538,7 +539,14 @@ class MemberTypes extends ConfigFormBase {
   private function updateMemberTypes(&$memberTypes, $vals, $eid) {
     foreach ($memberTypes->types as $typeCode => $type) {
       foreach ($vals[$typeCode]['type'] as $fieldName => $val) {
-        $memberTypes->types[$typeCode]->$fieldName = $val;
+        // Handle text_format fields (description).
+        if ($fieldName === 'description' && is_array($val)) {
+          $memberTypes->types[$typeCode]->description = $val['value'];
+          $memberTypes->types[$typeCode]->descriptionFormat = $val['format'];
+        }
+        else {
+          $memberTypes->types[$typeCode]->$fieldName = $val;
+        }
       }
       foreach ($vals[$typeCode]['days']['daysTable'] as $dayRef => $dayVals) {
         if ($dayVals['enable']) {

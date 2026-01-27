@@ -147,3 +147,14 @@ function conreg_page_attachments(&$variables) {
     $variables['#attached']['library'][] = 'conreg/icon';
   }
 }
+
+/**
+ * Implements hook_theme().
+ */
+function conreg_theme() {
+  return [
+    'member_type_cards' => [
+      'render element' => 'element',
+    ],
+  ];
+}

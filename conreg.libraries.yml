@@ -7,6 +7,7 @@ conreg_form:
     js/conreg.js: {}
   dependencies:
     - core/jquery
+    - core/once
 
 conreg_field_options:
   version: 1.x
