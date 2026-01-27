@@ -1,0 +1,73 @@
+{#
+/**
+ * @file
+ * Theme template for member type card selection element.
+ *
+ * Displays membership types as styled cards with title, description, and price.
+ *
+ * Available variables:
+ * - element: The form element containing radio options.
+ * - attributes: HTML attributes for the containing element.
+ * - children: The rendered radio buttons.
+ */
+#}
+{% set classes = [
+  'member-type-cards',
+  'js-form-item',
+  'form-item',
+  'js-form-type-member-type-cards',
+  'form-type-member-type-cards',
+  element['#required'] ? 'required',
+] %}
+{% set current_value = element['#value'] is defined ? element['#value'] : element['#default_value'] %}
+{% set label_id = element['#id'] ~ '-label' %}
+
+<div{{ attributes.addClass(classes) }} role="radiogroup" aria-labelledby="{{ label_id }}">
+  {% if element['#title'] %}
+    <div id="{{ label_id }}" class="member-type-cards__title form-item__label{% if element['#required'] %} form-required{% endif %}">
+      {{ element['#title'] }}
+    </div>
+  {% endif %}
+
+  <div class="member-type-cards__options">
+    {% for key, child in element %}
+      {% if key matches '/^[^#]/' and child['#type'] is defined and child['#type'] == 'radio' %}
+        {% set is_selected = current_value is not empty and (child['#return_value'] ~ '') == (current_value ~ '') %}
+        {% set is_disabled = child['#card_disabled'] is defined and child['#card_disabled'] %}
+        {% set is_tabbable = (element['#tabbable_key'] ~ '') == (child['#return_value'] ~ '') %}
+        {% set name_id = child['#id'] ~ '-name' %}
+        <div class="member-type-card{% if is_selected %} member-type-card--selected{% endif %}{% if is_disabled %} member-type-card--disabled{% endif %}" data-card-value="{{ child['#return_value'] }}" role="radio" aria-checked="{{ is_selected ? 'true' : 'false' }}" aria-labelledby="{{ name_id }}"{% if child['#card_description'] %} aria-describedby="{{ child['#card_description_id'] }}"{% endif %}{% if is_disabled %} aria-disabled="true"{% endif %} tabindex="{{ is_disabled ? '-1' : (is_tabbable ? '0' : '-1') }}">
+          <div class="member-type-card__radio">
+            {{ child }}
+          </div>
+          <div class="member-type-card__content">
+            <span id="{{ name_id }}" class="member-type-card__name">
+              {{- child['#title'] -}}
+              {%- if is_disabled %}
+                <span class="member-type-card__disabled-message">{{ 'Not available for Member 1'|t }}</span>
+              {%- endif %}
+            </span>
+            {% if child['#card_price'] is not empty or child['#card_price'] == 0 %}
+              <span class="member-type-card__price">
+                {%- if child['#card_price'] == 0 or child['#card_price'] == '0' -%}
+                  {{ 'Free'|t }}
+                {%- else -%}
+                  {{ child['#currency_symbol'] }}{{ child['#card_price'] }}
+                {%- endif -%}
+              </span>
+            {% endif %}
+            {% if child['#card_description'] %}
+              <span id="{{ child['#card_description_id'] }}" class="member-type-card__description">{{ child['#card_description'] }}</span>
+            {% endif %}
+          </div>
+        </div>
+      {% endif %}
+    {% endfor %}
+  </div>
+
+  {% if element['#errors'] %}
+    <div class="member-type-cards__error form-item--error-message">
+      {{ element['#errors'] }}
+    </div>
+  {% endif %}
+</div>

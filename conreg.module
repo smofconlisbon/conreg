@@ -185,3 +185,14 @@ function conreg_user_login(UserInterface $account) {
     }
   }
 }
+
+/**
+ * Implements hook_theme().
+ */
+function conreg_theme() {
+  return [
+    'member_type_cards' => [
+      'render element' => 'element',
+    ],
+  ];
+}

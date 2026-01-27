@@ -404,11 +404,22 @@ class Registration extends FormBase {
       if ($config->get('payments.show_remaining') ?? FALSE) {
         $tags[] = 'event:' . $eid . ':remaining';
       }
+      $isFirstMember = empty($return) && empty($lead_mid) && $cnt == 1;
+      // Show all public options, but track which are disabled for first member.
+      $disabledOptions = [];
+      if ($isFirstMember) {
+        $disabledOptions = array_diff_key($types->publicOptions, $types->firstOptions);
+      }
+      // Filter member types to only include public ones.
+      $filteredTypes = array_intersect_key($types->types, $types->publicOptions);
       $form['members']['member' . $cnt]['type'] = [
-        '#type' => 'select',
+        '#type' => 'member_type_cards',
         '#title' => $curMemberClass->fields->membership_type,
         '#description' => $curMemberClass->fields->membership_type_description,
-        '#options' => ((empty($return) && empty($lead_mid) && $cnt == 1) ? $types->firstOptions : $types->publicOptions),
+        '#options' => $types->publicOptions,
+        '#disabled_options' => $disabledOptions,
+        '#member_types' => $filteredTypes,
+        '#currency_symbol' => $symbol,
         '#required' => TRUE,
         '#attributes' => ['class' => ['edit-member-type']],
         '#ajax' => [

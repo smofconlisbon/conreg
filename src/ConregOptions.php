@@ -268,9 +268,9 @@ class ConregOptions {
         // If limited number for type, calculate number left.
         $numberForType = isset($numberOfMembers[$typeCode]) && $numberOfMembers[$typeCode] ? $numberOfMembers[$typeCode] : 0;
         $numberRemaining = $typeVals['number_allowed'] - $numberForType;
-        $displayDescription = t('%description (%number remaining)', [
-          '%description' => $type->description,
-          '%number' => $numberRemaining,
+        $displayName = t('%name (%number remaining)', [
+          '%name' => $type->name,
+          '%number' => $numberRemaining
         ]);
         if ($numberRemaining <= 0) {
           $soldOut = TRUE;
@@ -278,20 +278,20 @@ class ConregOptions {
         $type->remaining = $numberRemaining;
       }
       else {
-        // No number limit so just show description.
-        $displayDescription = $type->description;
+        // No number limit so just show name.
+        $displayName = $type->name;
       }
       $memberTypes->types[$typeCode] = $type;
       // If duplicates allowed for type, set in array for front end.
       $memberTypes->allowDuplicates[$typeCode] = $type->allowDuplicates ?? FALSE;
       if ($type->active && $type->allowFirst && !$soldOut) {
-        $memberTypes->firstOptions[$typeCode] = $displayDescription;
+        $memberTypes->firstOptions[$typeCode] = $displayName;
       }
       if ($type->active && !$soldOut) {
-        $memberTypes->publicOptions[$typeCode] = $displayDescription;
+        $memberTypes->publicOptions[$typeCode] = $displayName;
         $memberTypes->publicNames[$typeCode] = $type->name;
       }
-      $memberTypes->privateOptions[$typeCode] = $displayDescription;
+      $memberTypes->privateOptions[$typeCode] = $displayName;
     }
     $tags = ['event:' . $eid . ':type'];
     if ($showRemaining) {
