@@ -5,8 +5,6 @@ namespace Drupal\conreg\Plugin\Mail;
 use Drupal\Core\Mail\MailFormatHelper;
 use Drupal\Core\Mail\MailInterface;
 use Drupal\Core\Site\Settings;
-use Psr\Http\Message\RequestInterface;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\Mime\Header\UnstructuredHeader;
 
 // cspell:ignore windir
@@ -21,23 +19,6 @@ use Symfony\Component\Mime\Header\UnstructuredHeader;
  * )
  */
 final class SimpleConregPhpMail implements MailInterface {
-
-  /**
-   * Constructor for mail plugin.
-   *
-   * @param \Psr\Http\Message\RequestInterface $request
-   *   The HTTP request.
-   */
-  public function __construct(
-    protected RequestInterface $request,
-  ) {}
-
-  /**
-   * {@inheritdoc}
-   */
-  public static function create(ContainerInterface $container) {
-    return new static($container->get('request'));
-  }
 
   /**
    * Concatenates and wraps the email body for plain-text mails.
@@ -71,6 +52,8 @@ final class SimpleConregPhpMail implements MailInterface {
    * @see \Drupal\Core\Mail\MailManagerInterface::mail()
    */
   public function mail(array $message) {
+    $request = \Drupal::request();
+
     // If 'Return-Path' isn't already set in php.ini, we pass it separately
     // as an additional parameter instead of in the header.
     if (isset($message['headers']['Return-Path'])) {
@@ -99,7 +82,7 @@ final class SimpleConregPhpMail implements MailInterface {
     // We suppress warnings and notices from mail() because of issues on some
     // hosts. The return value of this method will still indicate whether mail
     // was sent successfully.
-    if (!$this->request->server->has('WINDIR') && strpos($this->request->server->get('SERVER_SOFTWARE'), 'Win32') === FALSE) {
+    if (!$request->server->has('WINDIR') && strpos($request->server->get('SERVER_SOFTWARE') ?? '', 'Win32') === FALSE) {
       // On most non-Windows systems, the "-f" option to the sendmail command
       // is used to set the Return-Path. There is no space between -f and
       // the value of the return path.
