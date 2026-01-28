@@ -9,7 +9,7 @@ use Drupal\conreg\Service\MemberStorage;
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Datetime\DateHelper;
-use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
  * Controller for Simple Convention Registration.
@@ -21,12 +21,12 @@ class ConregController extends ControllerBase {
    *
    * @param \Drupal\conreg\Service\MemberStorage $memberStorage
    *   The member storage service.
-   * @param \Symfony\Component\HttpFoundation\Request $request
-   *   The HTTP request.
+   * @param \Symfony\Component\HttpFoundation\RequestStack $requestStack
+   *   The request stack.
    */
   public function __construct(
     protected MemberStorage $memberStorage,
-    protected Request $request,
+    protected RequestStack $requestStack,
   ) {}
 
   /**
@@ -59,7 +59,7 @@ class ConregController extends ControllerBase {
     $showCountries = $config->get('member_listing_page.show_countries') ?? TRUE;
     $showSummary = $config->get('member_listing_page.show_summary') ?? TRUE;
 
-    switch ($this->request->query->get('sort') ?? '') {
+    switch ($this->requestStack->getCurrentRequest()->query->get('sort') ?? '') {
       case 'desc':
         $direction = 'DESC';
         break;
@@ -68,7 +68,7 @@ class ConregController extends ControllerBase {
         $direction = 'ASC';
         break;
     }
-    switch ($this->request->query->get('order') ?? '') {
+    switch ($this->requestStack->getCurrentRequest()->query->get('order') ?? '') {
       case 'Name':
         $order = 'name';
         break;
@@ -593,7 +593,7 @@ class ConregController extends ControllerBase {
     ];
 
     $pageOptions = [];
-    switch ($this->request->query->get('sort') ?? '') {
+    switch ($this->requestStack->getCurrentRequest()->query->get('sort') ?? '') {
       case 'desc':
         $direction = 'DESC';
         $pageOptions['sort'] = 'desc';
@@ -603,7 +603,7 @@ class ConregController extends ControllerBase {
         $direction = 'ASC';
         break;
     }
-    switch ($this->request->query->get('order') ?? '') {
+    switch ($this->requestStack->getCurrentRequest()->query->get('order') ?? '') {
       case 'MID':
         $order = 'm.mid';
         $pageOptions['order'] = 'MID';
