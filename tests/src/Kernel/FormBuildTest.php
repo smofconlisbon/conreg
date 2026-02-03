@@ -534,4 +534,47 @@ class FormBuildTest extends KernelTestBase {
     $this->assertEquals('conreg_admin_member_email', $form['#form_id']);
   }
 
+  /**
+   * Set up form for the test case.
+   */
+  protected function createBulkEmailConfig(int $eid = 1): void {
+    $config = $this->container
+      ->get('config.factory')
+      ->getEditable('conreg.settings.' . $eid);
+
+    $config->set('bulk_email.from_name', 'Admin');
+    $config->set('bulk_email.from_email', 'admin@example.com');
+    $config->set('bulk_email.template_subject', 'Bulk email subject');
+    $config->set('bulk_email.template_body', 'Body');
+    $config->set('bulk_email.template_format', 'basic_html');
+    $config->save();
+  }
+
+  /**
+   * Test Bulk Email form.
+   */
+  public function testAdminBulkEmailFormBuild(): void {
+    $this->createTestMember();
+    $this->createBulkEmailConfig();
+
+    $route = $this->container
+      ->get('router.route_provider')
+      ->getRouteByName('conreg_admin_bulk_email');
+
+    $this->assertInstanceOf(Route::class, $route);
+
+    $this->assertEquals(
+    'Membership Bulk Email Sender',
+    $route->getDefault('_title')
+    );
+
+    $form = $this->container
+      ->get('form_builder')
+      ->getForm($route->getDefault('_form'), 1);
+
+    $this->assertIsArray($form);
+    $this->assertArrayHasKey('#form_id', $form);
+    $this->assertEquals('conreg_admin_bulk_email', $form['#form_id']);
+  }
+
 }

@@ -125,9 +125,11 @@ class FieldOptions {
 
     // Get the list of options, and put titles in an array.
     $optionTitles = [];
-    foreach (explode("\n", $config->get('conreg_options.options')) as $optionLine) {
-      [$optid, , $optionTitle] = explode('|', $optionLine);
-      $optionTitles[$optid] = $optionTitle;
+    foreach (explode("\n", trim($config->get('conreg_options.options') ?? '')) as $optionLine) {
+      if ($optionLine) {
+        [$optid, , $optionTitle] = explode('|', trim($optionLine));
+        $optionTitles[$optid] = $optionTitle;
+      }
     }
     return $optionTitles;
   }

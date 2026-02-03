@@ -395,6 +395,25 @@ conreg.settings.*:
         options:
           type: text
           label: 'The options withing an option group'
+    bulk_email:
+      type: mapping
+      label: 'Bulk email settings'
+      mapping:
+        from_name:
+          type: text
+          label: 'The name of the sender'
+        from_email:
+          type: text
+          label: 'The email address of the sender'
+        template_subject:
+          type: text
+          label: 'The subject of the bulk email'
+        template_body:
+          type: text
+          label: 'The body text of the bulk email'
+        template_format:
+          type: text
+          label: 'The text format of the bulk email body'
 
 conreg.email_templates:
   type: config_object

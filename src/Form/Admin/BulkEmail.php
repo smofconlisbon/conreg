@@ -1,7 +1,10 @@
 <?php
 
-namespace Drupal\conreg;
+namespace Drupal\conreg\Form\Admin;
 
+use Drupal\conreg\ConregTokens;
+use Drupal\conreg\ConregOptions;
+use Drupal\conreg\FieldOptions;
 use Drupal\conreg\Service\MemberStorage;
 use Drupal\Core\DependencyInjection\AutowireTrait;
 use Drupal\Core\Form\FormBase;
@@ -10,7 +13,7 @@ use Drupal\Core\Form\FormStateInterface;
 /**
  * Simple form to add an entry, with all the interesting fields.
  */
-class SimpleConregAdminBulkEmail extends FormBase {
+class BulkEmail extends FormBase {
 
   use AutowireTrait;
 
@@ -28,7 +31,7 @@ class SimpleConregAdminBulkEmail extends FormBase {
    * {@inheritdoc}
    */
   public function getFormId() {
-    return 'conreg_admin_member_email';
+    return 'conreg_admin_bulk_email';
   }
 
   /**

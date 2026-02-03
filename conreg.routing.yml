@@ -364,7 +364,7 @@ conreg_admin_bulk_email:
   path: 'admin/members/bulk-email/{eid}'
   defaults:
     _title: 'Membership Bulk Email Sender'
-    _form: '\Drupal\conreg\SimpleConregAdminBulkEmail'
+    _form: '\Drupal\conreg\Form\Admin\BulkEmail'
     eid: 1
   requirements:
     _permission: 'bulk email sending'
