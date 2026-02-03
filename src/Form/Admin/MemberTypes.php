@@ -3,7 +3,7 @@
 namespace Drupal\conreg\Form\Admin;
 
 use Drupal\Component\Utility\Html;
-use Drupal\conreg\EventStorage;
+use Drupal\conreg\Service\EventStorage;
 use Drupal\conreg\ConregOptions;
 use Drupal\conreg\ConregTokens;
 use Drupal\Core\Cache\CacheTagsInvalidator;
@@ -24,10 +24,13 @@ class MemberTypes extends ConfigFormBase {
    *
    * @param \Drupal\Core\Cache\CacheTagsInvalidator $cacheInvalidator
    *   The cache invalidator.
+   * @param \Drupal\conreg\Service\EventStorage $eventStorage
+   *   The event storage service.
    */
   public function __construct(
     #[Autowire('cache_tags.invalidator')]
     protected CacheTagsInvalidator $cacheInvalidator,
+    protected EventStorage $eventStorage,
   ) {}
 
   /**
@@ -54,7 +57,7 @@ class MemberTypes extends ConfigFormBase {
     $form_state->set('eid', $eid);
 
     // Fetch event name from Event table.
-    if (count($event = EventStorage::load(['eid' => $eid])) < 3) {
+    if (count($event = $this->eventStorage->load(['eid' => $eid])) < 3) {
       // Event not in database. Display error.
       $form['conreg_event'] = [
         '#markup' => $this->t('Event not found. Please contact site admin.'),

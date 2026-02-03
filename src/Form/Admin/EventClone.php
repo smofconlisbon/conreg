@@ -2,7 +2,8 @@
 
 namespace Drupal\conreg\Form\Admin;
 
-use Drupal\conreg\EventStorage;
+use Drupal\conreg\Service\EventStorage;
+use Drupal\Core\DependencyInjection\AutowireTrait;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 
@@ -10,6 +11,18 @@ use Drupal\Core\Form\FormStateInterface;
  * Clone a ConReg event.
  */
 class EventClone extends FormBase {
+
+  use AutowireTrait;
+
+  /**
+   * Constructs the EventAddOns form.
+   *
+   * @param \Drupal\conreg\Service\EventStorage $eventStorage
+   *   The event storage service.
+   */
+  public function __construct(
+    protected EventStorage $eventStorage,
+  ) {}
 
   /**
    * {@inheritdoc}
@@ -57,7 +70,7 @@ class EventClone extends FormBase {
       'event_name' => $vals['event_name'],
       'is_open' => 1,
     ];
-    $newEid = EventStorage::insert($event);
+    $newEid = $this->eventStorage->insert($event);
     // Load source event configuration, then save as new event's configuration.
     $oldConfig = $this->config('conreg.settings.' . $oldEid);
     $newConfig = $this->configFactory()->getEditable('conreg.settings.' . $newEid);

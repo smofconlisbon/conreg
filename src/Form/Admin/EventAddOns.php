@@ -2,8 +2,9 @@
 
 namespace Drupal\conreg\Form\Admin;
 
-use Drupal\conreg\EventStorage;
+use Drupal\conreg\Service\EventStorage;
 use Drupal\conreg\ConregConfig;
+use Drupal\Core\DependencyInjection\AutowireTrait;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 
@@ -11,6 +12,18 @@ use Drupal\Core\Form\FormStateInterface;
  * Configure conreg settings for this site.
  */
 class EventAddOns extends ConfigFormBase {
+
+  use AutowireTrait;
+
+  /**
+   * Constructs the EventAddOns form.
+   *
+   * @param \Drupal\conreg\Service\EventStorage $eventStorage
+   *   The event storage service.
+   */
+  public function __construct(
+    protected EventStorage $eventStorage,
+  ) {}
 
   /**
    * {@inheritdoc}
@@ -36,7 +49,7 @@ class EventAddOns extends ConfigFormBase {
     $form_state->set('eid', $eid);
 
     // Fetch event name from Event table.
-    if (count($event = EventStorage::load(['eid' => $eid])) < 3) {
+    if (count($event = $this->eventStorage->load(['eid' => $eid])) < 3) {
       // Event not in database. Display error.
       $form['conreg_event'] = [
         '#markup' => $this->t('Event not found. Please contact site admin.'),

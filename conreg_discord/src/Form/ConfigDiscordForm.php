@@ -3,10 +3,10 @@
 namespace Drupal\conreg_discord\Form;
 
 use Drupal\conreg\ConregConfig;
-use Drupal\conreg\EventStorage;
 use Drupal\conreg\ConregTokens;
 use Drupal\conreg\ConregOptions;
 use Drupal\conreg\Member;
+use Drupal\conreg\Service\EventStorage;
 use Drupal\conreg_discord\Discord;
 use Drupal\Core\Config\ImmutableConfig;
 use Drupal\Core\Database\Connection;
@@ -45,7 +45,7 @@ class ConfigDiscordForm extends ConfigFormBase {
   private $memberTypes;
 
   /**
-   * Construct the form.
+   * Constructs the form.
    *
    * @param \Drupal\Core\Database\Connection $connection
    *   The database connection.
@@ -53,11 +53,14 @@ class ConfigDiscordForm extends ConfigFormBase {
    *   The mail manager service.
    * @param \Drupal\Core\Language\LanguageManagerInterface $languageManager
    *   The language manager service.
+   * @param \Drupal\conreg\Service\EventStorage $eventStorage
+   *   The event storage service.
    */
   public function __construct(
     protected Connection $connection,
     protected MailManagerInterface $mailManager,
     protected LanguageManagerInterface $languageManager,
+    protected EventStorage $eventStorage,
   ) {}
 
   /**
@@ -84,7 +87,7 @@ class ConfigDiscordForm extends ConfigFormBase {
     $form_state->set('eid', $eid);
 
     // Fetch event name from Event table.
-    if (count($event = EventStorage::load(['eid' => $eid])) < 3) {
+    if (count($event = $this->eventStorage->load(['eid' => $eid])) < 3) {
       // Event not in database. Display error.
       $form['conreg_event'] = [
         '#markup' => $this->t('Event not found. Please contact site admin.'),

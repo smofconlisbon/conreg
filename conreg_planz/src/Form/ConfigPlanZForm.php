@@ -7,8 +7,9 @@ use Drupal\conreg_planz\PlanZ;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\conreg\FieldOptions;
-use Drupal\conreg\EventStorage;
+use Drupal\conreg\Service\EventStorage;
 use Drupal\conreg\ConregTokens;
+use Drupal\Core\DependencyInjection\AutowireTrait;
 
 // cspell:ignore badgeid permroleid permrolename
 
@@ -17,12 +18,24 @@ use Drupal\conreg\ConregTokens;
  */
 class ConfigPlanZForm extends ConfigFormBase {
 
+  use AutowireTrait;
+
   /**
    * PlanZ configuration helper/service.
    *
    * @var \Drupal\conreg_planz\PlanZ
    */
   private PlanZ $planz;
+
+  /**
+   * Constructs the PlanZ config form.
+   *
+   * @param \Drupal\conreg\Service\EventStorage $eventStorage
+   *   The event storage service.
+   */
+  public function __construct(
+    protected EventStorage $eventStorage,
+  ) {}
 
   /**
    * {@inheritdoc}
@@ -48,7 +61,7 @@ class ConfigPlanZForm extends ConfigFormBase {
     $form_state->set('eid', $eid);
 
     // Fetch event name from Event table.
-    if (count($event = EventStorage::load(['eid' => $eid])) < 3) {
+    if (count($event = $this->eventStorage->load(['eid' => $eid])) < 3) {
       // Event not in database. Display error.
       $form['conreg_event'] = [
         '#markup' => $this->t('Event not found. Please contact site admin.'),

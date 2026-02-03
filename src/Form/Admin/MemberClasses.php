@@ -6,8 +6,8 @@ use Drupal\Core\Cache\CacheTagsInvalidator;
 use Drupal\Core\DependencyInjection\AutowireTrait;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\conreg\EventStorage;
 use Drupal\conreg\ConregOptions;
+use Drupal\conreg\Service\EventStorage;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
 /**
@@ -22,10 +22,13 @@ class MemberClasses extends ConfigFormBase {
    *
    * @param \Drupal\Core\Cache\CacheTagsInvalidator $cacheInvalidator
    *   The cache invalidator.
+   * @param \Drupal\conreg\Service\EventStorage $eventStorage
+   *   The event storage service.
    */
   public function __construct(
     #[Autowire('cache_tags.invalidator')]
     protected CacheTagsInvalidator $cacheInvalidator,
+    protected EventStorage $eventStorage,
   ) {}
 
   /**
@@ -52,7 +55,7 @@ class MemberClasses extends ConfigFormBase {
     $form_state->set('eid', $eid);
 
     // Fetch event name from Event table.
-    if (count($event = EventStorage::load(['eid' => $eid])) < 3) {
+    if (count($event = $this->eventStorage->load(['eid' => $eid])) < 3) {
       // Event not in database. Display error.
       $form['conreg_event'] = [
         '#markup' => $this->t('Event not found. Please contact site admin.'),

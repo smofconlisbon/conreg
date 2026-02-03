@@ -7,10 +7,10 @@
 
 use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\conreg\EventStorage;
-use Drupal\conreg\ConregOptions;
 use Drupal\conreg\ConregEmailer;
 use Drupal\conreg\ConregConfig;
+use Drupal\conreg\ConregOptions;
+use Drupal\conreg\Service\EventStorage;
 
 /**
  * Implements hook_help().
@@ -49,8 +49,10 @@ function conreg_form_alter(&$form, FormStateInterface $form_state, $form_id) {
     case "simplenews_newsletter_add_form":
       // Get the newsletter ID from the form.
       $newsletter_id = $form['id']['#default_value'];
+      /** @var \Drupal\conreg\Service\EventStorage $event_storage */
+      $event_storage = \Drupal::service(EventStorage::class);
       // Get the list of active events.
-      $events = EventStorage::loadAll(['is_open' => 1]);
+      $events = $event_storage->loadAll(['is_open' => 1]);
       foreach ($events as $event) {
         $eid = $event['eid'];
         $config = ConregConfig::getConfig($eid);
@@ -95,8 +97,10 @@ function conreg_simplenews_form_submit($form, FormStateInterface $form_state) {
   $subscription_manager = \Drupal::service('simplenews.subscription_manager');
 
   $newsletter_id = $form_values['id'];
+  /** @var \Drupal\conreg\Service\EventStorage $event_storage */
+  $event_storage = \Drupal::service(EventStorage::class);
   // Get the list of active events.
-  $events = EventStorage::loadAll(['is_open' => 1]);
+  $events = $event_storage->loadAll(['is_open' => 1]);
   foreach ($events as $event) {
     $eid = $event['eid'];
     $config = \Drupal::getContainer()->get('config.factory')->getEditable('conreg.settings.' . $eid);

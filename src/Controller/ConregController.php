@@ -4,7 +4,7 @@ namespace Drupal\conreg\Controller;
 
 use Drupal\conreg\ConregConfig;
 use Drupal\conreg\ConregOptions;
-use Drupal\conreg\EventStorage;
+use Drupal\conreg\Service\EventStorage;
 use Drupal\conreg\Service\MemberStorage;
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Controller\ControllerBase;
@@ -23,10 +23,13 @@ class ConregController extends ControllerBase {
    *   The member storage service.
    * @param \Symfony\Component\HttpFoundation\Request $request
    *   The HTTP request.
+   * @param \Drupal\conreg\Service\EventStorage $eventStorage
+   *   The event storage service.
    */
   public function __construct(
     protected MemberStorage $memberStorage,
     protected Request $request,
+    protected EventStorage $eventStorage,
   ) {}
 
   /**
@@ -745,7 +748,7 @@ class ConregController extends ControllerBase {
    * Render a summary convention members in the database.
    */
   public function memberAdminMemberSummary($eid) {
-    $event = EventStorage::load(['eid' => $eid]);
+    $event = $this->eventStorage->load(['eid' => $eid]);
     $content = [
       '#title' => $this->t('@event_name Member Summary', ['@event_name' => $event['event_name']]),
       '#cache' => [

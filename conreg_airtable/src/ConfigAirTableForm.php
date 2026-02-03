@@ -3,8 +3,8 @@
 namespace Drupal\conreg_airtable;
 
 use Drupal\conreg\ConregConfig;
-use Drupal\conreg\EventStorage;
 use Drupal\conreg\FieldOptions;
+use Drupal\conreg\Service\EventStorage;
 use Drupal\Core\Database\Connection;
 use Drupal\Core\DependencyInjection\AutowireTrait;
 use Drupal\Core\Form\ConfigFormBase;
@@ -22,9 +22,12 @@ class ConfigAirTableForm extends ConfigFormBase {
    *
    * @param \Drupal\Core\Database\Connection $connection
    *   The database connection.
+   * @param \Drupal\conreg\Service\EventStorage $eventStorage
+   *   The event storage service.
    */
   public function __construct(
     protected Connection $connection,
+    protected EventStorage $eventStorage,
   ) {}
 
   /**
@@ -51,7 +54,7 @@ class ConfigAirTableForm extends ConfigFormBase {
     $form_state->set('eid', $eid);
 
     // Fetch event name from Event table.
-    if (count($event = EventStorage::load(['eid' => $eid])) < 3) {
+    if (count($event = $this->eventStorage->load(['eid' => $eid])) < 3) {
       // Event not in database. Display error.
       $form['conreg_event'] = [
         '#markup' => $this->t('Event not found. Please contact site admin.'),

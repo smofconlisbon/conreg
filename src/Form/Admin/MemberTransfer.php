@@ -3,7 +3,7 @@
 namespace Drupal\conreg\Form\Admin;
 
 use Drupal\conreg\ConregOptions;
-use Drupal\conreg\EventStorage;
+use Drupal\conreg\Service\EventStorage;
 use Drupal\conreg\Service\MemberStorage;
 use Drupal\Core\DependencyInjection\AutowireTrait;
 use Drupal\Core\Form\FormBase;
@@ -24,10 +24,13 @@ class MemberTransfer extends FormBase {
    *   The member storage service.
    * @param \Drupal\Core\TempStore\PrivateTempStoreFactory $tempStoreFactory
    *   Private user storage area.
+   * @param \Drupal\conreg\Service\EventStorage $eventStorage
+   *   The event storage service.
    */
   final public function __construct(
     protected MemberStorage $memberStorage,
     protected PrivateTempStoreFactory $tempStoreFactory,
+    protected EventStorage $eventStorage,
   ) {}
 
   /**
@@ -73,7 +76,7 @@ class MemberTransfer extends FormBase {
 
     // Load list of events.
     $options = [];
-    $events = EventStorage::eventOptions();
+    $events = $this->eventStorage->eventOptions();
     foreach ($events as $event) {
       $options[$event['eid']] = $event['event_name'];
     }

@@ -4,7 +4,7 @@ namespace Drupal\conreg\Form;
 
 use Drupal\conreg\Addons;
 use Drupal\conreg\ConregOptions;
-use Drupal\conreg\EventStorage;
+use Drupal\conreg\Service\EventStorage;
 use Drupal\conreg\Member;
 use Drupal\conreg\Payment;
 use Drupal\conreg\PaymentStorage;
@@ -42,7 +42,7 @@ class Checkout extends FormBase {
   /**
    * Constructs a new Checkout form.
    *
-   * @param \Drupal\conreg\MemberStorage $memberStorage
+   * @param \Drupal\conreg\Service\MemberStorage $memberStorage
    *   The member storage service.
    * @param \Drupal\Core\Mail\MailManagerInterface $mailManager
    *   The mail manager.
@@ -50,12 +50,15 @@ class Checkout extends FormBase {
    *   The language manager.
    * @param \Drupal\conreg\Service\StripeServiceInterface $stripeService
    *   The Stripe service.
+   * @param \Drupal\conreg\Service\EventStorage $eventStorage
+   *   The event storage service.
    */
   public function __construct(
     protected MemberStorage $memberStorage,
     protected MailManagerInterface $mailManager,
     protected LanguageManagerInterface $languageManager,
     protected StripeServiceInterface $stripeService,
+    protected EventStorage $eventStorage,
   ) {}
 
   /**
@@ -207,7 +210,7 @@ class Checkout extends FormBase {
    * Display.
    */
   public function showThankYouPage($form, $eid, $config, $payment) {
-    $event = EventStorage::load(['eid' => $eid]);
+    $event = $this->eventStorage->load(['eid' => $eid]);
     $find = ['[reference]', '[event_name]'];
     $replace = [$payment->paymentRef, $event['event_name']];
 

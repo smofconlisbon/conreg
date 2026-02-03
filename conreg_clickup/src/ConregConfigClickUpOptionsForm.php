@@ -3,8 +3,8 @@
 namespace Drupal\conreg_clickup;
 
 use Drupal\conreg\ConregConfig;
-use Drupal\conreg\EventStorage;
 use Drupal\conreg\FieldOptions;
+use Drupal\conreg\Service\EventStorage;
 use Drupal\conreg\Service\MemberStorage;
 use Drupal\Core\DependencyInjection\AutowireTrait;
 use Drupal\Core\Form\ConfigFormBase;
@@ -18,13 +18,16 @@ class ConregConfigClickUpOptionsForm extends ConfigFormBase {
   use AutowireTrait;
 
   /**
-   * Construct the form.
+   * Constructs the form.
    *
    * @param \Drupal\conreg\Service\MemberStorage $memberStorage
    *   The member storage service.
+   * @param \Drupal\conreg\Service\EventStorage $eventStorage
+   *   The event storage service.
    */
   public function __construct(
     protected MemberStorage $memberStorage,
+    protected EventStorage $eventStorage,
   ) {}
 
   /**
@@ -51,7 +54,7 @@ class ConregConfigClickUpOptionsForm extends ConfigFormBase {
     $form_state->set('eid', $eid);
 
     // Fetch event name from Event table.
-    if (count($event = EventStorage::load(['eid' => $eid])) < 3) {
+    if (count($event = $this->eventStorage->load(['eid' => $eid])) < 3) {
       // Event not in database. Display error.
       $form['conreg_event'] = [
         '#markup' => $this->t('Event not found. Please contact site admin.'),

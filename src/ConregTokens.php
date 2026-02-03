@@ -6,6 +6,7 @@ use Drupal\Core\Config\ImmutableConfig;
 use Drupal\Core\Url;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
+use Drupal\conreg\Service\EventStorage;
 
 /**
  * Class for replacing tokens in email messages.
@@ -104,7 +105,7 @@ class ConregTokens {
     $this->mid = $mid;
 
     $this->html = [];
-    $this->event = EventStorage::load(['eid' => $eid]);
+    $this->event = \Drupal::service(EventStorage::class)->load(['eid' => $eid]);
     $this->config = ConregConfig::getConfig($eid);
     $this->symbol = $this->config->get('payments.symbol');
 

@@ -2,8 +2,8 @@
 
 namespace Drupal\conreg\Form\Admin;
 
-use Drupal\conreg\EventStorage;
 use Drupal\conreg\ConregTokens;
+use Drupal\conreg\Service\EventStorage;
 use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Cache\CacheTagsInvalidatorInterface;
 use Drupal\Core\DependencyInjection\AutowireTrait;
@@ -31,6 +31,8 @@ class EventConfig extends ConfigFormBase {
    *   The cache invalidator.
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager
    *   The entity type manager.
+   * @param \Drupal\conreg\Service\EventStorage $eventStorage
+   *   The event storage service.
    */
   public function __construct(
     protected CacheTagsInvalidatorInterface $cacheInvalidator,
@@ -38,6 +40,7 @@ class EventConfig extends ConfigFormBase {
     protected CacheBackendInterface $cacheDefault,
     protected LanguageManagerInterface $languageManager,
     protected EntityTypeManagerInterface $entityTypeManager,
+    protected EventStorage $eventStorage,
   ) {}
 
   /**
@@ -64,7 +67,7 @@ class EventConfig extends ConfigFormBase {
     $form_state->set('eid', $eid);
 
     // Fetch event name from Event table.
-    if (count($event = EventStorage::load(['eid' => $eid])) < 3) {
+    if (count($event = $this->eventStorage->load(['eid' => $eid])) < 3) {
       // Event not in database. Display error.
       $form['conreg_event'] = [
         '#markup' => $this->t('Event not found. Please contact site admin.'),
@@ -687,7 +690,7 @@ class EventConfig extends ConfigFormBase {
       'event_name' => trim($vals['conreg_event']['event_name']),
       'is_open' => $vals['conreg_event']['open'],
     ];
-    EventStorage::update($event);
+    $this->eventStorage->update($event);
 
     $config = $this->configFactory()->getEditable('conreg.settings.' . $eid);
     $config->set('closed_message_text', $vals['conreg_event']['closed_message']['value']);

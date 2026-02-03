@@ -13,3 +13,8 @@ services:
     class: Drupal\conreg\Service\MemberStorage
     autowire: true
   Drupal\conreg\Service\MemberStorage: '@conreg.member.storage'
+
+  conreg.event.storage:
+    class: Drupal\conreg\Service\EventStorage
+    autowire: true
+  Drupal\conreg\Service\EventStorage: '@conreg.event.storage'

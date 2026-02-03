@@ -2,7 +2,8 @@
 
 namespace Drupal\conreg\Form\Admin;
 
-use Drupal\conreg\EventStorage;
+use Drupal\conreg\Service\EventStorage;
+use Drupal\Core\DependencyInjection\AutowireTrait;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Component\Utility\Html;
@@ -12,6 +13,18 @@ use Drupal\Core\Url;
  * Configure conreg settings for this site.
  */
 class EventList extends ConfigFormBase {
+
+  use AutowireTrait;
+
+  /**
+   * Constructs the EventAddOns form.
+   *
+   * @param \Drupal\conreg\Service\EventStorage $eventStorage
+   *   The event storage service.
+   */
+  public function __construct(
+    protected EventStorage $eventStorage,
+  ) {}
 
   /**
    * {@inheritdoc}
@@ -33,7 +46,7 @@ class EventList extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
-    $events = EventStorage::loadAll();
+    $events = $this->eventStorage->loadAll();
 
     $headers = [
       'event_name' => [

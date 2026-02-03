@@ -7,11 +7,11 @@ use Drupal\conreg\Addons;
 use Drupal\conreg\ConregConfig;
 use Drupal\conreg\Service\CountryServiceInterface;
 use Drupal\conreg\ConregOptions;
-use Drupal\conreg\EventStorage;
 use Drupal\conreg\FieldOptions;
 use Drupal\conreg\Member;
 use Drupal\conreg\Payment;
 use Drupal\conreg\PaymentLine;
+use Drupal\conreg\Service\EventStorage;
 use Drupal\Core\DependencyInjection\AutowireTrait;
 use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\HtmlCommand;
@@ -44,6 +44,8 @@ class Registration extends FormBase {
    *   The country service.
    * @param \Drupal\Core\Extension\ModuleHandlerInterface $moduleHandler
    *   The module handler service.
+   * @param \Drupal\conreg\Service\EventStorage $eventStorage
+   *   The event storage service.
    */
   final public function __construct(
     protected AccountProxyInterface $currentUser,
@@ -51,6 +53,7 @@ class Registration extends FormBase {
     protected EmailValidatorInterface $emailValidator,
     protected CountryServiceInterface $countryService,
     protected ModuleHandlerInterface $moduleHandler,
+    protected EventStorage $eventStorage,
   ) {}
 
   /**
@@ -73,7 +76,7 @@ class Registration extends FormBase {
     $memberPrices = [];
 
     // Fetch event name from Event table.
-    $event = EventStorage::load(['eid' => $eid]);
+    $event = $this->eventStorage->load(['eid' => $eid]);
     if (!$event || count($event) < 3) {
       // Event not in database. Display error.
       $form['conreg_event'] = [
@@ -1001,7 +1004,7 @@ class Registration extends FormBase {
    */
   public function submitForm(array &$form, FormStateInterface $form_state): void {
     $eid = $form_state->get('eid');
-    $event = EventStorage::load(['eid' => $eid]);
+    $event = $this->eventStorage->load(['eid' => $eid]);
     $return = $form_state->get('return');
     $memberClasses = ConregOptions::memberClasses($eid, $config);
 

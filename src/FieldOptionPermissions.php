@@ -2,6 +2,8 @@
 
 namespace Drupal\conreg;
 
+use Drupal\conreg\Service\EventStorage;
+
 /**
  * List options for Simple Convention Registration.
  */
@@ -21,7 +23,7 @@ class FieldOptionPermissions {
   public static function permissions() {
     $permissions = [];
 
-    $events = EventStorage::eventOptions();
+    $events = \Drupal::service(EventStorage::class)->eventOptions();
     foreach ($events as $event) {
       $fieldOptions = FieldOptions::getFieldOptions($event['eid']);
       foreach ($fieldOptions->getFieldOptionList() as $option) {

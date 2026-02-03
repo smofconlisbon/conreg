@@ -14,7 +14,7 @@ use Drupal\Core\Cache\Cache;
 use Drupal\Core\Render\RendererInterface;
 use Drupal\Core\TempStore\PrivateTempStoreFactory;
 use Drupal\conreg\ConregOptions;
-use Drupal\conreg\EventStorage;
+use Drupal\conreg\Service\EventStorage;
 
 /**
  * Simple form to add an entry, with all the interesting fields.
@@ -32,11 +32,14 @@ class LookupMemberForm extends FormBase {
    *   The database connection.
    * @param \Drupal\Core\TempStore\PrivateTempStoreFactory $privateTempStoreFactory
    *   The store for private data.
+   * @param \Drupal\conreg\Service\EventStorage $eventStorage
+   *   The event storage service.
    */
   public function __construct(
     protected RendererInterface $renderer,
     protected Connection $database,
     protected PrivateTempStoreFactory $privateTempStoreFactory,
+    protected EventStorage $eventStorage,
   ) {}
 
   /**
@@ -52,7 +55,7 @@ class LookupMemberForm extends FormBase {
   public function buildForm(array $form, FormStateInterface $form_state, $eid = 1) {
     // Store Event ID in form state.
     $form_state->set('eid', $eid);
-    $event = EventStorage::load(['eid' => $eid]);
+    $event = $this->eventStorage->load(['eid' => $eid]);
 
     // Get any existing form values for use in AJAX validation.
     $form_values = $form_state->getValues();

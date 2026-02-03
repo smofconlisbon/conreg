@@ -3,7 +3,7 @@
 namespace Drupal\conreg\Form;
 
 use Drupal\conreg\ConregConfig;
-use Drupal\conreg\EventStorage;
+use Drupal\conreg\Service\EventStorage;
 use Drupal\conreg\Service\MemberStorage;
 use Drupal\Core\DependencyInjection\AutowireTrait;
 use Drupal\Core\Form\FormBase;
@@ -27,11 +27,14 @@ class CheckMember extends FormBase {
    *   The mail manager service.
    * @param \Drupal\Core\Language\LanguageManagerInterface $languageManager
    *   The language manager service.
+   * @param \Drupal\conreg\Service\EventStorage $eventStorage
+   *   The event storage service.
    */
   public function __construct(
     protected MemberStorage $memberStorage,
     protected MailManagerInterface $mailManager,
     protected LanguageManagerInterface $languageManager,
+    protected EventStorage $eventStorage,
   ) {}
 
   /**
@@ -49,7 +52,7 @@ class CheckMember extends FormBase {
     $form_state->set('eid', $eid);
 
     // Fetch event name from Event table.
-    if (count(EventStorage::load(['eid' => $eid])) < 3) {
+    if (count($this->eventStorage->load(['eid' => $eid])) < 3) {
       // Event not in database. Display error.
       $form['conreg_event'] = [
         '#markup' => $this->t('Event not found. Please contact site admin.'),

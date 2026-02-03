@@ -3,9 +3,9 @@
 namespace Drupal\conreg_planz\Plugin\Derivative;
 
 use Drupal\Component\Plugin\Derivative\DeriverBase;
+use Drupal\conreg\Service\EventStorage;
 use Drupal\Core\Plugin\Discovery\ContainerDeriverInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
-use Drupal\conreg\EventStorage;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -16,15 +16,20 @@ final class PlanZMenuDeriver extends DeriverBase implements ContainerDeriverInte
   use StringTranslationTrait;
 
   /**
-   * {@inheritdoc}
+   * Constructs a new PlanZMenuDeriver.
+   *
+   * @param \Drupal\conreg\Service\EventStorage $eventStorage
+   *   The event storage service.
    */
-  public function __construct() {}
+  public function __construct(protected EventStorage $eventStorage) {}
 
   /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container, $base_plugin_id) {
-    return new static();
+    return new static(
+      $container->get(EventStorage::class)
+    );
   }
 
   /**
@@ -33,7 +38,7 @@ final class PlanZMenuDeriver extends DeriverBase implements ContainerDeriverInte
   public function getDerivativeDefinitions($base_plugin_definition) {
     $links = [];
 
-    $events = EventStorage::loadAll();
+    $events = $this->eventStorage->loadAll();
     foreach ($events as $event) {
       $eid = $event['eid'];
       $links["conreg_planz_admin_$eid"] = [

@@ -4,8 +4,8 @@ namespace Drupal\conreg_badges\Plugin\Derivative;
 
 use Drupal\Component\Plugin\Derivative\DeriverBase;
 use Drupal\Core\Plugin\Discovery\ContainerDeriverInterface;
+use Drupal\conreg\Service\EventStorage;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
-use Drupal\conreg\EventStorage;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -16,15 +16,20 @@ final class BadgesMenuDeriver extends DeriverBase implements ContainerDeriverInt
   use StringTranslationTrait;
 
   /**
-   * {@inheritdoc}
+   * Constructs the BadgesMenuDeriver.
+   *
+   * @param \Drupal\conreg\Service\EventStorage $eventStorage
+   *   The event storage service.
    */
-  public function __construct() {}
+  public function __construct(protected EventStorage $eventStorage) {}
 
   /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container, $base_plugin_id) {
-    return new static();
+    return new static(
+      $container->get(EventStorage::class)
+    );
   }
 
   /**
@@ -33,11 +38,12 @@ final class BadgesMenuDeriver extends DeriverBase implements ContainerDeriverInt
   public function getDerivativeDefinitions($base_plugin_definition) {
     $links = [];
 
-    $events = EventStorage::loadAll();
+    $events = $this->eventStorage->loadAll();
     foreach ($events as $event) {
       $eid = $event['eid'];
+
       $links["conreg_badges_$eid"] = [
-        'title' => $this->t("Badge export"),
+        'title' => $this->t('Badge export'),
         'route_name' => 'conreg_badges_list',
         'route_parameters' => ['eid' => $eid],
         'parent' => "conreg.event_links:conreg_event_$eid",
@@ -45,7 +51,7 @@ final class BadgesMenuDeriver extends DeriverBase implements ContainerDeriverInt
       ] + $base_plugin_definition;
 
       $links["conreg_badge_print_$eid"] = [
-        'title' => $this->t("Badge printing"),
+        'title' => $this->t('Badge printing'),
         'route_name' => 'conreg_badges_print',
         'route_parameters' => ['eid' => $eid],
         'parent' => "conreg.event_links:conreg_event_$eid",

@@ -4,8 +4,8 @@ namespace Drupal\conreg\Form\Admin;
 
 use Drupal\Component\Utility\Html;
 use Drupal\conreg\ConregOptions;
-use Drupal\conreg\EventStorage;
 use Drupal\conreg\Member;
+use Drupal\conreg\Service\EventStorage;
 use Drupal\conreg\Service\MemberStorage;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
@@ -32,7 +32,7 @@ class AdminMembers extends FormBase {
   /**
    * Constructs a new EmailExampleGetFormPage.
    *
-   * @param \Drupal\conreg\MemberStorage $memberStorage
+   * @param \Drupal\conreg\Service\MemberStorage $memberStorage
    *   The member storage service.
    * @param \Drupal\Core\Datetime\DateFormatter $dateFormatter
    *   The date formatter.
@@ -42,6 +42,8 @@ class AdminMembers extends FormBase {
    *   The Drupal renderer.
    * @param \Drupal\Core\Cache\CacheTagsInvalidator $cacheTagInvalidator
    *   The cache tag invalidator service.
+   * @param \Drupal\conreg\Service\EventStorage $eventStorage
+   *   The event storage service.
    */
   public function __construct(
     protected MemberStorage $memberStorage,
@@ -50,6 +52,7 @@ class AdminMembers extends FormBase {
     protected RendererInterface $renderer,
     #[Autowire('cache_tags.invalidator')]
     protected CacheTagsInvalidator $cacheTagInvalidator,
+    protected EventStorage $eventStorage,
   ) {}
 
   /**
@@ -65,7 +68,7 @@ class AdminMembers extends FormBase {
   public function buildForm(array $form, FormStateInterface $form_state, $eid = 1, $display = NULL, $page = NULL) {
     // Store Event ID in form state.
     $form_state->set('eid', $eid);
-    $event = EventStorage::load(['eid' => $eid]);
+    $event = $this->eventStorage->load(['eid' => $eid]);
 
     // Get any existing form values for use in AJAX validation.
     $form_values = $form_state->getValues();

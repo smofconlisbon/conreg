@@ -3,9 +3,9 @@
 namespace Drupal\conreg\Plugin\Derivative;
 
 use Drupal\Component\Plugin\Derivative\DeriverBase;
+use Drupal\conreg\Service\EventStorage;
 use Drupal\Core\Plugin\Discovery\ContainerDeriverInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
-use Drupal\conreg\EventStorage;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -16,15 +16,19 @@ final class EventsMenuDeriver extends DeriverBase implements ContainerDeriverInt
   use StringTranslationTrait;
 
   /**
-   * {@inheritdoc}
+   * Constructs a new EventsMenuDeriver.
    */
-  public function __construct() {}
+  public function __construct(
+    protected EventStorage $eventStorage,
+  ) {}
 
   /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container, $base_plugin_id) {
-    return new static();
+    return new static(
+      $container->get(EventStorage::class),
+    );
   }
 
   /**
@@ -34,10 +38,12 @@ final class EventsMenuDeriver extends DeriverBase implements ContainerDeriverInt
     $links = [];
 
     $weight = -1;
-    $events = EventStorage::loadAll();
+    $events = $this->eventStorage->loadAll();
+
     foreach ($events as $event) {
       $eid = $event['eid'];
       $parent_id = "conreg_event_$eid";
+
       $links[$parent_id] = [
         'title' => $event['event_name'],
         'route_name' => 'conreg_admin_member_summary',
@@ -47,7 +53,7 @@ final class EventsMenuDeriver extends DeriverBase implements ContainerDeriverInt
       ] + $base_plugin_definition;
 
       $links["conreg_summary_$eid"] = [
-        'title' => $this->t("Member summary"),
+        'title' => $this->t('Member summary'),
         'route_name' => 'conreg_admin_member_summary',
         'route_parameters' => ['eid' => $eid],
         'parent' => $base_plugin_definition['id'] . ':' . $parent_id,
@@ -55,7 +61,7 @@ final class EventsMenuDeriver extends DeriverBase implements ContainerDeriverInt
       ] + $base_plugin_definition;
 
       $links["conreg_admin_$eid"] = [
-        'title' => $this->t("Administer members"),
+        'title' => $this->t('Administer members'),
         'route_name' => 'conreg_admin_members',
         'route_parameters' => ['eid' => $eid],
         'parent' => $base_plugin_definition['id'] . ':' . $parent_id,
@@ -63,7 +69,7 @@ final class EventsMenuDeriver extends DeriverBase implements ContainerDeriverInt
       ] + $base_plugin_definition;
 
       $links["conreg_details_$eid"] = [
-        'title' => $this->t("List all member details"),
+        'title' => $this->t('List all member details'),
         'route_name' => 'conreg_admin_member_list',
         'route_parameters' => ['eid' => $eid],
         'parent' => $base_plugin_definition['id'] . ':' . $parent_id,
@@ -71,7 +77,7 @@ final class EventsMenuDeriver extends DeriverBase implements ContainerDeriverInt
       ] + $base_plugin_definition;
 
       $links["conreg_email_list_$eid"] = [
-        'title' => $this->t("Export email mailing list"),
+        'title' => $this->t('Export email mailing list'),
         'route_name' => 'conreg_admin_mailout_emails',
         'route_parameters' => ['eid' => $eid],
         'parent' => $base_plugin_definition['id'] . ':' . $parent_id,
@@ -79,7 +85,7 @@ final class EventsMenuDeriver extends DeriverBase implements ContainerDeriverInt
       ] + $base_plugin_definition;
 
       $links["conreg_options_$eid"] = [
-        'title' => $this->t("Selected options"),
+        'title' => $this->t('Selected options'),
         'route_name' => 'conreg_admin_member_options',
         'route_parameters' => ['eid' => $eid],
         'parent' => $base_plugin_definition['id'] . ':' . $parent_id,
@@ -87,7 +93,7 @@ final class EventsMenuDeriver extends DeriverBase implements ContainerDeriverInt
       ] + $base_plugin_definition;
 
       $links["conreg_addons_$eid"] = [
-        'title' => $this->t("Add-ons"),
+        'title' => $this->t('Add-ons'),
         'route_name' => 'conreg_admin_member_addons',
         'route_parameters' => ['eid' => $eid],
         'parent' => $base_plugin_definition['id'] . ':' . $parent_id,
@@ -95,7 +101,7 @@ final class EventsMenuDeriver extends DeriverBase implements ContainerDeriverInt
       ] + $base_plugin_definition;
 
       $links["conreg_children_$eid"] = [
-        'title' => $this->t("Child members"),
+        'title' => $this->t('Child members'),
         'route_name' => 'conreg_admin_child_member_ages',
         'route_parameters' => ['eid' => $eid],
         'parent' => $base_plugin_definition['id'] . ':' . $parent_id,
@@ -103,7 +109,7 @@ final class EventsMenuDeriver extends DeriverBase implements ContainerDeriverInt
       ] + $base_plugin_definition;
 
       $links["conreg_fantable_$eid"] = [
-        'title' => $this->t("Fan table registration"),
+        'title' => $this->t('Fan table registration'),
         'route_name' => 'conreg_admin_fantable',
         'route_parameters' => ['eid' => $eid],
         'parent' => $base_plugin_definition['id'] . ':' . $parent_id,
@@ -111,7 +117,7 @@ final class EventsMenuDeriver extends DeriverBase implements ContainerDeriverInt
       ] + $base_plugin_definition;
 
       $links["conreg_checkin_$eid"] = [
-        'title' => $this->t("Check-in"),
+        'title' => $this->t('Check-in'),
         'route_name' => 'conreg_admin_checkin',
         'route_parameters' => ['eid' => $eid],
         'parent' => $base_plugin_definition['id'] . ':' . $parent_id,
@@ -119,7 +125,7 @@ final class EventsMenuDeriver extends DeriverBase implements ContainerDeriverInt
       ] + $base_plugin_definition;
 
       $links["conreg_bulk_email_$eid"] = [
-        'title' => $this->t("Bulk email sending"),
+        'title' => $this->t('Bulk email sending'),
         'route_name' => 'conreg_admin_bulk_email',
         'route_parameters' => ['eid' => $eid],
         'parent' => $base_plugin_definition['id'] . ':' . $parent_id,
@@ -127,7 +133,7 @@ final class EventsMenuDeriver extends DeriverBase implements ContainerDeriverInt
       ] + $base_plugin_definition;
 
       $links["conreg_config_$eid"] = [
-        'title' => $this->t("Configure registration"),
+        'title' => $this->t('Configure registration'),
         'route_name' => 'conreg_config',
         'route_parameters' => ['eid' => $eid],
         'parent' => $base_plugin_definition['id'] . ':' . $parent_id,

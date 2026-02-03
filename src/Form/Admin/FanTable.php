@@ -6,10 +6,10 @@ use Drupal\Component\Utility\Html;
 use Drupal\conreg\Addons;
 use Drupal\conreg\ConregConfig;
 use Drupal\conreg\ConregOptions;
-use Drupal\conreg\EventStorage;
 use Drupal\conreg\Member;
 use Drupal\conreg\Payment;
 use Drupal\conreg\PaymentLine;
+use Drupal\conreg\Service\EventStorage;
 use Drupal\conreg\Service\MemberStorage;
 use Drupal\conreg\Upgrade;
 use Drupal\conreg\UpgradeManager;
@@ -29,17 +29,20 @@ class FanTable extends FormBase {
   /**
    * Constructs a new EmailExampleGetFormPage.
    *
-   * @param \Drupal\conreg\MemberStorage $memberStorage
+   * @param \Drupal\conreg\Service\MemberStorage $memberStorage
    *   The member storage service.
    * @param \Drupal\Core\Mail\MailManagerInterface $mailManager
    *   The mail manager.
    * @param \Drupal\Core\Language\LanguageManagerInterface $languageManager
    *   The language manager.
+   * @param \Drupal\conreg\Service\EventStorage $eventStorage
+   *   The event storage service.
    */
   public function __construct(
     protected MemberStorage $memberStorage,
     protected MailManagerInterface $mailManager,
     protected LanguageManagerInterface $languageManager,
+    protected EventStorage $eventStorage,
   ) {}
 
   /**
@@ -55,7 +58,7 @@ class FanTable extends FormBase {
   public function buildForm(array $form, FormStateInterface $form_state, $eid = 1, $lead_mid = 0) {
     // Store Event ID in form state.
     $form_state->set('eid', $eid);
-    $event = EventStorage::load(['eid' => $eid]);
+    $event = $this->eventStorage->load(['eid' => $eid]);
 
     // Get any existing form values for use in AJAX validation.
     $form_values = $form_state->getValues();
@@ -458,7 +461,7 @@ class FanTable extends FormBase {
    * Add payment lines for each member being paid for.
    */
   private function addMembersToPayment($eid, $form_values, Payment &$payment): array {
-    $event = EventStorage::load(['eid' => $eid]);
+    $event = $this->eventStorage->load(['eid' => $eid]);
     $config = ConregConfig::getConfig($eid);
 
     // Check for any unpaid members to add to payment.
