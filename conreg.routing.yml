@@ -249,7 +249,7 @@ conreg_admin_mailout_emails:
   path: 'admin/members/mailout/{eid}'
   defaults:
     _title: 'Member Mailout Emails'
-    _form: '\Drupal\conreg\SimpleConregAdminMailoutEmails'
+    _form: '\Drupal\conreg\Form\Admin\MailoutEmails'
     eid: 1
     option: 0
     export: FALSE
@@ -261,7 +261,7 @@ conreg_admin_mailout_emails_export:
   path: "admin/members/mailout_export/{eid}/{methods}/{languages}/{fields}"
   defaults:
     _title: "Exporting Member Mailout Emails"
-    _form: '\Drupal\conreg\SimpleConregAdminMailoutEmails'
+    _form: '\Drupal\conreg\Form\Admin\MailoutEmails'
     eid: 1
     option: 0
     export: TRUE

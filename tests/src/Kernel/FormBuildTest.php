@@ -577,4 +577,31 @@ class FormBuildTest extends KernelTestBase {
     $this->assertEquals('conreg_admin_bulk_email', $form['#form_id']);
   }
 
+  /**
+   * Test building Member Mailout Emails form.
+   */
+  public function testAdminMailoutEmailsFormBuild(): void {
+    // Mailout form depends on members existing.
+    $this->createTestMember();
+
+    $route = $this->container
+      ->get('router.route_provider')
+      ->getRouteByName('conreg_admin_mailout_emails');
+
+    $this->assertInstanceOf(Route::class, $route);
+
+    $this->assertEquals(
+      'Member Mailout Emails',
+      $route->getDefault('_title')
+    );
+
+    $form = $this->container
+      ->get('form_builder')
+      ->getForm($route->getDefault('_form'), 1);
+
+    $this->assertIsArray($form);
+    $this->assertArrayHasKey('#form_id', $form);
+    $this->assertEquals('conreg_admin_mailout_emails', $form['#form_id']);
+  }
+
 }

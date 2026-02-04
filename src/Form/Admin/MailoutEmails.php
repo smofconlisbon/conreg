@@ -1,8 +1,9 @@
 <?php
 
-namespace Drupal\conreg;
+namespace Drupal\conreg\Form\Admin;
 
 use Drupal\Component\Utility\Html;
+use Drupal\conreg\ConregOptions;
 use Drupal\conreg\Service\MemberStorage;
 use Drupal\Core\DependencyInjection\AutowireTrait;
 use Drupal\Core\Form\FormBase;
@@ -15,7 +16,7 @@ use Symfony\Component\HttpFoundation\Response;
 /**
  * Simple form to add an entry, with all the interesting fields.
  */
-class SimpleConregAdminMailoutEmails extends FormBase {
+class MailoutEmails extends FormBase {
 
   use AutowireTrait;
 
@@ -35,7 +36,7 @@ class SimpleConregAdminMailoutEmails extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function getFormId() {
+  public function getFormId(): string {
     return 'conreg_admin_mailout_emails';
   }
 
@@ -153,7 +154,10 @@ class SimpleConregAdminMailoutEmails extends FormBase {
       }
       $headers['email'] = ['data' => $this->t('Email'), 'field' => 'm.email'];
       if ($showMethod) {
-        $headers['communication_method'] = ['data' => t('Communication method'), 'field' => 'm.communication_method'];
+        $headers['communication_method'] = [
+          'data' => $this->t('Communication method'),
+          'field' => 'm.communication_method',
+        ];
       }
       if ($showLanguage) {
         $headers['language'] = ['data' => $this->t('Language'), 'field' => 'm.language'];
@@ -163,7 +167,7 @@ class SimpleConregAdminMailoutEmails extends FormBase {
         '#type' => 'table',
         '#header' => $headers,
         '#attributes' => ['id' => 'simple-conreg-admin-member-list'],
-        '#empty' => t('No entries available.'),
+        '#empty' => $this->t('No entries available.'),
         '#sticky' => TRUE,
       ];
 
@@ -269,10 +273,10 @@ class SimpleConregAdminMailoutEmails extends FormBase {
     }
     $headerCells[] = $this->t('Email');
     if ($showMethod) {
-      $headerCells[] = t('Communication method');
+      $headerCells[] = $this->t('Communication method');
     }
     if ($showLanguage) {
-      $headerCells[] = t('Language');
+      $headerCells[] = $this->t('Language');
     }
     $headerRow = implode(',', $headerCells);
 
