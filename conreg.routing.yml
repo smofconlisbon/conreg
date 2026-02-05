@@ -236,8 +236,8 @@ conreg_admin_member_options:
 conreg_admin_member_addons:
   path: 'admin/members/addons/{eid}/{addon}'
   defaults:
-    _title: 'Member Options'
-    _form: '\Drupal\conreg\SimpleConregAdminMemberAddOns'
+    _title: 'Member Addons'
+    _form: '\Drupal\conreg\Form\Admin\MemberAddOns'
     eid: 1
     addon: 0
   requirements:

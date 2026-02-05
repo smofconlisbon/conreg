@@ -1,19 +1,20 @@
 <?php
 
-namespace Drupal\conreg;
+namespace Drupal\conreg\Form\Admin;
 
+use Drupal\conreg\AddonStorage;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 
 /**
  * Simple form to add an entry, with all the interesting fields.
  */
-class SimpleConregAdminMemberAddOns extends FormBase {
+class MemberAddOns extends FormBase {
 
   /**
    * {@inheritdoc}
    */
-  public function getFormId() {
+  public function getFormId(): string {
     return 'conreg_admin_member_options';
   }
 
@@ -103,13 +104,13 @@ class SimpleConregAdminMemberAddOns extends FormBase {
       $rows[] = array_map('Drupal\Component\Utility\Html::escape', (array) $entry);
     }
 
-    $rows[] = ['', '', '', '', t('Total'), '', '', number_format($total, 2), ''];
+    $rows[] = ['', '', '', '', $this->t('Total'), '', '', number_format($total, 2), ''];
 
     $form['table'] = [
       '#type' => 'table',
       '#header' => $headers,
       '#rows' => $rows,
-      '#empty' => t('No entries available.'),
+      '#empty' => $this->t('No entries available.'),
       '#sticky' => TRUE,
     ];
     // Don't cache this page.

@@ -604,4 +604,28 @@ class FormBuildTest extends KernelTestBase {
     $this->assertEquals('conreg_admin_mailout_emails', $form['#form_id']);
   }
 
+  /**
+   * Test building Member Add-ons form.
+   */
+  public function testAdminMemberAddOnsFormBuild(): void {
+    $route = $this->container
+      ->get('router.route_provider')
+      ->getRouteByName('conreg_admin_member_addons');
+
+    $this->assertInstanceOf(Route::class, $route);
+
+    $this->assertEquals(
+      'Member Addons',
+      $route->getDefault('_title')
+    );
+
+    $form = $this->container
+      ->get('form_builder')
+      ->getForm($route->getDefault('_form'), 1);
+
+    $this->assertIsArray($form);
+    $this->assertArrayHasKey('#form_id', $form);
+    $this->assertEquals('conreg_admin_member_options', $form['#form_id']);
+  }
+
 }
