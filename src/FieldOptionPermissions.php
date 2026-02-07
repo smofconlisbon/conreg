@@ -26,7 +26,7 @@ class FieldOptionPermissions {
       $fieldOptions = FieldOptions::getFieldOptions($event['eid']);
       foreach ($fieldOptions->getFieldOptionList() as $option) {
         $permissions += [
-          'view field option ' . $option['optid'] . ' event ' . $event['eid'] => [
+          'view field option ' . $option['option_id'] . ' event ' . $event['eid'] => [
             'title' => t('View data for field option %option for event %event',
             [
               '%option' => $option['option_title'],
