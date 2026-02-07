@@ -70,7 +70,7 @@ class LoginController extends ControllerBase {
 
     // If user doesn't exist, create new user.
     if (!$user) {
-      $language = $this->languageManager->getCurrentLanguage()->getId();
+      $language = $this->language_manager->getCurrentLanguage()->getId();
       $user = User::create([
         'name' => $member['email'],
         'mail' => $member['email'],
