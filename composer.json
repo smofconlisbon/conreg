@@ -1,5 +1,5 @@
 {
-  "name": "drupal/simple-conreg",
+  "name": "drupal/conreg",
   "type": "drupal-module",
   "description": "Allows a simple convention registration form.",
   "license": "GPL-2.0+",
