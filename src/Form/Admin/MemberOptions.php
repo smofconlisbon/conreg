@@ -51,7 +51,7 @@ class MemberOptions extends FormBase {
     $optionTitles = [];
     $groupAdded = FALSE;
     foreach ($groupList as $val) {
-      if (empty($val['optid'])) {
+      if (empty($val['option_id'])) {
         // Optid not set, so entry is group heading.
         $groupAdded = FALSE;
         $groupId = $val['group_id'];
@@ -60,14 +60,14 @@ class MemberOptions extends FormBase {
       }
       else {
         // Entry is option.
-        if ($this->currentUser()->hasPermission('view field option ' . $val['optid'] . ' event ' . $eid)) {
+        if ($this->currentUser()->hasPermission('view field option ' . $val['option_id'] . ' event ' . $eid)) {
           // Only display if user has permission to see option.
           if (!$groupAdded) {
             $options[$groupId] = $groupTitle;
             $groupAdded = TRUE;
           }
-          $options[$groupId . "_" . $val['optid']] = " - " . $val['option_title'];
-          $optionTitles[$val['optid']] = $val['option_title'];
+          $options[$groupId . "_" . $val['option_id']] = " - " . $val['option_title'];
+          $optionTitles[$val['option_id']] = $val['option_title'];
         }
       }
     }
@@ -188,7 +188,7 @@ class MemberOptions extends FormBase {
       // Group heading selected.
       $selOption = [];
       foreach ($groupList as $groupOption) {
-        if ($groupOption['group_id'] == $selGroup && !empty($groupOption['option_id']) && $this->currentUser()->hasPermission('view field option ' . $groupOption['optid'] . ' event ' . $eid)) {
+        if ($groupOption['group_id'] == $selGroup && !empty($groupOption['option_id']) && $this->currentUser()->hasPermission('view field option ' . $groupOption['option_id'] . ' event ' . $eid)) {
           $selOption[] = $groupOption['option_id'];
           $displayOpts[] = $groupOption['option_id'];
           $headers['option_' . $groupOption['option_id']] = [
