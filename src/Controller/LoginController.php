@@ -6,9 +6,8 @@ use Drupal\Component\Datetime\TimeInterface;
 use Drupal\conreg\ConregConfig;
 use Drupal\conreg\Service\MemberStorage;
 use Drupal\Core\Controller\ControllerBase;
-use Drupal\Core\Language\LanguageManagerInterface;
-use Drupal\Core\Url;
 use Drupal\user\Entity\User;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 
 /**
  * Returns responses for ConReg - Simple Convention Registration routes.
@@ -22,19 +21,16 @@ class LoginController extends ControllerBase {
    *   The member storage service.
    * @param \Drupal\Component\Datetime\TimeInterface $time
    *   The time service.
-   * @param \Drupal\Core\Language\LanguageManagerInterface $language_manager
-   *   The language manager.
    */
   public function __construct(
     protected MemberStorage $memberStorage,
     protected TimeInterface $time,
-    protected LanguageManagerInterface $language_manager,
   ) {}
 
   /**
    * Check valid member credentials, login and redirect to member portal.
    */
-  public function memberLoginAndRedirect($mid, $key, $expiry) {
+  public function memberLoginAndRedirect($mid, $key, $expiry): array|RedirectResponse {
 
     // Check member credentials valid.
     $member = $this->memberStorage->load([
@@ -45,7 +41,9 @@ class LoginController extends ControllerBase {
     ]);
     if (empty($member['mid'])) {
       $content['markup'] = [
-        '#markup' => '<p>Invalid credentials.</p>',
+        '#markup' => $this->t('Invalid credentials.'),
+        '#prefix' => '<p>',
+        '#suffix' => '</p>',
       ];
       return $content;
     }
@@ -53,7 +51,9 @@ class LoginController extends ControllerBase {
     // Check if login has expired.
     if (empty($member['login_exp_date'] > $this->time->getRequestTime())) {
       $content['markup'] = [
-        '#markup' => '<p>Login has expired. Please use Member Check to generate a new login link.</p>',
+        '#markup' => $this->t('Login has expired. Please use Member Check to generate a new login link.'),
+        '#prefix' => '<p>',
+        '#suffix' => '</p>',
       ];
       return $content;
     }
@@ -70,7 +70,7 @@ class LoginController extends ControllerBase {
 
     // If user doesn't exist, create new user.
     if (!$user) {
-      $language = $this->languageManager->getCurrentLanguage()->getId();
+      $language = $this->languageManager()->getCurrentLanguage()->getId();
       $user = User::create([
         'name' => $member['email'],
         'mail' => $member['email'],
@@ -102,27 +102,7 @@ class LoginController extends ControllerBase {
     // Login user.
     user_login_finalize($user);
 
-    // Redirecting at the same time as login was causing trouble, so after
-    // loading, load JS to reload page. Redirect will happen on reload. As
-    // fallback, display link to member portal.
-    $url_object = Url::fromRoute('conreg_portal', [
-      'eid' => $member['eid'],
-    ], [
-      'absolute' => TRUE,
-      'query' => ['redirect' => 'redirect'],
-    ]);
-    $output = [
-      // '#attached' => [
-      // 'library' => ['conreg/conreg_login'],
-      // ],
-      '#title' => $this->t('Welcome @name!', ['@name' => $member['first_name']]),
-      'link' => [
-        '#type' => 'link',
-        '#url' => $url_object,
-        '#title' => $this->t('Enter Member Portal'),
-      ],
-    ];
-    return $output;
+    return $this->redirect('conreg_portal', ['eid' => $member['eid']], ['absolute' => TRUE]);
   }
 
 }
