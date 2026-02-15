@@ -60,7 +60,7 @@ class EventList extends ConfigFormBase {
     $form['table'] = [
       '#type' => 'table',
       '#header' => $headers,
-      '#attributes' => ['id' => 'simple-conreg-admin-event-list'],
+      '#attributes' => ['id' => 'conreg-admin-event-list'],
       '#empty' => $this->t('No entries available.'),
       '#sticky' => TRUE,
     ];

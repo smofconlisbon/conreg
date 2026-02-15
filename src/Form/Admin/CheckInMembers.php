@@ -188,7 +188,7 @@ class CheckInMembers extends FormBase {
     $form['table'] = [
       '#type' => 'table',
       '#header' => $headers,
-      '#attributes' => ['id' => 'simple-conreg-admin-member-list'],
+      '#attributes' => ['id' => 'conreg-admin-member-list'],
       '#empty' => $this->t('No entries available.'),
       '#sticky' => TRUE,
     ];
@@ -298,7 +298,7 @@ class CheckInMembers extends FormBase {
     $form['unpaid'] = [
       '#type' => 'table',
       '#header' => $headers,
-      '#attributes' => ['id' => 'simple-conreg-admin-member-list'],
+      '#attributes' => ['id' => 'conreg-admin-member-list'],
       '#empty' => $this->t('No entries available.'),
       '#sticky' => TRUE,
     ];
@@ -800,7 +800,7 @@ class CheckInMembers extends FormBase {
         $this->memberStorage->update($entry);
       }
     }
-    Cache::invalidateTags(['simple-conreg-member-list']);
+    Cache::invalidateTags(['conreg-member-list']);
   }
 
   /**

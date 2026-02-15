@@ -106,7 +106,7 @@ class ConregController extends ControllerBase {
     }
 
     $content['message'] = [
-      '#cache' => ['tags' => ['simple-conreg-member-list'], '#max-age' => 600],
+      '#cache' => ['tags' => ['conreg-member-list'], '#max-age' => 600],
       '#markup' => $this->t("Members' public details are listed below."),
     ];
 

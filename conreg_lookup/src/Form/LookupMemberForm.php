@@ -148,7 +148,7 @@ class LookupMemberForm extends FormBase {
     $form['table'] = [
       '#type' => 'table',
       '#header' => $headers,
-      '#attributes' => ['id' => 'simple-conreg-admin-member-list'],
+      '#attributes' => ['id' => 'conreg-admin-member-list'],
       '#empty' => $this->t('No entries available.'),
       '#sticky' => TRUE,
     ];
@@ -252,7 +252,7 @@ class LookupMemberForm extends FormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    Cache::invalidateTags(['simple-conreg-member-list']);
+    Cache::invalidateTags(['conreg-member-list']);
   }
 
   /**

@@ -252,7 +252,7 @@ class AdminMembers extends FormBase {
     $form['table'] = [
       '#type' => 'table',
       '#header' => $headers,
-      '#attributes' => ['id' => 'simple-conreg-admin-member-list'],
+      '#attributes' => ['id' => 'conreg-admin-member-list'],
       '#empty' => $this->t('No entries available.'),
       '#sticky' => TRUE,
     ];
@@ -492,7 +492,7 @@ class AdminMembers extends FormBase {
         $member->saveMember();
       }
     }
-    $this->cacheTagInvalidator->invalidateTags(['simple-conreg-member-list']);
+    $this->cacheTagInvalidator->invalidateTags(['conreg-member-list']);
   }
 
 }

@@ -80,7 +80,7 @@ class MemberPortal extends FormBase {
       $form['table'] = [
         '#type' => 'table',
         '#header' => $headers,
-        '#attributes' => ['id' => 'simple-conreg-admin-member-list'],
+        '#attributes' => ['id' => 'conreg-admin-member-list'],
         '#empty' => $this->t('No entries available.'),
         '#sticky' => TRUE,
       ];
@@ -167,7 +167,7 @@ class MemberPortal extends FormBase {
     $unpaid = [
       '#type' => 'table',
       '#header' => $headers,
-      '#attributes' => ['id' => 'simple-conreg-admin-member-list'],
+      '#attributes' => ['id' => 'conreg-admin-member-list'],
       '#empty' => $this->t('No entries available.'),
       '#sticky' => TRUE,
     ];

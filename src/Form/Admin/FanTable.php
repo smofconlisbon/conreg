@@ -139,7 +139,7 @@ class FanTable extends FormBase {
     $form['search']['table'] = [
       '#type' => 'table',
       '#header' => $headers,
-      '#attributes' => ['id' => 'simple-conreg-admin-member-list'],
+      '#attributes' => ['id' => 'conreg-admin-member-list'],
       '#empty' => t('No entries available.'),
       '#sticky' => TRUE,
     ];
@@ -234,7 +234,7 @@ class FanTable extends FormBase {
     $form['unpaid']['unpaid'] = [
       '#type' => 'table',
       '#header' => $headers,
-      '#attributes' => ['id' => 'simple-conreg-admin-member-list'],
+      '#attributes' => ['id' => 'conreg-admin-member-list'],
       '#empty' => t('No entries available.'),
       '#sticky' => TRUE,
     ];
