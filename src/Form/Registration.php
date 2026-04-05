@@ -320,6 +320,10 @@ class Registration extends FormBase {
       ];
 
       if ($first_user_email && $cnt == 1) {
+        // If user logged in, never cache form.
+        $form['#cache']['max-age'] = 0;
+
+        // Display email of logged in user.
         $form['members']['member' . $cnt]['email'] = [
           '#type' => 'hidden',
           '#value' => $first_user_email,
