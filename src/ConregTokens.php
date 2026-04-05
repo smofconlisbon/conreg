@@ -472,7 +472,7 @@ class ConregTokens {
           $this->plainDisplay .= $addOnFree . ":\t" . $addon->amount . "\n";
         }
         if (!empty($addon->amount)) {
-          $addOnPrice = $this->t("@addon price", ['@addon' => $addOnName]);
+          $addOnPrice = $this->t("@addon price", ['@addon' => $addon->label]);
           $this->display .= '<tr><td>' . $addOnPrice . '</td><td>' . $addon->amount . '</td></tr>';
           $this->plainDisplay .= $addOnPrice . ":\t" . $addon->amount . "\n";
         }
