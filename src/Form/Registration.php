@@ -176,6 +176,7 @@ class Registration extends FormBase {
       '#tree' => TRUE,
       '#cache' => [
         'tags' => ['event:' . $eid . ':registration'],
+        'contexts' => ['user'],
         'max-age' => Cache::PERMANENT,
       ],
       '#prefix' => '<div id="regform">',
