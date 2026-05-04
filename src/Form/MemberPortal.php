@@ -2,10 +2,10 @@
 
 namespace Drupal\conreg\Form;
 
-use Drupal\conreg\AddonStorage;
 use Drupal\conreg\ConregOptions;
 use Drupal\conreg\Payment;
 use Drupal\conreg\PaymentLine;
+use Drupal\conreg\Service\AddonStorage;
 use Drupal\conreg\Service\MemberStorage;
 use Drupal\conreg\Upgrade;
 use Drupal\conreg\UpgradeManager;
@@ -27,9 +27,12 @@ class MemberPortal extends FormBase {
    *
    * @param \Drupal\conreg\Service\MemberStorage $memberStorage
    *   The member storage service.
+   * @param \Drupal\conreg\Service\AddonStorage $addonStorage
+   *   The addon storage service.
    */
   public function __construct(
     protected MemberStorage $memberStorage,
+    protected AddonStorage $addonStorage,
   ) {}
 
   /**
@@ -189,7 +192,7 @@ class MemberPortal extends FormBase {
         $display_unpaid = TRUE;
       }
 
-      foreach (AddonStorage::loadAll(['mid' => $mid, 'is_paid' => 0]) as $addon) {
+      foreach ($this->addonStorage->loadAll(['mid' => $mid, 'is_paid' => 0]) as $addon) {
         $row = [];
         $row['type'] = ['#markup' => $this->t('Add-on')];
         $row['name'] = ['#markup' => Html::escape($entry['first_name'] . ' ' . $entry['last_name'])];
@@ -356,7 +359,7 @@ class MemberPortal extends FormBase {
       }
 
       // Loop through unpaid upgrades for member, and add those to payment.
-      foreach (AddonStorage::loadAll(['mid' => $mid, 'is_paid' => 0]) as $addon) {
+      foreach ($this->addonStorage->loadAll(['mid' => $mid, 'is_paid' => 0]) as $addon) {
         $payment->add(new PaymentLine(
           $mid,
           'addon',
@@ -368,7 +371,7 @@ class MemberPortal extends FormBase {
           $addon['addon_amount']
         ));
         // Update addon to set the payment ID.
-        AddonStorage::update(['addonid' => $addon['addonid'], 'payid' => $payment->getId()]);
+        $this->addonStorage->update(['addonid' => $addon['addonid'], 'payid' => $payment->getId()]);
         $payment_amount += $addon['addon_amount'];
       }
     }

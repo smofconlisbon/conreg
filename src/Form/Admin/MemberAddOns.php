@@ -2,7 +2,8 @@
 
 namespace Drupal\conreg\Form\Admin;
 
-use Drupal\conreg\AddonStorage;
+use Drupal\conreg\Service\AddonStorage;
+use Drupal\Core\DependencyInjection\AutowireTrait;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 
@@ -10,6 +11,18 @@ use Drupal\Core\Form\FormStateInterface;
  * Simple form to add an entry, with all the interesting fields.
  */
 class MemberAddOns extends FormBase {
+
+  use AutowireTrait;
+
+  /**
+   * Construct the form.
+   *
+   * @param \Drupal\conreg\Service\AddonStorage $addonStorage
+   *   The addon storage service.
+   */
+  public function __construct(
+    protected AddonStorage $addonStorage,
+  ) {}
 
   /**
    * {@inheritdoc}
@@ -81,7 +94,7 @@ class MemberAddOns extends FormBase {
       '#attributes' => ['class' => ['table-copy']],
     ];
 
-    $memberAddOns = AddonStorage::loadAddOnReport($eid, $selection);
+    $memberAddOns = $this->addonStorage->loadAddOnReport($eid, $selection);
 
     $rows = [];
     $headers = [

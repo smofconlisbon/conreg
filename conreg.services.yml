@@ -1,20 +1,24 @@
 services:
+  _defaults:
+    autowire: true
+    autoconfigure: true
+
   conreg.country:
     class: Drupal\conreg\Service\CountryService
-    autowire: true
   Drupal\conreg\Service\CountryServiceInterface: '@conreg.country'
 
   conreg.stripe_service:
     class: Drupal\conreg\Service\StripeService
-    autowire: true
   Drupal\conreg\Service\StripeServiceInterface: '@conreg.stripe_service'
 
   conreg.member.storage:
     class: Drupal\conreg\Service\MemberStorage
-    autowire: true
   Drupal\conreg\Service\MemberStorage: '@conreg.member.storage'
 
   conreg.event.storage:
     class: Drupal\conreg\Service\EventStorage
-    autowire: true
   Drupal\conreg\Service\EventStorage: '@conreg.event.storage'
+
+  conreg.addon_storage:
+    class: Drupal\conreg\Service\AddonStorage
+  Drupal\conreg\Service\AddonStorage: '@conreg.addon_storage'

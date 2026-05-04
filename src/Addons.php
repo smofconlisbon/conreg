@@ -6,29 +6,6 @@ use Drupal\Core\Config\ImmutableConfig;
 use Drupal\Core\Form\FormStateInterface;
 
 /**
- * Provide array_key_first function for versions of PHP before 7.3.
- */
-if (!function_exists('array_key_first')) {
-
-  /**
-   * Returns the first key in an array.
-   *
-   * @param array $arr
-   *   The array.
-   *
-   * @return string|int|null
-   *   The first key, or null for empty array.
-   */
-  function array_key_first(array $arr) {
-    foreach ($arr as $key => $unused) {
-      return $key;
-    }
-    return NULL;
-  }
-
-}
-
-/**
  * List options for Simple Convention Registration.
  */
 class Addons {
@@ -87,7 +64,8 @@ class Addons {
     // If member ID passed in, read values from database.
     $saved = [];
     if (!is_null($mid)) {
-      $result = AddonStorage::loadAll(['mid' => $mid]);
+      $storage = \Drupal::service('conreg.addon_storage');
+      $result = $storage->loadAll(['mid' => $mid]);
       foreach ($result as $entry) {
         $saved[$entry['addon_name']] = $entry;
       }
@@ -163,9 +141,14 @@ class Addons {
             // current(array_keys()) to get first add-on option.
             $info = ($addOnVals['info'] ?? []);
 
-            if ((!empty($addonVals[$addOnId]['option']) && $addonVals[$addOnId]['option'] != current(array_keys($addOnOptions)) ||
-                (isset($saved[$addOnId]))) &&
-                !empty($info['label'])) {
+            if (
+              (
+                !empty($addonVals[$addOnId]['option']) &&
+                $addonVals[$addOnId]['option'] != current(array_keys($addOnOptions)) ||
+                isset($saved[$addOnId])
+              ) &&
+              !empty($info['label'])
+            ) {
               $addons[$addOnId]['extra']['info'] = [
                 '#type' => 'textfield',
                 '#title' => $info['label'],
@@ -312,6 +295,10 @@ class Addons {
    * Save add-ons for single member on Edit form.
    */
   public function saveMemberAddons($config, $form_values, $mid) {
+
+    // Fetch conreg.addon_storage service once for reused on the method.
+    $storage = \Drupal::service('conreg.addon_storage');
+
     foreach ($config->get('add-ons') as $addOnName => $addOnVals) {
       // If add-on set, get values.
       $addon = ($addOnVals['addon'] ?? []);
@@ -320,7 +307,7 @@ class Addons {
         // Get add options...
         [, $addOnPrices] = self::memberAddons($addon['options']);
 
-        $saved = AddonStorage::load([
+        $saved = $storage->load([
           'mid' => $mid,
           'addon_name' => $addOnName,
         ]);
@@ -354,16 +341,15 @@ class Addons {
         if ($price > 0) {
           $insert['addon_amount'] = $price;
           if (isset($saved) && isset($saved['addonid'])) {
-            AddonStorage::update($insert);
+            $storage->update($insert);
           }
           else {
-            AddonStorage::insert($insert);
+            $storage->insert($insert);
           }
         }
         else {
-          // If there's a previously saved addon, delete it.
           if (isset($saved) && isset($saved['addonid'])) {
-            AddonStorage::delete(['addonid' => $saved['addonid']]);
+            $storage->delete(['addonid' => $saved['addonid']]);
           }
         }
       }
@@ -388,6 +374,10 @@ class Addons {
     if (!isset($addOns)) {
       return;
     }
+
+    // Fetch conreg.addon_storage service once for reused on the method.
+    $storage = \Drupal::service('conreg.addon_storage');
+
     foreach ($addOns as $addOnName => $addOnVals) {
       // If add-on set, get values.
       $addon = ($addOnVals['addon'] ?? []);
@@ -421,14 +411,17 @@ class Addons {
           // Only insert if add-on has a price.
           if ($price > 0) {
             $insert['addon_amount'] = $price;
-            AddonStorage::insert($insert);
+            $storage->insert($insert);
             // Add a payment line for the global add-on.
             $payment->add(new PaymentLine(
               $mid,
               'addon',
-              t("Add-on @add_on",
-              ['@add_on' => $addOnName]),
-              $price));
+              t(
+                "Add-on @add_on",
+                ['@add_on' => $addOnName]
+              ),
+              $price
+            ));
           }
         }
         else {
@@ -460,19 +453,23 @@ class Addons {
             }
             if ($price > 0) {
               $insert['addon_amount'] = $price;
-              AddonStorage::insert($insert);
+              $storage->insert($insert);
             }
             // Add a payment line for the add-on.
-            $payment->add(new PaymentLine(
-              $mid,
-              'addon',
-              t("Add-on @add_on for @first_name @last_name",
-              [
-                '@add_on' => $addOnName,
-                '@first_name' => $first_name,
-                '@last_name' => $last_name,
-              ]),
-              $price)
+            $payment->add(
+              new PaymentLine(
+                $mid,
+                'addon',
+                t(
+                  "Add-on @add_on for @first_name @last_name",
+                  [
+                    '@add_on' => $addOnName,
+                    '@first_name' => $first_name,
+                    '@last_name' => $last_name,
+                  ]
+                ),
+                $price
+              )
             );
           }
         }
@@ -494,7 +491,8 @@ class Addons {
       'is_paid' => 1,
       'payment_ref' => $paymentRef,
     ];
-    AddonStorage::updateByPayId($update);
+    // One time service call.
+    \Drupal::service('conreg.addon_storage')->updateByPayId($update);
   }
 
   /**
@@ -512,8 +510,11 @@ class Addons {
     $symbol = $config->get('payments.symbol');
     $addons = $config->get('add-ons');
     $memberAddons = [];
+
+    // Fetch service for reuse.
+    $storage = \Drupal::service('conreg.addon_storage');
     // Fetch all paid add-ons for member, and loop through them.
-    foreach (AddonStorage::loadAll(['mid' => $mid, 'is_paid' => 1]) as $addOpts) {
+    foreach ($storage->loadAll(['mid' => $mid, 'is_paid' => 1]) as $addOpts) {
       $name = $addOpts['addon_name'];
       $memberAddon = [
         'name' => $name,

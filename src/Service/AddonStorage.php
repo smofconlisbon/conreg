@@ -1,11 +1,30 @@
 <?php
 
-namespace Drupal\conreg;
+namespace Drupal\conreg\Service;
+
+use Drupal\Core\Database\Connection;
+use Drupal\Core\Messenger\MessengerInterface;
+use Drupal\Core\StringTranslation\StringTranslationTrait;
 
 /**
  * Class for handling storage of add-ons.
  */
 class AddonStorage {
+
+  use StringTranslationTrait;
+
+  /**
+   * Constructs a new AddonStorage object.
+   *
+   * @param \Drupal\Core\Database\Connection $connection
+   *   The database connection.
+   * @param \Drupal\Core\Messenger\MessengerInterface $messenger
+   *   The messenger service.
+   */
+  public function __construct(
+    protected Connection $connection,
+    protected MessengerInterface $messenger,
+  ) {}
 
   /**
    * Save an entry in the database.
@@ -28,20 +47,18 @@ class AddonStorage {
    *
    * @see $connection->insert()
    */
-  public static function insert($entry) {
-    $return_value = NULL;
-    $connection = \Drupal::database();
+  public function insert($entry) {
     try {
-      $return_value = $connection->insert('conreg_member_addons')
+      return $this->connection->insert('conreg_member_addons')
         ->fields($entry)
         ->execute();
     }
     catch (\Exception $e) {
-      \Drupal::messenger()->addMessage(t('$connection->insert failed. Message = %message, query= %query', [
+      $this->messenger->addError($this->t('Insert failed. Message = %message', [
         '%message' => $e->getMessage(),
-      ]), 'error');
+      ]));
+      return NULL;
     }
-    return $return_value;
   }
 
   /**
@@ -52,44 +69,38 @@ class AddonStorage {
    *
    * @return int
    *   The number of updated rows.
-   *
-   * @see $connection->update()
    */
-  public static function update($entry) {
-    $connection = \Drupal::database();
+  public function update($entry) {
     try {
-      // $connection->update()...->execute() returns the number of rows updated.
-      $count = $connection->update('conreg_member_addons')
+      return $this->connection->update('conreg_member_addons')
         ->fields($entry)
         ->condition('addonid', $entry['addonid'])
         ->execute();
     }
     catch (\Exception $e) {
-      \Drupal::messenger()->addMessage(t('$connection->update failed. Message = %message', [
+      $this->messenger->addError($this->t('Update failed. Message = %message', [
         '%message' => $e->getMessage(),
-      ]), 'error');
+      ]));
+      return 0;
     }
-    return $count;
   }
 
   /**
    * Update member add-on by payment ID.
    */
-  public static function updateByPayId($entry) {
-    $connection = \Drupal::database();
+  public function updateByPayId($entry) {
     try {
-      // $connection->update()...->execute() returns the number of rows updated.
-      $count = $connection->update('conreg_member_addons')
+      return $this->connection->update('conreg_member_addons')
         ->fields($entry)
         ->condition('payid', $entry['payid'])
         ->execute();
     }
     catch (\Exception $e) {
-      \Drupal::messenger()->addMessage(t('$connection->update failed. Message = %message', [
+      $this->messenger->addError($this->t('Update by Pay ID failed. Message = %message', [
         '%message' => $e->getMessage(),
-      ]), 'error');
+      ]));
+      return 0;
     }
-    return $count;
   }
 
   /**
@@ -101,9 +112,8 @@ class AddonStorage {
    *
    * @see $connection->delete()
    */
-  public static function delete($entry) {
-    $connection = \Drupal::database();
-    $connection->delete('conreg_member_addons')
+  public function delete($entry) {
+    $this->connection->delete('conreg_member_addons')
       ->condition('addonid', $entry['addonid'])
       ->execute();
   }
@@ -111,46 +121,40 @@ class AddonStorage {
   /**
    * Read from the database using a filter array.
    */
-  public static function load($entry = []) {
-    $connection = \Drupal::database();
+  public function load(array $entry = []) {
     // Read all fields from the conreg_addons table.
-    $select = $connection->select('conreg_member_addons', 'addons');
+    $select = $this->connection->select('conreg_member_addons', 'addons');
     $select->fields('addons');
 
     // Add each field and value as a condition to this query.
     foreach ($entry as $field => $value) {
       $select->condition($field, $value);
     }
-    // Return the result in associative array format.
     return $select->execute()->fetchAssoc();
   }
 
   /**
    * Read from the database and return multiple rows using a filter array.
    */
-  public static function loadAll($entry = []) {
-    $connection = \Drupal::database();
+  public function loadAll(array $entry = []) {
     // Read all fields from the conreg_addons table.
-    $select = $connection->select('conreg_member_addons', 'addons');
+    $select = $this->connection->select('conreg_member_addons', 'addons');
     $select->fields('addons');
 
     // Add each field and value as a condition to this query.
     foreach ($entry as $field => $value) {
       $select->condition($field, $value);
     }
-    // Return the result in associative array format.
-    $entries = $select->execute()->fetchAll(\PDO::FETCH_ASSOC);
 
-    return $entries;
+    // Return the result in associative array format.
+    return $select->execute()->fetchAll(\PDO::FETCH_ASSOC);
   }
 
   /**
    * Load add-on data for report.
    */
-  public static function loadAddOnReport($eid, $addOn) {
-    $connection = \Drupal::database();
-    // Read all fields from the conreg_addons table.
-    $select = $connection->select('conreg_members', 'm');
+  public function loadAddOnReport($eid, $addOn) {
+    $select = $this->connection->select('conreg_members', 'm');
     $select->join('conreg_member_addons', 'a', 'm.mid = a.mid');
     $select->addField('m', 'member_no');
     $select->addField('m', 'first_name');
@@ -163,16 +167,15 @@ class AddonStorage {
     $select->addField('a', 'payment_ref');
     $select->condition('m.eid', $eid);
     $select->condition('m.is_paid', 1);
-    // Only include members who aren't deleted.
+    // Only include members who aren't deleted and have paid.
     $select->condition("m.is_deleted", FALSE);
     $select->condition('a.is_paid', 1);
+
     if (!empty($addOn)) {
       $select->condition('a.addon_name', $addOn);
     }
 
-    $entries = $select->execute()->fetchAll(\PDO::FETCH_ASSOC);
-
-    return $entries;
+    return $select->execute()->fetchAll(\PDO::FETCH_ASSOC);
   }
 
 }
