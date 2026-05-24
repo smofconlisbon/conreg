@@ -1,0 +1,91 @@
+site_name: ConReg Documentation
+site_description: Drupal convention registration developer and operator guide
+site_url: https://drupal.org/project/conreg
+repo_url: https://git.drupalcode.org/project/conreg
+repo_name: drupal/conreg
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - search.suggest
+    - content.code.copy
+
+extra:
+  generator: false
+  social:
+    - icon: fontawesome/brands/drupal
+      link: https://www.drupal.org/project/conreg
+      name: Drupal.org Project Page
+    - icon: fontawesome/brands/gitlab
+      link: https://git.drupalcode.org/project/conreg
+      name: GitLab Repository
+
+plugins:
+  - search
+
+nav:
+  - Home: index.md
+  - Getting started:
+      - Overview: getting-started/overview.md
+      - Installation: getting-started/installation.md
+      - Requirements: getting-started/requirements.md
+      - Module enablement: getting-started/modules.md
+  - Architecture:
+      - Overview: architecture/overview.md
+      - Data model: architecture/data-model.md
+      - Configuration: architecture/configuration.md
+      - Registration and payments: architecture/registration-flow.md
+      - Email and tokens: architecture/email.md
+      - Caching: architecture/caching.md
+  - Core module:
+      - Features: core/features.md
+      - Public routes: core/public-routes.md
+      - Admin UI: core/admin-ui.md
+      - Permissions: core/permissions.md
+      - Services: core/services.md
+  - Submodules:
+      - Overview: submodules/index.md
+      - Airtable: submodules/airtable.md
+      - Badges: submodules/badges.md
+      - ClickUp: submodules/clickup.md
+      - Discord: submodules/discord.md
+      - Lookup: submodules/lookup.md
+      - PlanZ: submodules/planz.md
+      - Simplenews: submodules/simplenews.md
+  - Site building:
+      - Events and cloning: site-building/events.md
+      - Member classes and types: site-building/member-setup.md
+      - Field options and add-ons: site-building/options-and-addons.md
+      - Stripe and payments: site-building/payments.md
+      - Email templates: site-building/email-templates.md
+      - Simplenews linking: site-building/simplenews.md
+  - Administration:
+      - Member management: administration/members.md
+      - Check-in and fan table: administration/checkin-fantable.md
+      - Reporting and exports: administration/reporting.md
+      - Bulk email: administration/bulk-email.md
+  - Development:
+      - Extending ConReg: development/extending.md
+      - Hooks API: development/hooks.md
+      - Testing: development/testing.md
+  - Reference:
+      - Routes: reference/routes.md
+      - Database tables: reference/database.md
+      - Config keys: reference/config.md
