@@ -20,6 +20,7 @@ use Drupal\Core\Config\ImmutableConfig;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Link;
 use Drupal\Core\Render\RendererInterface;
 use Drupal\Core\Session\AccountProxyInterface;
 use Drupal\Core\Url;
@@ -193,14 +194,15 @@ class Registration extends FormBase {
 
     if ($paidMembers && $return != 'fantable') {
       $url = Url::fromRoute('conreg_portal', ['eid' => $eid]);
+      $link = Link::fromTextAndUrl($this->t('member portal'), $url)->toRenderable();
       $form['paid_members_registered'] = [
         '#prefix' => '<div class="registration-form-paid-members">',
         '#suffix' => '</div>',
         '#markup' => $this->t(
-          '<strong>Please note:</strong> You already have registered the following members: %members. For more details, please go to the <a href="@member-portal-page">member portal</a>.',
+          '<strong>Please note:</strong> You already have registered the following members: %members. For more details, please go to the @member_portal.',
           [
             '%members' => implode(', ', $paidMembers),
-            '@member-portal-page' => $url->toString(),
+            '@member_portal' => $this->renderer->render($link),
           ],
         ),
       ];
@@ -208,14 +210,15 @@ class Registration extends FormBase {
 
     if ($unpaidMembers && $return != 'fantable') {
       $url = Url::fromRoute('conreg_portal', ['eid' => $eid]);
+      $link = Link::fromTextAndUrl($this->t('member portal'), $url)->toRenderable();
       $form['unpaid_members_registered'] = [
         '#prefix' => '<div class="registration-form-unpaid-members">',
         '#suffix' => '</div>',
         '#markup' => $this->t(
-          '<strong>Warning:</strong> You have started registration for the following: %unpaid_members. However, you have not completed payment. To complete, please go to the <a href="@member-portal-page">member portal</a>.',
+          '<strong>Warning:</strong> You have started registration for the following: %unpaid_members. However, you have not completed payment. To complete, please go to the @member_portal.',
           [
             '%unpaid_members' => implode(', ', $unpaidMembers),
-            '@member-portal-page' => $url->toString(),
+            '@member_portal' => $this->renderer->render($link),
           ],
         ),
       ];
@@ -998,7 +1001,20 @@ class Registration extends FormBase {
         // Check a user hasn't already been registered with the same email.
         $member = Member::loadMemberByEmail($eid, $email);
         if ($member) {
-          $form_state->setErrorByName('members][member' . $cnt . '][email', $this->t('A member has previously been registered with this address.'));
+          $url = $this->currentUser->isAuthenticated()
+            ? Url::fromRoute('conreg_portal')
+            : Url::fromRoute('conreg_check');
+          $link = Link::fromTextAndUrl($this->t('member portal'), $url)->toRenderable();
+          $form_state->setErrorByName(
+            'members][member' . $cnt . '][email',
+            $this->t(
+              'A member has previously been registered with the address :email. Please visit our @member_portal to confirm your membership status.',
+              [
+                ':email' => $email,
+                '@member_portal' => $this->renderer->render($link),
+              ],
+            )
+          );
         }
       }
     }
