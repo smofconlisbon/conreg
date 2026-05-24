@@ -59,6 +59,19 @@ conreg_fantable_checkout:
   options:
     no_cache: true
 
+conreg_checkin_checkout:
+  path: 'members/checkin/checkout/{payid}/{key}'
+  defaults:
+    _title: 'Payment'
+    _form: '\Drupal\conreg\Form\Checkout'
+    return: 'checkin'
+  requirements:
+    _permission: 'convention registration'
+    payid: ^[0-9]+$
+    key: ^[0-9]+$
+  options:
+    no_cache: true
+
 conreg_portal_checkout:
   path: 'members/portal/checkout/{payid}/{key}'
   defaults:

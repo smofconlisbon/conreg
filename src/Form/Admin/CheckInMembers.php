@@ -14,6 +14,7 @@ use Drupal\Core\Config\ImmutableConfig;
 use Drupal\Core\DependencyInjection\AutowireTrait;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Language\LanguageManagerInterface;
 
 /**
  * Simple form to add an entry, with all the interesting fields.
@@ -29,10 +30,13 @@ class CheckInMembers extends FormBase {
    *   The member storage service.
    * @param \Drupal\conreg\Service\EventStorage $eventStorage
    *   The event storage service.
+   * @param \Drupal\Core\Language\LanguageManagerInterface $languageManager
+   *   The site's language manager.
    */
   public function __construct(
     protected MemberStorage $memberStorage,
     protected EventStorage $eventStorage,
+    protected LanguageManagerInterface $languageManager,
   ) {}
 
   /**
@@ -554,6 +558,7 @@ class CheckInMembers extends FormBase {
     $config = ConregConfig::getConfig($eid);
     $types = ConregOptions::memberTypes($eid, $config);
     $form_values = $form_state->getValues();
+    $language = $this->languageManager->getDefaultLanguage()->getId();
     // Assign random key for payment URL.
     $rand_key = mt_rand();
     if (!empty($form_values['unpaid']['add']['badge_name'])) {
@@ -599,6 +604,7 @@ class CheckInMembers extends FormBase {
       'payment_amount' => $price,
       'join_date' => time(),
       'update_date' => time(),
+      'language' => $language,
     ];
     // Insert to database table.
     $return = $this->memberStorage->insert($entry);
