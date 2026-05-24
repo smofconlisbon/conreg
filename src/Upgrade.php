@@ -2,6 +2,10 @@
 
 namespace Drupal\conreg;
 
+use Drupal\Component\Datetime\TimeInterface;
+use Drupal\conreg\Service\MemberStorage;
+use Drupal\conreg\Service\UpgradeStorage;
+
 /**
  * Details of member upgrade.
  */
@@ -59,6 +63,12 @@ class Upgrade {
   /**
    * Construct the upgrade object.
    *
+   * @param \Drupal\conreg\Service\UpgradeStorage $upgradeStorage
+   *   The upgrade storage service.
+   * @param \Drupal\conreg\Service\MemberStorage $memberStorage
+   *   The member storage service.
+   * @param \Drupal\Component\Datetime\TimeInterface $time
+   *   The time service.
    * @param int $eid
    *   Event ID.
    * @param int|null $mid
@@ -81,6 +91,9 @@ class Upgrade {
    *   Upgrade price.
    */
   public function __construct(
+    protected UpgradeStorage $upgradeStorage,
+    protected MemberStorage $memberStorage,
+    protected TimeInterface $time,
     public $eid = 1,
     public $mid = NULL,
     $upgid = NULL,
@@ -116,7 +129,7 @@ class Upgrade {
    */
   public function getLead() {
     if (empty($this->leadMid) && !empty($this->mid)) {
-      if ($member = \Drupal::service('conreg.member.storage')->load(['mid' => $this->mid])) {
+      if ($member = $this->memberStorage->load(['mid' => $this->mid])) {
         $this->leadMid = $member['lead_mid'];
       }
     }
@@ -126,7 +139,7 @@ class Upgrade {
   /**
    * Get upgrade type details from config.
    */
-  public function setUpgrade($upgid) {
+  public function setUpgrade(int $upgid) {
     $upgrades = ConregOptions::memberUpgrades($this->eid);
     if (isset($upgrades->upgrades[$upgid])) {
       $this->fromType = $upgrades->upgrades[$upgid]->fromType;
@@ -141,10 +154,10 @@ class Upgrade {
   /**
    * Save the upgrade record.
    */
-  public function saveUpgrade($upgradeTotal) {
-    UpgradeStorage::deleteUnpaidByMid($this->mid);
+  public function saveUpgrade(float $upgradeTotal) {
+    $this->upgradeStorage->deleteUnpaidByMid($this->mid);
 
-    UpgradeStorage::insert([
+    $this->upgradeStorage->insert([
       'mid' => $this->mid,
       'eid' => $this->eid,
       'lead_mid' => $this->leadMid,
@@ -163,8 +176,8 @@ class Upgrade {
   /**
    * Function to complete upgrade when payment received.
    */
-  public function complete($lead_mid, $payment_amount, $payment_method, $payment_id) {
-    $upgrade = UpgradeStorage::load([
+  public function complete(int $lead_mid, float $payment_amount, string $payment_method, string $payment_id) {
+    $upgrade = $this->upgradeStorage->load([
       'eid' => $this->eid,
       'mid' => $this->mid,
       'is_paid' => 0,
@@ -177,11 +190,11 @@ class Upgrade {
       'payment_method' => $payment_method,
       'payment_id' => $payment_id,
       'is_paid' => 1,
-      'upgrade_date' => \Drupal::time()->getRequestTime(),
+      'upgrade_date' => $this->time->getRequestTime(),
     ];
-    UpgradeStorage::update($update);
+    $this->upgradeStorage->update($update);
     // Fetch member record.
-    if ($member = \Drupal::service('conreg.member.storage')->load(['mid' => $this->mid])) {
+    if ($member = $this->memberStorage->load(['mid' => $this->mid])) {
       // Update member type, days and price.
       $member['member_type'] = $this->toType;
       $member['days'] = $this->toDays;
@@ -190,7 +203,7 @@ class Upgrade {
       $member['member_total'] = $member['member_price'] + $member['add_on_price'] + $this->upgradePrice;
       $member['update_date'] = time();
       // Save updated member.
-      \Drupal::service('conreg.member.storage')->update($member);
+      $this->memberStorage->update($member);
     }
   }
 

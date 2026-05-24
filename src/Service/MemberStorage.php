@@ -68,7 +68,7 @@ class MemberStorage {
   public function update(array $entry): int|NULL {
     try {
       // Returns the number of rows updated.
-      $count = $this->connection->update('conreg_members')
+      return $this->connection->update('conreg_members')
         ->fields($entry)
         ->condition('mid', $entry['mid'])
         ->execute();
@@ -78,7 +78,7 @@ class MemberStorage {
         '%message' => $e->getMessage(),
       ]), 'error');
     }
-    return $count;
+    return NULL;
   }
 
   /**
@@ -95,7 +95,7 @@ class MemberStorage {
   public function updateByLeadMid(array $entry): int|NULL {
     try {
       // Returns the number of rows updated.
-      $count = $this->connection->update('conreg_members')
+      return $this->connection->update('conreg_members')
         ->fields($entry)
         ->condition('lead_mid', $entry['lead_mid'])
         ->execute();
@@ -105,7 +105,7 @@ class MemberStorage {
         '%message' => $e->getMessage(),
       ]), 'error');
     }
-    return $count;
+    return NULL;
   }
 
   /**
@@ -472,7 +472,7 @@ class MemberStorage {
   /**
    * Get unpaid member list for bottom pane of check in listing.
    */
-  public function adminMemberUnpaidListLoad($eid) {
+  public function adminMemberUnpaidListLoad(int $eid) {
     $select = $this->connection->select('conreg_members', 'm');
     // Select these specific fields for the output.
     $select->addField('m', 'mid');
@@ -507,7 +507,7 @@ class MemberStorage {
   /**
    * Get member list for Member Portal listing.
    */
-  public function adminMemberPortalListLoad($eid, $email, $is_paid = NULL) {
+  public function adminMemberPortalListLoad(int $eid, ?string $email, ?int $is_paid = NULL) {
     $select = $this->connection->select('conreg_members', 'm');
     // Select these specific fields for the output.
     $select->addField('m', 'mid');
@@ -548,7 +548,7 @@ class MemberStorage {
   /**
    * Get a list of member numbers.
    */
-  public function loadAllMemberNos($eid) {
+  public function loadAllMemberNos(int $eid) {
     $select = $this->connection->select('conreg_members', 'm');
     // Select these specific fields for the output.
     $select->addField('m', 'mid');
@@ -572,7 +572,7 @@ class MemberStorage {
   /**
    * Get the maximum member number.
    */
-  public function loadMaxMemberNo($eid) {
+  public function loadMaxMemberNo(int $eid) {
     $select = $this->connection->select('conreg_members', 'm');
     // Select these specific fields for the output.
     $select->addExpression('MAX(m.member_no)');
@@ -593,7 +593,7 @@ class MemberStorage {
   /**
    * Get the list of members with completed payments.
    */
-  public function adminPaidMemberListLoad($eid, $direction = 'ASC', $order = 'm.member_no') {
+  public function adminPaidMemberListLoad(int $eid, $direction = 'ASC', $order = 'm.member_no') {
     $select = $this->connection->select('conreg_members', 'm');
     // Select these specific fields for the output.
     $select->addField('m', 'member_type');
@@ -735,7 +735,7 @@ class MemberStorage {
   /**
    * Get the summary of members grouped by member type.
    */
-  public function adminMemberSummaryLoad($eid) {
+  public function adminMemberSummaryLoad(int $eid) {
     $select = $this->connection->select('conreg_members', 'm');
     // Select these specific fields for the output.
     $select->addField('m', 'member_type');
@@ -754,7 +754,7 @@ class MemberStorage {
   /**
    * Get summary of members grouped by badge type.
    */
-  public function adminMemberBadgeSummaryLoad($eid) {
+  public function adminMemberBadgeSummaryLoad(int $eid) {
     $select = $this->connection->select('conreg_members', 'm');
     // Select these specific fields for the output.
     $select->addField('m', 'badge_type');
@@ -773,7 +773,7 @@ class MemberStorage {
   /**
    * Get summary of members grouped by days attending.
    */
-  public function adminMemberDaysSummaryLoad($eid) {
+  public function adminMemberDaysSummaryLoad(int $eid) {
     $select = $this->connection->select('conreg_members', 'm');
     // Select these specific fields for the output.
     $select->addField('m', 'days');
@@ -792,7 +792,7 @@ class MemberStorage {
   /**
    * Get summary of memberships grouped by payment method.
    */
-  public function adminMemberPaymentMethodSummaryLoad($eid) {
+  public function adminMemberPaymentMethodSummaryLoad(int $eid) {
     $select = $this->connection->select('conreg_members', 'm');
     // Select these specific fields for the output.
     $select->addField('m', 'payment_method');
@@ -811,7 +811,7 @@ class MemberStorage {
   /**
    * Get summary of memberships grouped by amount paid.
    */
-  public function adminMemberAmountPaidSummaryLoad($eid) {
+  public function adminMemberAmountPaidSummaryLoad(int $eid) {
     $select = $this->connection->select('conreg_members', 'm');
     // Select these specific fields for the output.
     $select->addField('m', 'member_price');
@@ -830,7 +830,7 @@ class MemberStorage {
   /**
    * Get summary of memberships grouped by member type and price.
    */
-  public function adminMemberAmountPaidByTypeSummaryLoad($eid) {
+  public function adminMemberAmountPaidByTypeSummaryLoad(int $eid) {
     $select = $this->connection->select('conreg_members', 'm');
     // Select these specific fields for the output.
     $select->addField('m', 'member_type');
@@ -851,7 +851,7 @@ class MemberStorage {
   /**
    * Get summary of memberships grouped by month joined.
    */
-  public function adminMemberByDateSummaryLoad($eid) {
+  public function adminMemberByDateSummaryLoad(int $eid) {
     $select = $this->connection->select('conreg_members', 'm');
     // Select these specific fields for the output.
     $select->addExpression('year(from_unixtime(m.join_date))', 'year');
@@ -873,7 +873,7 @@ class MemberStorage {
   /**
    * Get summary of memberships grouped by checkin status.
    */
-  public function adminMemberCheckInSummaryLoad($eid) {
+  public function adminMemberCheckInSummaryLoad(int $eid) {
     $select = $this->connection->select('conreg_members', 'm');
     // Select these specific fields for the output.
     $select->addField('m', 'is_checked_in');
@@ -892,7 +892,7 @@ class MemberStorage {
   /**
    * Get all member addons wit non-zero cost.
    */
-  public function adminMemberAddOns($eid) {
+  public function adminMemberAddOns(int $eid) {
     $select = $this->connection->select('conreg_members', 'm');
     // Select these specific fields for the output.
     $select->addField('m', 'first_name');
@@ -916,7 +916,7 @@ class MemberStorage {
   /**
    * Get all members with a child membership type.
    */
-  public function adminMemberChildMembers($eid) {
+  public function adminMemberChildMembers(int $eid) {
     $select = $this->connection->select('conreg_members', 'm');
     // Select these specific fields for the output.
     $select->addField('m', 'member_no');
@@ -942,7 +942,7 @@ class MemberStorage {
   /**
    * Get membership summary grouped by country.
    */
-  public function adminMemberCountrySummaryLoad($eid) {
+  public function adminMemberCountrySummaryLoad(int $eid) {
     $select = $this->connection->select('conreg_members', 'm');
     // Select these specific fields for the output.
     $select->addField('m', 'country');
@@ -966,7 +966,7 @@ class MemberStorage {
    * Function to return a list of members and communications methods for
    * integration with Simplenews module.
    */
-  public function adminMailoutListLoad($eid, $methods, $languages) {
+  public function adminMailoutListLoad(int $eid, array $methods, array $languages) {
     // Run this query: select email, min(communication_method) from
     // conreg_members where email is not null and email<>'' and
     // communication_method is not null group by email;.
@@ -998,7 +998,7 @@ class MemberStorage {
    * Function to return a list of members and communications methods for
    * integration with Simplenews module.
    */
-  public function adminSimplenewsSubscribeListLoad($eid) {
+  public function adminSimplenewsSubscribeListLoad(int $eid) {
     // Run this query: select email, min(communication_method) from
     // conreg_members where email is not null and email<>'' and
     // communication_method is not null group by email;.

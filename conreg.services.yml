@@ -22,3 +22,8 @@ services:
   conreg.addon_storage:
     class: Drupal\conreg\Service\AddonStorage
   Drupal\conreg\Service\AddonStorage: '@conreg.addon_storage'
+
+  conreg.upgrade.storage:
+    class: Drupal\conreg\Service\UpgradeStorage
+    autowire: true
+  Drupal\conreg\Service\UpgradeStorage: '@conreg.upgrade.storage'

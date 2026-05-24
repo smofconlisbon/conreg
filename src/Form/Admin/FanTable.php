@@ -2,6 +2,7 @@
 
 namespace Drupal\conreg\Form\Admin;
 
+use Drupal\Component\Datetime\TimeInterface;
 use Drupal\Component\Utility\Html;
 use Drupal\conreg\Addons;
 use Drupal\conreg\ConregConfig;
@@ -11,6 +12,7 @@ use Drupal\conreg\Payment;
 use Drupal\conreg\PaymentLine;
 use Drupal\conreg\Service\EventStorage;
 use Drupal\conreg\Service\MemberStorage;
+use Drupal\conreg\Service\UpgradeStorage;
 use Drupal\conreg\Upgrade;
 use Drupal\conreg\UpgradeManager;
 use Drupal\Core\DependencyInjection\AutowireTrait;
@@ -37,12 +39,18 @@ class FanTable extends FormBase {
    *   The language manager.
    * @param \Drupal\conreg\Service\EventStorage $eventStorage
    *   The event storage service.
+   * @param \Drupal\conreg\Service\UpgradeStorage $upgradeStorage
+   *   The upgrade storage service.
+   * @param \Drupal\Component\Datetime\TimeInterface $time
+   *   The time service.
    */
   public function __construct(
     protected MemberStorage $memberStorage,
     protected MailManagerInterface $mailManager,
     protected LanguageManagerInterface $languageManager,
     protected EventStorage $eventStorage,
+    protected UpgradeStorage $upgradeStorage,
+    protected TimeInterface $time,
   ) {}
 
   /**
@@ -431,11 +439,11 @@ class FanTable extends FormBase {
    *   Payment object.
    */
   public function saveUpgrades($eid, $form_values, &$upgrade_price, Payment &$payment) {
-    $mgr = new UpgradeManager($eid);
+    $mgr = new UpgradeManager($this->upgradeStorage, $this->memberStorage, $this->time, $eid);
 
     if ($form_values["table"]) {
       foreach ($form_values["table"] as $mid => $memberRow) {
-        $upgrade = new Upgrade($eid, $mid, $memberRow["member_type"]);
+        $upgrade = new Upgrade($this->upgradeStorage, $this->memberStorage, $this->time, $eid, $mid, $memberRow["member_type"]);
         // Only save upgrade if price is not null.
         if (isset($upgrade->upgradePrice)) {
           $mgr->Add($upgrade);
@@ -588,7 +596,7 @@ class FanTable extends FormBase {
     }
 
     // Load upgrades into upgrade manager and process.
-    $mgr = new UpgradeManager($eid);
+    $mgr = new UpgradeManager($this->upgradeStorage, $this->memberStorage, $this->time, $eid);
     $mgr->loadUpgrades($lead_mid, FALSE);
     // Add total price of upgrades to total price of new members.
     $payment_amount += $mgr->getTotalPrice();

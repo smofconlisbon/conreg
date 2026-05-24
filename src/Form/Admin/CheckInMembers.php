@@ -42,7 +42,7 @@ class CheckInMembers extends FormBase {
   /**
    * Add a summary by check-in status to render array.
    */
-  public function checkInSummary($eid, &$content) {
+  public function checkInSummary(int $eid, array &$content) {
     $descriptions = [
       0 => 'Not Checked In',
       1 => 'Checked In',
@@ -419,7 +419,7 @@ class CheckInMembers extends FormBase {
   /**
    * Set up markup fields to display cash payment.
    */
-  public function buildCashForm($toPay, $config) {
+  public function buildCashForm(array $toPay, ImmutableConfig $config) {
     $symbol = $config->get('payments.symbol');
     $form = [];
     $form['intro'] = [
@@ -482,7 +482,7 @@ class CheckInMembers extends FormBase {
   /**
    * Set up markup fields to display check-in confirm.
    */
-  public function buildConfirmForm($eid, $toPay) {
+  public function buildConfirmForm(int $eid, array $toPay) {
     $config = $this->config('conreg.settings.' . $eid);
     $form = [];
     $form['intro'] = [
@@ -767,11 +767,12 @@ class CheckInMembers extends FormBase {
     if ($lead_mid) {
       // Save the payment.
       $payid = $payment->save();
+
+      // Redirect to payment form.
+      $form_state->setRedirect('conreg_checkin_checkout',
+        ['payid' => $payid, 'key' => $payment->randomKey]
+      );
     }
-    // Redirect to payment form.
-    $form_state->setRedirect('conreg_checkin_checkout',
-      ['payid' => $payid, 'key' => $payment->randomKey]
-    );
   }
 
   /**

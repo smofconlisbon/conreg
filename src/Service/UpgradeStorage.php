@@ -1,16 +1,24 @@
 <?php
 
-namespace Drupal\conreg;
+namespace Drupal\conreg\Service;
+
+use Drupal\Core\Database\Connection;
+use Drupal\Core\Messenger\MessengerInterface;
 
 /**
- * Storage for conreg_upgrades table.
+ * Storage class for conreg_upgrades.
  */
 class UpgradeStorage {
+
+  public function __construct(
+    protected Connection $connection,
+    protected MessengerInterface $messenger,
+  ) {}
 
   /**
    * Save an entry in the database.
    *
-   * The underlying DBTNG function is $connection->insert().
+   * The underlying DBTNG function is $this->connection->insert().
    *
    * Exception handling is shown in this example. It could be simplified
    * without the try/catch blocks, but since an insert will throw an exception
@@ -26,18 +34,17 @@ class UpgradeStorage {
    * @throws \Exception
    *   When the database insert fails.
    *
-   * @see $connection->insert()
+   * @see $this->connection->insert()
    */
-  public static function insert($entry) {
+  public function insert(array $entry): int|NULL {
     $return_value = NULL;
-    $connection = \Drupal::database();
     try {
-      $return_value = $connection->insert('conreg_upgrades')
+      $return_value = $this->connection->insert('conreg_upgrades')
         ->fields($entry)
         ->execute();
     }
     catch (\Exception $e) {
-      \Drupal::messenger()->addMessage(t('$connection->insert failed. Message = %message', [
+      $this->messenger->addMessage(t('$this->connection->insert failed. Message = %message', [
         '%message' => $e->getMessage(),
       ]), 'error');
     }
@@ -53,19 +60,17 @@ class UpgradeStorage {
    * @return int
    *   The number of updated rows.
    *
-   * @see $connection->update()
+   * @see $this->connection->update()
    */
-  public static function update($entry) {
-    $connection = \Drupal::database();
+  public function update(array $entry): int|NULL {
     try {
-      // $connection->update()...->execute() returns the number of rows updated.
-      $count = $connection->update('conreg_upgrades')
+      $count = $this->connection->update('conreg_upgrades')
         ->fields($entry)
         ->condition('upgid', $entry['upgid'])
         ->execute();
     }
     catch (\Exception $e) {
-      \Drupal::messenger()->addMessage(t('$connection->update failed. Message = %message', [
+      $this->messenger->addMessage(t('$this->connection->update failed. Message = %message', [
         '%message' => $e->getMessage(),
       ]), 'error');
     }
@@ -81,19 +86,17 @@ class UpgradeStorage {
    * @return int
    *   The number of updated rows.
    *
-   * @see $connection->update()
+   * @see $this->connection->update()
    */
-  public static function updateByLeadMid($entry) {
-    $connection = \Drupal::database();
+  public function updateByLeadMid(array $entry): int|NULL {
     try {
-      // $connection->update()...->execute() returns the number of rows updated.
-      $count = $connection->update('conreg_upgrades')
+      $count = $this->connection->update('conreg_upgrades')
         ->fields($entry)
         ->condition('lead_mid', $entry['lead_mid'])
         ->execute();
     }
     catch (\Exception $e) {
-      \Drupal::messenger()->addMessage(t('$connection->update failed. Message = %message', [
+      $this->messenger->addMessage(t('$this->connection->update failed. Message = %message', [
         '%message' => $e->getMessage(),
       ]), 'error');
     }
@@ -107,21 +110,22 @@ class UpgradeStorage {
    *   An array containing at least the person identifier 'pid' element of the
    *   entry to delete.
    *
-   * @see $connection->delete()
+   * @see $this->connection->delete()
    */
-  public static function delete($entry) {
-    $connection = \Drupal::database();
-    $connection->delete('conreg_upgrades')
+  public function delete(array $entry): void {
+    $this->connection->delete('conreg_upgrades')
       ->condition('upgid', $entry['upgid'])
       ->execute();
   }
 
   /**
    * Delete unpaid upgrades for member.
+   *
+   * @param int $mid
+   *   The member ID.
    */
-  public static function deleteUnpaidByMid($mid) {
-    $connection = \Drupal::database();
-    $connection->delete('conreg_upgrades')
+  public function deleteUnpaidByMid($mid): void {
+    $this->connection->delete('conreg_upgrades')
       ->condition('mid', $mid)
       ->condition('is_paid', 0)
       ->execute();
@@ -129,10 +133,12 @@ class UpgradeStorage {
 
   /**
    * Delete unpaid upgrades for any members registered by lead member.
+   *
+   * @param int $lead_mid
+   *   The lead member ID.
    */
-  public static function deleteUnpaidByLeadMid($lead_mid) {
-    $connection = \Drupal::database();
-    $connection->delete('conreg_upgrades')
+  public function deleteUnpaidByLeadMid($lead_mid): void {
+    $this->connection->delete('conreg_upgrades')
       ->condition('lead_mid', $lead_mid)
       ->condition('is_paid', 0)
       ->execute();
@@ -140,35 +146,39 @@ class UpgradeStorage {
 
   /**
    * Read from the database using a filter array.
+   *
+   * @param array $entry
+   *   Array of fields to filter on.
+   *
+   * @return array|bool
+   *   Values read from conreg_upgrades or false if no result.
    */
-  public static function load($entry = []) {
-    $connection = \Drupal::database();
-    // Read all fields from the conreg_upgrades table.
-    $select = $connection->select('conreg_upgrades', 'upgrades');
+  public function load(array $entry = []): array|bool {
+    $select = $this->connection->select('conreg_upgrades', 'upgrades');
     $select->fields('upgrades');
 
-    // Add each field and value as a condition to this query.
     foreach ($entry as $field => $value) {
       $select->condition($field, $value);
     }
-    // Return the result in associative array format.
     return $select->execute()->fetchAssoc();
   }
 
   /**
    * Read from the database and return multiple rows using a filter array.
+   *
+   * @param array $entry
+   *   Array of fields to filter on.
+   *
+   * @return array
+   *   Associative array of fields.
    */
-  public static function loadAll($entry = []) {
-    $connection = \Drupal::database();
-    // Read all fields from the conreg_upgrades table.
-    $select = $connection->select('conreg_upgrades', 'upgrades');
+  public function loadAll(array $entry = []): array {
+    $select = $this->connection->select('conreg_upgrades', 'upgrades');
     $select->fields('upgrades');
 
-    // Add each field and value as a condition to this query.
     foreach ($entry as $field => $value) {
       $select->condition($field, $value);
     }
-    // Return the result in associative array format.
     $entries = $select->execute()->fetchAll(\PDO::FETCH_ASSOC);
 
     return $entries;

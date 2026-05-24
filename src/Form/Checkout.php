@@ -2,15 +2,19 @@
 
 namespace Drupal\conreg\Form;
 
+use Drupal\Component\Datetime\TimeInterface;
 use Drupal\conreg\Addons;
 use Drupal\conreg\ConregOptions;
 use Drupal\conreg\Service\EventStorage;
 use Drupal\conreg\Member;
 use Drupal\conreg\Payment;
+use Drupal\conreg\PaymentLine;
 use Drupal\conreg\PaymentStorage;
 use Drupal\conreg\Service\MemberStorage;
 use Drupal\conreg\Service\StripeServiceInterface;
+use Drupal\conreg\Service\UpgradeStorage;
 use Drupal\conreg\UpgradeManager;
+use Drupal\Core\Config\ImmutableConfig;
 use Drupal\Core\DependencyInjection\AutowireTrait;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
@@ -52,6 +56,10 @@ class Checkout extends FormBase {
    *   The Stripe service.
    * @param \Drupal\conreg\Service\EventStorage $eventStorage
    *   The event storage service.
+   * @param \Drupal\conreg\Service\UpgradeStorage $upgradeStorage
+   *   The upgrade storage service.
+   * @param \Drupal\Component\Datetime\TimeInterface $time
+   *   The time service.
    */
   public function __construct(
     protected MemberStorage $memberStorage,
@@ -59,6 +67,8 @@ class Checkout extends FormBase {
     protected LanguageManagerInterface $languageManager,
     protected StripeServiceInterface $stripeService,
     protected EventStorage $eventStorage,
+    protected UpgradeStorage $upgradeStorage,
+    protected TimeInterface $time,
   ) {}
 
   /**
@@ -209,7 +219,7 @@ class Checkout extends FormBase {
   /**
    * Display.
    */
-  public function showThankYouPage($form, $eid, $config, $payment) {
+  public function showThankYouPage(array $form, int $eid, ImmutableConfig $config, Payment $payment) {
     $event = $this->eventStorage->load(['eid' => $eid]);
     $find = ['[reference]', '[event_name]'];
     $replace = [$payment->paymentRef, $event['event_name']];
@@ -264,7 +274,7 @@ class Checkout extends FormBase {
   /**
    * Process a line of payment information from Stripe.
    */
-  private function processPaymentLine($line, $session) {
+  private function processPaymentLine(PaymentLine $line, object $session) {
     switch ($line->type) {
       case "member":
         // Only update member if not already paid.
@@ -291,7 +301,7 @@ class Checkout extends FormBase {
       case "upgrade":
         $member = Member::loadMember($line->mid);
         if (isset($member) && is_object($member) && !$member->is_deleted) {
-          $mgr = new UpgradeManager($member->eid);
+          $mgr = new UpgradeManager($this->upgradeStorage, $this->memberStorage, $this->time, $member->eid);
           if ($mgr->loadUpgrades($member->mid, 0)) {
             $payment = Payment::loadBySessionId($session->id);
             $mgr->completeUpgrades($payment->paymentAmount, $payment->paymentMethod, $payment->paymentRef);
@@ -304,7 +314,7 @@ class Checkout extends FormBase {
   /**
    * If no charge for payment line, just marked paid.
    */
-  private function processWithoutPayment($line) {
+  private function processWithoutPayment(PaymentLine $line) {
     switch ($line->type) {
       case "member":
         // Only update member if not already paid.
@@ -333,7 +343,7 @@ class Checkout extends FormBase {
   /**
    * Send the email to confirm completion.
    */
-  private function sendConfirmationEmail($member) {
+  private function sendConfirmationEmail(array $member) {
     $config = $this->config('conreg.settings.' . $member['eid']);
     $types = ConregOptions::memberTypes($member['eid'], $config);
 

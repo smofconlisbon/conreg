@@ -2,6 +2,10 @@
 
 namespace Drupal\conreg;
 
+use Drupal\Component\Datetime\TimeInterface;
+use Drupal\conreg\Service\MemberStorage;
+use Drupal\conreg\Service\UpgradeStorage;
+
 /**
  * Class for managing member upgrades.
  */
@@ -24,10 +28,21 @@ class UpgradeManager {
   /**
    * Construct upgrade manager. Store event ID and set up array.
    *
+   * @param \Drupal\conreg\Service\UpgradeStorage $upgradeStorage
+   *   The upgrade storage service.
+   * @param \Drupal\conreg\Service\MemberStorage $memberStorage
+   *   The member storage service.
+   * @param \Drupal\Component\Datetime\TimeInterface $time
+   *   The time service.
    * @param int $eid
    *   Event ID, defaults to 1.
    */
-  public function __construct(public $eid = 1) {
+  public function __construct(
+    protected UpgradeStorage $upgradeStorage,
+    protected MemberStorage $memberStorage,
+    protected TimeInterface $time,
+    public $eid = 1,
+  ) {
     $this->upgrades = [];
   }
 
@@ -78,7 +93,7 @@ class UpgradeManager {
    *   Lead member ID.
    */
   public function saveUpgrades() {
-    UpgradeStorage::deleteUnpaidByLeadMid($this->leadMid);
+    $this->upgradeStorage->deleteUnpaidByLeadMid($this->leadMid);
 
     $total = $this->getTotalPrice();
     // Create array containing member IDs of members to upgrade.
@@ -101,14 +116,17 @@ class UpgradeManager {
    */
   public function loadUpgrades($mid, $isPaid) {
     $this->upgrades = [];
-    $upgrades = UpgradeStorage::loadAll(['lead_mid' => $mid, 'is_paid' => $isPaid]);
+    $upgrades = $this->upgradeStorage->loadAll(['lead_mid' => $mid, 'is_paid' => $isPaid]);
     if (empty($upgrades)) {
-      $upgrades = UpgradeStorage::loadAll(['mid' => $mid, 'is_paid' => $isPaid]);
+      $upgrades = $this->upgradeStorage->loadAll(['mid' => $mid, 'is_paid' => $isPaid]);
     }
     if (!empty($upgrades)) {
       $this->leadMid = $upgrades['lead_mid'];
       foreach ($upgrades as $upgrade) {
         $this->add(new Upgrade(
+          $this->upgradeStorage,
+          $this->memberStorage,
+          $this->time,
           $this->eid,
           $upgrade['mid'],
           NULL,

@@ -2,11 +2,13 @@
 
 namespace Drupal\conreg\Form;
 
+use Drupal\Component\Datetime\TimeInterface;
 use Drupal\conreg\ConregOptions;
 use Drupal\conreg\Payment;
 use Drupal\conreg\PaymentLine;
 use Drupal\conreg\Service\AddonStorage;
 use Drupal\conreg\Service\MemberStorage;
+use Drupal\conreg\Service\UpgradeStorage;
 use Drupal\conreg\Upgrade;
 use Drupal\conreg\UpgradeManager;
 use Drupal\Core\DependencyInjection\AutowireTrait;
@@ -29,10 +31,16 @@ class MemberPortal extends FormBase {
    *   The member storage service.
    * @param \Drupal\conreg\Service\AddonStorage $addonStorage
    *   The addon storage service.
+   * @param \Drupal\conreg\Service\UpgradeStorage $upgradeStorage
+   *   The upgrade storage service.
+   * @param \Drupal\Component\Datetime\TimeInterface $time
+   *   The time service.
    */
   public function __construct(
     protected MemberStorage $memberStorage,
     protected AddonStorage $addonStorage,
+    protected UpgradeStorage $upgradeStorage,
+    protected TimeInterface $time,
   ) {}
 
   /**
@@ -263,7 +271,7 @@ class MemberPortal extends FormBase {
   /**
    * Get the Member ID of the currently logged in user.
    */
-  private function getUserLeadMid($eid) {
+  private function getUserLeadMid(int $eid) {
     $user_email = $this->currentUser()->getEmail();
     if ($member = $this->memberStorage->load(['eid' => $eid, 'email' => $user_email])) {
       return $member['mid'];
@@ -273,8 +281,8 @@ class MemberPortal extends FormBase {
   /**
    * If any member upgrades selected, save them so they can be charged.
    */
-  public function saveUpgrades($eid, $form_values, &$upgrade_price, Payment &$payment) {
-    $mgr = new UpgradeManager($eid);
+  public function saveUpgrades(int $eid, ?array $form_values, ?float &$upgrade_price, Payment &$payment): int {
+    $mgr = new UpgradeManager($this->upgradeStorage, $this->memberStorage, $this->time, $eid);
 
     // Get lead MID from .
     $lead_mid = $this->getUserLeadMid($eid);
@@ -282,7 +290,7 @@ class MemberPortal extends FormBase {
     $upgrades = $form_values["table"];
     if (isset($upgrades) && is_array($upgrades)) {
       foreach ($upgrades as $mid => $memberRow) {
-        $upgrade = new Upgrade($eid, $mid, $memberRow["member_type"], $lead_mid);
+        $upgrade = new Upgrade($this->upgradeStorage, $this->memberStorage, $this->time, $eid, $mid, $memberRow["member_type"], $lead_mid);
         // Only save upgrade if price is not null.
         if (isset($upgrade->upgradePrice)) {
           $mgr->Add($upgrade);
