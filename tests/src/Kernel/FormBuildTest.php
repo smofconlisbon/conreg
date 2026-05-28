@@ -316,6 +316,15 @@ class FormBuildTest extends KernelTestBase {
     $this->assertIsArray($form);
     $this->assertArrayHasKey('#form_id', $form);
     $this->assertEquals('conreg_config_member_types', $form['#form_id']);
+    $this->assertEquals('basic_html', $form['A']['confirmation']['template_body']['#format']);
+
+    $overrideStates = [
+      'visible' => [
+        ':input[name="A[confirmation][override]"]' => ['checked' => TRUE],
+      ],
+    ];
+    $this->assertEquals($overrideStates, $form['A']['confirmation']['template_subject']['#states']);
+    $this->assertEquals($overrideStates, $form['A']['confirmation']['template_body']['#states']);
   }
 
   /**

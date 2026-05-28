@@ -86,6 +86,7 @@ class MemberTypes extends ConfigFormBase {
     $badgeTypes = ConregOptions::badgeTypes($eid);
     $memberClasses = ConregOptions::memberClasses($eid);
     $days = ConregOptions::days($eid);
+    $defaultTextFormat = $this->getDefaultTextFormat($eid);
 
     $form = [
       '#title' => $this->t('@event_name Member Types', ['@event_name' => $event['event_name']]),
@@ -186,17 +187,24 @@ class MemberTypes extends ConfigFormBase {
         '#title' => $this->t('Override confirmation email.'),
         '#default_value' => $type->confirmation->override,
       ];
+      $overrideStates = [
+        'visible' => [
+          ':input[name="' . $typeRef . '[confirmation][override]"]' => ['checked' => TRUE],
+        ],
+      ];
       $form[$typeRef]['confirmation']['template_subject'] = [
         '#type' => 'textfield',
         '#title' => $this->t('Confirmation email subject'),
         '#default_value' => $type->confirmation->template_subject,
+        '#states' => $overrideStates,
       ];
       $form[$typeRef]['confirmation']['template_body'] = [
         '#type' => 'text_format',
         '#title' => $this->t('Confirmation email body'),
         '#description' => $this->t('Text for the email body. you may use the following tokens: @tokens.', ['@tokens' => ConregTokens::tokenHelp()]),
         '#default_value' => $type->confirmation->template_body,
-        '#format' => $type->confirmation->template_format,
+        '#format' => $type->confirmation->template_format ?: $defaultTextFormat,
+        '#states' => $overrideStates,
       ];
 
       $form[$typeRef]['clone'] = [
@@ -372,6 +380,17 @@ class MemberTypes extends ConfigFormBase {
     $this->cacheInvalidator->invalidateTags(['event:' . $eid . ':type']);
 
     parent::submitForm($form, $form_state);
+  }
+
+  /**
+   * Gets the default text format for member type confirmation overrides.
+   */
+  private function getDefaultTextFormat(int $eid): string {
+    if (function_exists('filter_default_format')) {
+      return filter_default_format($this->currentUser());
+    }
+
+    return $this->config('conreg.settings.' . $eid)->get('confirmation.template_format') ?: 'plain_text';
   }
 
   /**
