@@ -212,8 +212,8 @@ class MemberEdit extends FormBase {
         '#type' => 'select',
         '#title' => $curMemberClass->fields->display,
         '#description' => $this->t('Select how you would like to appear on the membership list.'),
-        '#options' => ConregOptions::display(),
-        '#default_value' => $member->display ?: 'F',
+        '#options' => ConregOptions::display($eid, $config),
+        '#default_value' => ($member->display ?? '') ?: ConregOptions::displayDefault($eid, $config),
         '#required' => TRUE,
       ];
     }

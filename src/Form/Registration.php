@@ -118,6 +118,7 @@ class Registration extends FormBase {
     $symbol = $config->get('payments.symbol');
     $countryOptions = ConregOptions::memberCountries($eid, $config);
     $defaultCountry = $config->get('reference.default_country');
+    $defaultDisplay = ConregOptions::displayDefault($eid, $config);
     // If geoPlugin enabled in configuration, lookup country.
     if ($config->get('reference.geoplugin')) {
       $userCountry = $this->countryService->getUserCountry();
@@ -496,8 +497,8 @@ class Registration extends FormBase {
           '#type' => 'select',
           '#title' => $curMemberClass->fields->display,
           '#description' => $curMemberClass->fields->display_description,
-          '#options' => ConregOptions::display(),
-          '#default_value' => 'F',
+          '#options' => ConregOptions::display($eid, $config),
+          '#default_value' => $defaultDisplay,
           '#required' => TRUE,
         ];
       }

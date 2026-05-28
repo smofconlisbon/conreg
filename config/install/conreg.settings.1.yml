@@ -35,6 +35,7 @@ display_options:
     F|Full name and member name
     B|Member name only
     N|Not at all
+  default: F
 display:
   page_size: 15
 submit:

@@ -679,6 +679,25 @@ class ConregOptions {
   }
 
   /**
+   * Return the default display option for membership lists.
+   *
+   * @param int $eid
+   *   The event ID.
+   * @param \Drupal\Core\Config\ImmutableConfig|null $config
+   *   The configuration settings.
+   *
+   * @return string
+   *   The configured default display option.
+   */
+  public static function displayDefault(int $eid = 1, ImmutableConfig|null $config = NULL): string {
+    if (is_null($config)) {
+      $config = ConregConfig::getConfig($eid);
+    }
+
+    return $config->get('display_options.default') ?: 'F';
+  }
+
+  /**
    * Return list of communications methods.
    *
    * @param int $eid

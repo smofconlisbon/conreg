@@ -3,6 +3,7 @@
 namespace Drupal\Tests\conreg\Kernel;
 
 use Drupal\Core\Database\Database;
+use Drupal\Core\Session\UserSession;
 use Drupal\KernelTests\KernelTestBase;
 use Symfony\Component\Routing\Route;
 
@@ -85,9 +86,22 @@ class FormBuildTest extends KernelTestBase {
   }
 
   /**
+   * Sets the configured default display option.
+   */
+  protected function setDefaultDisplayOption(string $display): void {
+    $this->container
+      ->get('config.factory')
+      ->getEditable('conreg.settings.1')
+      ->set('display_options.default', $display)
+      ->save();
+  }
+
+  /**
    * Test building the Registration form.
    */
   public function testMemberRegisterFormBuild() {
+    $this->setDefaultDisplayOption('B');
+
     $route = $this->container
       ->get('router.route_provider')
       ->getRouteByName('conreg_register');
@@ -106,6 +120,7 @@ class FormBuildTest extends KernelTestBase {
     $this->assertArrayHasKey('#form_id', $form);
     $this->assertEquals('conreg_register', $form['#form_id']);
     $this->assertArrayNotHasKey('conreg_event', $form);
+    $this->assertEquals('B', $form['members']['member1']['display']['#default_value']);
     // $this->assertEquals('Registration', (string) $form['#title']);
   }
 
@@ -182,7 +197,17 @@ class FormBuildTest extends KernelTestBase {
    * Test building member edit.
    */
   public function testMemberEditFormBuild() {
-    $this->createTestMember();
+    $this->setDefaultDisplayOption('B');
+    $this->container->get('current_user')->setAccount(new UserSession([
+      'mail' => 'test@example.com',
+    ]));
+    $this->createTestMember([
+      'lead_mid' => 1,
+      'member_type' => 'A',
+      'days' => 'W',
+      'badge_type' => 'A',
+      'is_paid' => 1,
+    ]);
 
     $route = $this->container
       ->get('router.route_provider')
@@ -201,6 +226,7 @@ class FormBuildTest extends KernelTestBase {
     $this->assertIsArray($form);
     $this->assertArrayHasKey('#form_id', $form);
     $this->assertEquals('member_edit_form', $form['#form_id']);
+    $this->assertEquals('B', $form['member']['display']['#default_value']);
   }
 
   /**
@@ -253,6 +279,8 @@ class FormBuildTest extends KernelTestBase {
    * Test building Event Config form.
    */
   public function testAdminEventConfigFormBuild() {
+    $this->setDefaultDisplayOption('B');
+
     $route = $this->container
       ->get('router.route_provider')
       ->getRouteByName('conreg_config');
@@ -270,6 +298,8 @@ class FormBuildTest extends KernelTestBase {
     $this->assertIsArray($form);
     $this->assertArrayHasKey('#form_id', $form);
     $this->assertEquals('conreg_config', $form['#form_id']);
+    $this->assertEquals('B', $form['conreg_display_options']['default']['#default_value']);
+    $this->assertArrayHasKey('F', $form['conreg_display_options']['default']['#options']);
   }
 
   /**
@@ -377,6 +407,8 @@ class FormBuildTest extends KernelTestBase {
    * Test building Manage Members add new member form.
    */
   public function testAdminManageMembersNewFormBuild() {
+    $this->setDefaultDisplayOption('B');
+
     $route = $this->container
       ->get('router.route_provider')
       ->getRouteByName('conreg_admin_members_add');
@@ -394,6 +426,7 @@ class FormBuildTest extends KernelTestBase {
     $this->assertIsArray($form);
     $this->assertArrayHasKey('#form_id', $form);
     $this->assertEquals('conreg_admin_member_edit', $form['#form_id']);
+    $this->assertEquals('B', $form['member']['display']['#default_value']);
   }
 
   /**

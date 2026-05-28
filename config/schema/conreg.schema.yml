@@ -64,6 +64,9 @@ conreg.settings.*:
         options:
           type: text
           label: 'A list of options for displaying member on public lists (note: do not translate codes before |)'
+        default:
+          type: string
+          label: 'The default option for displaying members on public lists'
     member_listing_page:
       type: mapping
       mapping:

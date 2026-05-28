@@ -3,6 +3,7 @@
 namespace Drupal\conreg\Form\Admin;
 
 use Drupal\conreg\ConregTokens;
+use Drupal\conreg\ConregOptions;
 use Drupal\conreg\Service\EventStorage;
 use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Cache\CacheTagsInvalidatorInterface;
@@ -79,6 +80,7 @@ class EventConfig extends ConfigFormBase {
 
     // Get config for event.
     $config = $this->configFactory()->getEditable('conreg.settings.' . $eid);
+    $displayOptionsConfig = $this->config('conreg.settings.' . $eid);
 
     $form = [
       '#title' => $this->t('@event_name Event Configuration', ['@event_name' => $event['event_name']]),
@@ -317,6 +319,13 @@ class EventConfig extends ConfigFormBase {
       '#title' => $this->t('Display options'),
       '#description' => $this->t('Put each display option on a line with single character code, description, separated by | character (e.g. "F|Full name and badge name").'),
       '#default_value' => $config->get('display_options.options'),
+    ];
+    $form['conreg_display_options']['default'] = [
+      '#type' => 'select',
+      '#title' => $this->t('Default display option'),
+      '#description' => $this->t('Select the default option for displaying members on public lists.'),
+      '#options' => ConregOptions::display($eid, $displayOptionsConfig),
+      '#default_value' => ConregOptions::displayDefault($eid, $displayOptionsConfig),
     ];
 
     /*
@@ -718,6 +727,7 @@ class EventConfig extends ConfigFormBase {
     $config->set('communications_method.options', $vals['conreg_communication']['options']);
     $config->set('communications_method.default', $vals['conreg_communication']['default']);
     $config->set('display_options.options', $vals['conreg_display_options']['options']);
+    $config->set('display_options.default', $vals['conreg_display_options']['default']);
     $config->set('conreg_options.option_groups', $vals['conreg_options']['option_groups']);
     $config->set('conreg_options.options', $vals['conreg_options']['options']);
     $config->set('member_listing_page.show_members', $vals['conreg_member_listing']['show_members']);
