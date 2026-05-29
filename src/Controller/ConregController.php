@@ -12,7 +12,7 @@ use Drupal\Core\Datetime\DateHelper;
 use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
- * Controller for Simple Convention Registration.
+ * Controller for ConReg.
  */
 class ConregController extends ControllerBase {
 

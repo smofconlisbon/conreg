@@ -1,4 +1,4 @@
-# Custom permissions for simple convention registration module.
+# Custom permissions for the ConReg module.
 
 'convention registration':
   title: Register for convention

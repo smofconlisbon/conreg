@@ -1,6 +1,6 @@
 /**
  * @file
- * Simple Convention Registration.
+ * ConReg.
  */
 
 (function ($) {

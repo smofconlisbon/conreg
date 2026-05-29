@@ -6,7 +6,7 @@ use Drupal\Core\Config\ImmutableConfig;
 use Drupal\Core\Form\FormStateInterface;
 
 /**
- * List options for Simple Convention Registration.
+ * List options for ConReg.
  */
 class Addons {
 

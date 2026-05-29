@@ -10,7 +10,7 @@ use Drupal\user\Entity\User;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 
 /**
- * Returns responses for ConReg - Simple Convention Registration routes.
+ * Returns responses for ConReg routes.
  */
 class LoginController extends ControllerBase {
 

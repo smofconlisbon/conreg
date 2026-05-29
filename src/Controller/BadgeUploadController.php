@@ -9,7 +9,7 @@ use Drupal\file\FileRepositoryInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
- * Returns responses for ConReg - Simple Convention Registration routes.
+ * Returns responses for ConReg routes.
  */
 class BadgeUploadController extends ControllerBase {
 

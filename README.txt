@@ -2,7 +2,7 @@
 DESCRIPTION
 -----------
 
-Simple Convention Registration is a module to allow
+ConReg is a module to allow
 
 REQUIREMENTS
 ------------
@@ -38,18 +38,18 @@ INSTALLATION
     Grant the access at the Access control page:
       People > Permissions.
 
- 5. CONFIGURE SIMPLE CONVENTION REGISTRATION
+ 5. CONFIGURE CONREG
 
-    Configure Simple Convention Registration on the admin pages:
-      Configuration > Simple Convention Registration.
+    Configure ConReg on the admin pages:
+      Configuration > ConReg.
 
     Ensure you enter your private and public Stripe keys.
 
  6. LINK TO SIMPLENEWS
 
     If you wish to send email newsletters to your convention members, install
-    Simplenews, and configure a newsletter. Enable the newsletter for Simple
-    Convention Registration and select what classes of members should be added.
+    Simplenews, and configure a newsletter. Enable the newsletter for ConReg
+    and select what classes of members should be added.
 
 
 RELATED MODULES

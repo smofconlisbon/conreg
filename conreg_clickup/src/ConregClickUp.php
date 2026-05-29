@@ -12,7 +12,7 @@ use GuzzleHttp\Exception\RequestException;
 // cspell:ignore ecode
 
 /**
- * List options for Simple Convention Registration.
+ * List options for ConReg.
  */
 class ConregClickUp {
 

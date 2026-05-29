@@ -13,7 +13,7 @@ function conreg_airtable_requirements($phase) {
   if ($phase == 'install') {
     if (!class_exists('\Stripe\Stripe')) {
       $requirements['addressing_library'] = [
-        'description' => t('Simple Convention Registration requires the stripe/stripe-php library. Please see README for install instructions.'),
+        'description' => t('ConReg requires the stripe/stripe-php library. Please see README for install instructions.'),
         'severity' => REQUIREMENT_ERROR,
       ];
     }

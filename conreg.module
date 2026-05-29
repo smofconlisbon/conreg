@@ -63,7 +63,7 @@ function conreg_form_alter(&$form, FormStateInterface $form_state, $form_id) {
 
         $form['conreg_' . $eid] = [
           '#type' => 'fieldset',
-          '#title' => t('Simple Convention Registration - @event', ['@event' => $event['event_name']]),
+          '#title' => t('ConReg - @event', ['@event' => $event['event_name']]),
           '#tree' => TRUE,
         ];
         $form['conreg_' . $eid]['active'] = [

@@ -8,7 +8,7 @@ use GuzzleHttp\Exception\GuzzleException;
 use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
- * Country service for Simple Convention Registration.
+ * Country service for ConReg.
  */
 class CountryService implements CountryServiceInterface {
 

@@ -5,7 +5,7 @@ namespace Drupal\conreg;
 use Drupal\conreg\Service\EventStorage;
 
 /**
- * List options for Simple Convention Registration.
+ * List options for ConReg.
  */
 class FieldOptionPermissions {
 

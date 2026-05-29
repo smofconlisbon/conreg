@@ -16,7 +16,7 @@ use Symfony\Component\Mime\Header\UnstructuredHeader;
  *
  * @Mail(
  *   id = "conreg_php_mail",
- *   label = @Translation("Simple Convention Registration PHP mailer"),
+ *   label = @Translation("ConReg PHP mailer"),
  *   description = @Translation("Sends the message as HTML, using PHP's native mail() function.")
  * )
  */

@@ -8,7 +8,7 @@ use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Mail\MailManagerInterface;
 
 /**
- * Returns responses for ConReg - Simple Convention Registration routes.
+ * Returns responses for ConReg routes.
  */
 class BulkMailController extends ControllerBase {
 

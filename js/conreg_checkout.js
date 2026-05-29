@@ -1,6 +1,6 @@
 /**
  * @file
- * Simple Convention Registration Payment.
+ * ConReg payment.
  */
 
 // Adapted to Drupal by James Shields, 5 Oct 2019.

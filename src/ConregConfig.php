@@ -5,7 +5,7 @@ namespace Drupal\conreg;
 use Drupal\Core\Config\ImmutableConfig;
 
 /**
- * List options for Simple Convention Registration.
+ * List options for ConReg.
  */
 class ConregConfig {
 

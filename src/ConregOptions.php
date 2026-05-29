@@ -7,7 +7,7 @@ use Drupal\Core\Config\ImmutableConfig;
 use Drupal\Core\Locale\CountryManager;
 
 /**
- * List options for Simple Convention Registration.
+ * List options for ConReg.
  */
 class ConregOptions {
 
