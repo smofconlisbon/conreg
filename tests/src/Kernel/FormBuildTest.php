@@ -2,6 +2,7 @@
 
 namespace Drupal\Tests\conreg\Kernel;
 
+use Drupal\conreg\Plugin\Derivative\EventsMenuDeriver;
 use Drupal\Core\Database\Database;
 use Drupal\Core\Session\UserSession;
 use Drupal\KernelTests\KernelTestBase;
@@ -250,6 +251,32 @@ class FormBuildTest extends KernelTestBase {
     $this->assertIsArray($form);
     $this->assertArrayHasKey('#form_id', $form);
     $this->assertEquals('conreg_admin_event_list', $form['#form_id']);
+  }
+
+  /**
+   * Test building the ConReg overview routes.
+   */
+  public function testAdminOverviewRoutesBuild(): void {
+    $route_provider = $this->container->get('router.route_provider');
+
+    $overview = $route_provider->getRouteByName('conreg_overview');
+    $this->assertSame('ConReg Overview', $overview->getDefault('_title'));
+    $this->assertSame('access conreg events', $overview->getRequirement('_permission'));
+
+    $event_overview = $route_provider->getRouteByName('conreg_event_overview');
+    $this->assertSame('ConReg Event Overview', $event_overview->getDefault('_title'));
+    $this->assertSame('access conreg events', $event_overview->getRequirement('_permission'));
+  }
+
+  /**
+   * Test event menu links are grouped under the ConReg overview menu.
+   */
+  public function testAdminEventMenuDeriverUsesOverviewParent(): void {
+    $deriver = EventsMenuDeriver::create($this->container, 'conreg.event_links');
+    $links = $deriver->getDerivativeDefinitions(['id' => 'conreg.event_links']);
+
+    $this->assertSame('conreg_event_overview', $links['conreg_event_1']['route_name']);
+    $this->assertSame('conreg.overview', $links['conreg_event_1']['parent']);
   }
 
   /**

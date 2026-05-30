@@ -4,7 +4,9 @@
 
 | Route | Purpose |
 |---|---|
+| `conreg_overview` | Top-level ConReg admin menu |
 | `conreg_event_list` | List and manage events |
+| `conreg_event_overview` | Per-event admin menu |
 | `conreg_event_clone` | Clone config into a new event |
 | `conreg_config` | Main event configuration |
 

@@ -18,10 +18,10 @@ conreg.portal:
   route_name: conreg_portal
   weight: 3
 
-conreg.events:
-  title: ConReg events
+conreg.overview:
+  title: ConReg
   description: Manage registration for conventions.
-  route_name: conreg_event_list
+  route_name: conreg_overview
   menu_name: admin
   parent: system.admin
   weight: 10
@@ -30,11 +30,19 @@ conreg.events:
       pack_id: conreg
       icon_id: identification-badge
 
+conreg.events:
+  title: ConReg events
+  description: Manage events allowing registration.
+  route_name: conreg_event_list
+  menu_name: admin
+  parent: conreg.overview
+  weight: -101
+
 conreg.config_email:
   title: Email Templates
   route_name: conreg_config_email_templates
   menu_name: admin
-  parent: conreg.events
+  parent: conreg.overview
   weight: -100
 
 conreg.event_links:

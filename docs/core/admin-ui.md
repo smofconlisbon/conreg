@@ -4,12 +4,13 @@
 
 `conreg.links.menu.yml` provides:
 
-- `conreg.events` (`admin/config/conreg/events`)
+- `conreg.overview` (`admin/config/conreg/overview`)
+- `conreg.events` (`admin/config/conreg/events`) under `conreg.overview`
 - `conreg.config_email` (`admin/config/conreg/email/templates`)
 
 ## Dynamic event menu tree
 
-`EventsMenuDeriver` adds per-event links under `conreg.events`, including:
+`EventsMenuDeriver` adds per-event links under `conreg.overview`, including:
 
 - Member summary
 - Administer members

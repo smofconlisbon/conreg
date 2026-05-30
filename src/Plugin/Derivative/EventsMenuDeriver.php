@@ -46,9 +46,9 @@ final class EventsMenuDeriver extends DeriverBase implements ContainerDeriverInt
 
       $links[$parent_id] = [
         'title' => $event['event_name'],
-        'route_name' => 'conreg_admin_member_summary',
+        'route_name' => 'conreg_event_overview',
         'route_parameters' => ['eid' => $eid],
-        'parent' => 'conreg.events',
+        'parent' => 'conreg.overview',
         'weight' => $weight,
       ] + $base_plugin_definition;
 
