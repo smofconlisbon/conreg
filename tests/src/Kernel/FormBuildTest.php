@@ -2,8 +2,11 @@
 
 namespace Drupal\Tests\conreg\Kernel;
 
+use Drupal\conreg\Addons;
+use Drupal\conreg\Form\Admin\EventAddOns;
 use Drupal\conreg\Plugin\Derivative\EventsMenuDeriver;
 use Drupal\Core\Database\Database;
+use Drupal\Core\Form\FormState;
 use Drupal\Core\Session\UserSession;
 use Drupal\KernelTests\KernelTestBase;
 use Symfony\Component\Routing\Route;
@@ -695,6 +698,99 @@ class FormBuildTest extends KernelTestBase {
     $this->assertIsArray($form);
     $this->assertArrayHasKey('#form_id', $form);
     $this->assertEquals('conreg_admin_member_options', $form['#form_id']);
+  }
+
+  /**
+   * Test building add-ons with old config that has no label.
+   */
+  public function testAddOnWithoutLabelFallsBackToName(): void {
+    $config = $this->container
+      ->get('config.factory')
+      ->getEditable('conreg.settings.1');
+    $config
+      ->set('add-ons.badge.addon.active', 1)
+      ->set('add-ons.badge.addon.global', 0)
+      ->set('add-ons.badge.addon.options', "print|Printed badge|5")
+      ->save();
+
+    $form_state = new FormState();
+    $form = Addons::getAddon(
+      $this->container->get('config.factory')->get('conreg.settings.1'),
+      [],
+      [],
+      1,
+      [self::class, 'addOnAjaxCallback'],
+      $form_state
+    );
+
+    $this->assertSame('badge', $form['badge']['option']['#title']);
+  }
+
+  /**
+   * Test reading paid add-ons with old config that has no label.
+   */
+  public function testMemberAddOnWithoutLabelFallsBackToName(): void {
+    $this->container
+      ->get('config.factory')
+      ->getEditable('conreg.settings.1')
+      ->set('add-ons.badge.addon.active', 1)
+      ->save();
+
+    Database::getConnection()->insert('conreg_member_addons')
+      ->fields([
+        'mid' => 1,
+        'addon_name' => 'badge',
+        'addon_option' => 'print',
+        'addon_amount' => '5.00',
+        'is_paid' => 1,
+      ])
+      ->execute();
+
+    $addons = Addons::getMemberAddons(
+      $this->container->get('config.factory')->get('conreg.settings.1'),
+      1
+    );
+
+    $this->assertSame('badge', $addons['badge']->label);
+    $this->assertSame('', $addons['badge']->info_label);
+    $this->assertSame('', $addons['badge']->free_label);
+  }
+
+  /**
+   * Test validating active add-ons with only a free amount label.
+   */
+  public function testActiveFreeAmountAddOnDoesNotRequireGeneralLabel(): void {
+    $form = [];
+    $form_state = (new FormState())->setValues([
+      'new_addon' => [
+        'addon_name' => '',
+      ],
+      'addons' => [
+        'donation' => [
+          'addon' => [
+            'active' => 1,
+            'label' => '',
+          ],
+          'free' => [
+            'label' => 'Donation amount',
+          ],
+        ],
+      ],
+    ]);
+
+    $this->container
+      ->get('class_resolver')
+      ->getInstanceFromDefinition(EventAddOns::class)
+      ->validateForm($form, $form_state);
+
+    $this->assertSame([], $form_state->getErrors());
+  }
+
+  /**
+   * AJAX callback placeholder for building add-on form elements.
+   */
+  public static function addOnAjaxCallback(): array {
+    return [];
   }
 
 }

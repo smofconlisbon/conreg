@@ -2,6 +2,7 @@
 
 namespace Drupal\conreg\Form\Admin;
 
+use Drupal\conreg\Addons;
 use Drupal\conreg\Service\AddonStorage;
 use Drupal\Core\DependencyInjection\AutowireTrait;
 use Drupal\Core\Form\FormBase;
@@ -48,7 +49,7 @@ class MemberAddOns extends FormBase {
     if ($addons) {
       foreach ($addons as $key => $val) {
         if ($val['addon']['active'] ?? FALSE) {
-          $options[$key] = $val['free']['label'] ?: $val['addon']['label'] ?? '';
+          $options[$key] = ($val['free']['label'] ?? '') ?: Addons::getAddOnLabel($key, $val);
         }
       }
     }

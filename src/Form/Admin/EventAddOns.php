@@ -202,6 +202,23 @@ class EventAddOns extends ConfigFormBase {
     if (str_contains($vals['new_addon']['addon_name'] ?: '', ' ')) {
       $form_state->setErrorByName('new_addon][addon_name', $this->t('Add-on name must not contain spaces'));
     }
+
+    foreach ($vals['addons'] ?? [] as $addOnId => $addOnVals) {
+      $addon = $addOnVals['addon'] ?? [];
+      $free = $addOnVals['free'] ?? [];
+      if (
+        !empty($addon['active']) &&
+        trim((string) ($addon['label'] ?? '')) === '' &&
+        trim((string) ($free['label'] ?? '')) === ''
+      ) {
+        $form_state->setErrorByName(
+          'addons][' . $addOnId . '][addon][label',
+          $this->t('Label or free amount label is required for active add-on %addon.', [
+            '%addon' => $addOnId,
+          ])
+        );
+      }
+    }
   }
 
   /**

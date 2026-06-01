@@ -11,6 +11,17 @@ use Drupal\Core\Form\FormStateInterface;
 class Addons {
 
   /**
+   * Gets a display label for an add-on.
+   *
+   * Falls back to the add-on machine name for older or invalid configuration
+   * that does not have a label saved.
+   */
+  public static function getAddOnLabel(string $addOnId, array $addOnVals): string {
+    $label = trim((string) ($addOnVals['addon']['label'] ?? ''));
+    return $label !== '' ? $label : $addOnId;
+  }
+
+  /**
    * Return list of membership add-ons from config.
    *
    * Parameters: Optional config.
@@ -78,6 +89,7 @@ class Addons {
       $addon = ($addOnVals['addon'] ?? []);
       // Check add-on is enabled.
       if (($addon['active'] ?? 0) == 1) {
+        $addOnLabel = self::getAddOnLabel($addOnId, $addOnVals);
         // Get add options (we only want first element of first array)...
         [$addOnOptions] = self::memberAddons($addon['options']);
         // If global is set, only display if there's a member number.
@@ -93,12 +105,12 @@ class Addons {
 
           $addons[$addOnId] = [];
 
-          if (!empty($addon['label'])) {
+          if (!empty($addOnOptions)) {
             // Set the add-on options drop-down.
             $addons[$addOnId]['option'] = [
               '#type' => 'select',
-              '#title' => $addon['label'],
-              '#description' => $addon['description'],
+              '#title' => $addOnLabel,
+              '#description' => $addon['description'] ?? '',
               '#options' => $addOnOptions,
               '#required' => TRUE,
               '#ajax' => [
@@ -113,7 +125,7 @@ class Addons {
                 if ($saved[$addOnId]['is_paid'] == 1) {
                   // Add-on saved and paid, so replace drop-down with label.
                   $addons[$addOnId]['option'] = [
-                    '#markup' => '<strong>' . $addon['label'] . '</strong><br />' . $addOnOptions[$saved[$addOnId]['addon_option']],
+                    '#markup' => '<strong>' . $addOnLabel . '</strong><br />' . $addOnOptions[$saved[$addOnId]['addon_option']],
                     '#prefix' => '<div>',
                     '#suffix' => '</div>',
                   ];
@@ -383,6 +395,7 @@ class Addons {
       $addon = ($addOnVals['addon'] ?? []);
       // Check add-on is enabled.
       if (($addon['active'] ?? 0) == 1) {
+        $addOnLabel = self::getAddOnLabel($addOnName, $addOnVals);
         // Get add options (only care about second element of return array)...
         [, $addOnPrices] = self::memberAddons($addon['options']);
         // If global is set, only display if there's a member number.
@@ -418,7 +431,7 @@ class Addons {
               'addon',
               t(
                 "Add-on @add_on",
-                ['@add_on' => $addOnName]
+                ['@add_on' => $addOnLabel]
               ),
               $price
             ));
@@ -463,7 +476,7 @@ class Addons {
                 t(
                   "Add-on @add_on for @first_name @last_name",
                   [
-                    '@add_on' => $addOnName,
+                    '@add_on' => $addOnLabel,
                     '@first_name' => $first_name,
                     '@last_name' => $last_name,
                   ]
@@ -516,13 +529,14 @@ class Addons {
     // Fetch all paid add-ons for member, and loop through them.
     foreach ($storage->loadAll(['mid' => $mid, 'is_paid' => 1]) as $addOpts) {
       $name = $addOpts['addon_name'];
+      $addOnVals = $addons[$name] ?? [];
       $memberAddon = [
         'name' => $name,
-        'label' => $addons[$name]['addon']['label'],
-        'option' => $addOpts['addon_option'],
-        'info_label' => $addons[$name]['info']['label'],
-        'info' => $addOpts['addon_info'],
-        'free_label' => $addons[$name]['free']['label'],
+        'label' => self::getAddOnLabel($name, $addOnVals),
+        'option' => $addOpts['addon_option'] ?? '',
+        'info_label' => $addOnVals['info']['label'] ?? '',
+        'info' => $addOpts['addon_info'] ?? '',
+        'free_label' => $addOnVals['free']['label'] ?? '',
         'amount' => $symbol . $addOpts['addon_amount'],
         'value' => $addOpts['addon_amount'],
       ];

@@ -84,6 +84,52 @@ conreg.settings.*:
       mapping:
         page_size:
           type: integer
+    add-ons:
+      type: sequence
+      label: 'Add-ons'
+      sequence:
+        type: mapping
+        label: 'Add-on'
+        mapping:
+          addon:
+            type: mapping
+            label: 'Add-on options'
+            mapping:
+              active:
+                type: integer
+              global:
+                type: integer
+              label:
+                type: label
+                label: 'Add-on label'
+              description:
+                type: text
+                label: 'Add-on description'
+              options:
+                type: text
+                label: 'Add-on options'
+              weight:
+                type: integer
+          info:
+            type: mapping
+            label: 'Add-on information'
+            mapping:
+              label:
+                type: label
+                label: 'Add-on information label'
+              description:
+                type: text
+                label: 'Add-on information description'
+          free:
+            type: mapping
+            label: 'Add-on free input amount'
+            mapping:
+              label:
+                type: label
+                label: 'Add-on free amount label'
+              description:
+                type: text
+                label: 'Add-on free amount description'
     member:
       type: mapping
       label: 'Member settings'
