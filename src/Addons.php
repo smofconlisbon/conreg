@@ -97,10 +97,12 @@ class Addons {
           // Single member on edit form, or global add-ons.
           if ($memberPos == -1 || empty($memberPos)) {
             $id = 'member_addon_' . $addOnId . '_info';
+            $data_member = 'global';
             // Numbered member of Reg form.
           }
           else {
             $id = 'member_addon_' . $addOnId . '_info_' . $memberPos;
+            $data_member = 'member' . $memberPos;
           }
 
           $addons[$addOnId] = [];
@@ -184,6 +186,7 @@ class Addons {
               '#min' => 0,
               '#attributes' => [
                 'class' => ["edit-free-amt"],
+                'data-member' => $data_member,
               ],
             ];
             if (isset($saved[$addOnId])) {

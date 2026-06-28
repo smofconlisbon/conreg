@@ -289,6 +289,9 @@ class Registration extends FormBase {
       $form['members']['member' . $cnt] = [
         '#type' => 'fieldset',
         '#title' => $this->t('Member @number', ['@number' => $cnt]),
+        '#attributes' => [
+          'class' => ['member-wrapper'],
+        ],
       ];
 
       $firstname_max_length = $curMemberClass->max_length->first_name;
@@ -740,7 +743,7 @@ class Registration extends FormBase {
    *
    * @param array $form
    *   The form to update.
-   * @param Drupal\Core\Form\FormStateInterface $form_state
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
    *   The form state.
    *
    * @return array
@@ -756,10 +759,10 @@ class Registration extends FormBase {
    *
    * @param array $form
    *   The form definition.
-   * @param Drupal\Core\Form\FormStateInterface $form_state
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
    *   Current form state.
    *
-   * @return array|Drupal\Core\Ajax\AjaxResponse
+   * @return array|\Drupal\Core\Ajax\AjaxResponse
    *   Updated form array or Ajax partial form replacements.
    */
   public function updateMemberPriceCallback(array $form, FormStateInterface $form_state): array|AjaxResponse {
@@ -808,10 +811,10 @@ class Registration extends FormBase {
    *
    * @param array $form
    *   Form structure.
-   * @param Drupal\Core\Form\FormStateInterface $form_state
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
    *   Current form state.
    *
-   * @return Drupal\Core\Ajax\AjaxResponse
+   * @return \Drupal\Core\Ajax\AjaxResponse
    *   Ajax form replacement commands.
    */
   public function updateMemberBadgeNameCallback(array $form, FormStateInterface $form_state): AjaxResponse {
@@ -835,10 +838,10 @@ class Registration extends FormBase {
    *
    * @param array $form
    *   The form definition.
-   * @param Drupal\Core\Form\FormStateInterface $form_state
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
    *   Current state of form.
    *
-   * @return Drupal\Core\Ajax\AjaxResponse
+   * @return \Drupal\Core\Ajax\AjaxResponse
    *   The Ajax commands to update the form.
    */
   public function updateMemberAddressCallback(array $form, FormStateInterface $form_state): AjaxResponse {
@@ -858,7 +861,7 @@ class Registration extends FormBase {
    *
    * @param array $form
    *   The form array.
-   * @param Drupal\Core\Form\FormStateInterface $form_state
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
    *   Form state values.
    *
    * @return array
@@ -886,10 +889,10 @@ class Registration extends FormBase {
    *
    * @param array $form
    *   Form to check mandatory fields on.
-   * @param Drupal\Core\Form\FormStateInterface $form_state
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
    *   Current form state.
    *
-   * @return Drupal\Core\Ajax\AjaxResponse
+   * @return \Drupal\Core\Ajax\AjaxResponse
    *   Response containing modifications to form.
    */
   public function updateMandatoryValidationCallback(array $form, FormStateInterface $form_state): AjaxResponse {

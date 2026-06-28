@@ -1,73 +1,108 @@
 /**
  * @file
- * ConReg.
+ * ConReg behavior - handle badge name and pricing updates.
  */
 
-(function ($) {
-  Drupal.behaviors.conreg = {
-    attach: function (context, settings) {
-      $('.edit-members-first-name,.edit-members-last-name', context).on('input',function(event) {
-        var reg=/^([a-zA-Z0-9]+\-){3}/
-        var base=reg.exec(event.target.id);
-        var max_length = drupalSettings.conreg.badge_name_max;
-        var first_name=$("#" + base[0] + "first-name").val().trim();
-        var last_name=$("#" + base[0] + "last-name").val().trim();
-        var name=first_name.concat(" ", last_name);
-        var name_last=last_name.concat(", ", first_name);
-        $("." + base[0] + "badge-name-option[value='N'] + label").text(name.substring(0, max_length));
-        $("." + base[0] + "badge-name-option[value='F'] + label").text(first_name.substring(0, max_length));
-        $("." + base[0] + "badge-name-option[value='L'] + label").text(name_last.substring(0, max_length));
-      });
-
-      // Loop through badge name option fields to determine whether to show "custom" badge name.
-      $('.edit-members-badge-name-option').each(function(i, obj) {
-        showBadgeNameOther(obj);
-      });
-
-      // If "other" badge name option selected, make custom badge name field visible, otherwise hide.
-      $('.edit-members-badge-name-option').change(function(event) {
-        showBadgeNameOther(event.currentTarget);
-      });
-
-      // If free amount entered,
-      $(".edit-free-amt", context).on('input',function(event) {
-        const regex = /member[0-9]+/g
-        const found = event.target.id.match(regex);
-        if (found) {
-          var memberTotal = Number($("#edit-"+found[0]+"-price-minus-free-amt").val());
-          memberTotal += Number(event.target.value);
-          $("#"+found[0]+"-value").text(memberTotal.toFixed(2));
-        }
-        var total = Number($("#edit-total-minus-free-amt").val());
-        $(".edit-free-amt").each(function(index) {
-          total += Number($(this).val());
-        });
-        $("#total-value").text(total.toFixed(2));
-        if (total == 0) {
-          $("#edit-payment-submit").val(drupalSettings.submit.free);
-        }
-        else {
-          $("#edit-payment-submit").val(drupalSettings.submit.payment);
-        }
-      });
+(function (Drupal, once) {
+  function showBadgeNameOther(element) {
+    if (!element.checked) {
+      return;
     }
-  };
-})(jQuery);
 
-function showBadgeNameOther(obj)
-{
-  if (obj.checked) {
-    var badgeOther = obj.parentNode.parentNode.parentNode.parentNode.parentNode.querySelector(".edit-members-badge-name-container")
-    if (obj.value == 'O') {
-      badgeOther.style.display = "block";
-      badgeOther.querySelector(".edit-members-badge-name-other").required = true;
-      badgeOther.querySelector("label").classList.add("form-required");
+    const badgeOther = element
+      .closest('.member-wrapper')
+      ?.querySelector('.edit-members-badge-name-container');
+
+    if (!badgeOther) {
+      return;
     }
-    else {
-      badgeOther.style.display = "none";
-      badgeOther.querySelector(".edit-members-badge-name-other").required = false;
-      badgeOther.querySelector("label").classList.remove("form-required");
-    }
+
+    const input = badgeOther.querySelector('.edit-members-badge-name-other');
+    const label = badgeOther.querySelector('label');
+
+    const show = element.value === 'O';
+
+    badgeOther.hidden = !show;
+    input.required = show;
+    label.classList.toggle('form-required', show);
   }
-}
 
+  Drupal.behaviors.conreg = {
+    attach(context) {
+      // Update badge name options.
+      once(
+        'conreg-name',
+        '.edit-members-first-name, .edit-members-last-name',
+        context,
+      ).forEach((field) => {
+        field.addEventListener('input', (event) => {
+          const maxLength = drupalSettings.conreg.badge_name_max;
+
+          const wrapper = event.target.closest('.member-wrapper');
+          const firstName = wrapper
+            .querySelector('.edit-members-first-name')
+            .value.trim();
+          const lastName = wrapper
+            .querySelector('.edit-members-last-name')
+            .value.trim();
+
+          const labels = {
+            N: `${firstName} ${lastName}`,
+            F: firstName,
+            L: `${lastName}, ${firstName}`,
+          };
+
+          Object.entries(labels).forEach(([option, value]) => {
+            wrapper.querySelector(
+              `.edit-members-badge-name-option[value="${option}"] + label`,
+            ).textContent = value.substring(0, maxLength);
+          });
+        });
+      });
+
+      // Set initial badge options.
+      once('conreg-badge', '.edit-members-badge-name-option', context).forEach(
+        (option) => {
+          showBadgeNameOther(option);
+
+          option.addEventListener('change', () => {
+            showBadgeNameOther(option);
+          });
+        },
+      );
+
+      // Free amount changes.
+      once('conreg-free', '.edit-free-amt', context).forEach((field) => {
+        field.addEventListener('input', (event) => {
+          const member = event.target.dataset.member;
+
+          if (member && member !== 'global') {
+            const base = Number(
+              document.getElementById(`edit-${member}-price-minus-free-amt`)
+                .value,
+            );
+
+            document.getElementById(`${member}-value`).textContent = (
+              base + Number(event.target.value)
+            ).toFixed(2);
+          }
+
+          let total = Number(
+            document.getElementById('edit-total-minus-free-amt').value,
+          );
+
+          document.querySelectorAll('.edit-free-amt').forEach((input) => {
+            total += Number(input.value);
+          });
+
+          document.getElementById('total-value').textContent = total.toFixed(2);
+
+          document.getElementById('edit-payment-submit').value =
+            total === 0
+              ? drupalSettings.submit.free
+              : drupalSettings.submit.payment;
+        });
+      });
+    },
+  };
+})(Drupal, once);
