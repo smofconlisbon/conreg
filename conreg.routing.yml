@@ -33,6 +33,13 @@ conreg_portal_register:
   options:
     no_cache: true
 
+conreg_email_check:
+  path: '/members/email-check'
+  defaults:
+    _controller: '\Drupal\conreg\Controller\EmailCheckController::check'
+  requirements:
+    _permission: 'lookup registered member emails'
+
 conreg_checkout:
   path: 'members/checkout/{payid}/{key}'
   defaults:
@@ -289,9 +296,9 @@ conreg_admin_mailout_emails:
     eid: ^[0-9]+$
 
 conreg_admin_mailout_emails_export:
-  path: "admin/members/mailout_export/{eid}/{methods}/{languages}/{fields}"
+  path: 'admin/members/mailout_export/{eid}/{methods}/{languages}/{fields}'
   defaults:
-    _title: "Exporting Member Mailout Emails"
+    _title: 'Exporting Member Mailout Emails'
     _form: '\Drupal\conreg\Form\Admin\MailoutEmails'
     eid: 1
     option: 0

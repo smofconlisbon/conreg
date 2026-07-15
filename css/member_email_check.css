@@ -1,0 +1,32 @@
+.members-email-warning {
+  padding: 0.5rem;
+  color: #000;
+  outline: solid 2px #dc3545;
+  background-color: #dfc6c9;
+  font-weight: bold;
+}
+
+.member-email-status {
+  margin-left: 1rem;
+  font-size: 2em;
+}
+
+.member-email-status--valid::before {
+  content: "✓";
+  color: #198754;
+}
+
+.member-email-status--invalid::before {
+  content: "!";
+  color: #6c757d;
+}
+
+.member-email-status--possible::before {
+  content: "?";
+  color: #fd7e14;
+}
+
+.member-email-status--conflict::before {
+  content: "✕";
+  color: #dc3545;
+}

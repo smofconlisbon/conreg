@@ -433,7 +433,7 @@ conreg.settings.*:
           type: integer
         no_country_label:
           type: label
-          label: 'Option to select for users who don''t want to specify a country'
+          label: "Option to select for users who don't want to specify a country"
     conreg_options:
       type: mapping
       label: 'Settings for membership options'

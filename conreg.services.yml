@@ -11,6 +11,10 @@ services:
     class: Drupal\conreg\Service\StripeService
   Drupal\conreg\Service\StripeServiceInterface: '@conreg.stripe_service'
 
+  conreg.member_repository:
+    class: Drupal\conreg\Service\MemberRepository
+  Drupal\conreg\Service\MemberRepository: '@conreg.member_repository'
+
   conreg.member.storage:
     class: Drupal\conreg\Service\MemberStorage
   Drupal\conreg\Service\MemberStorage: '@conreg.member.storage'
@@ -25,5 +29,4 @@ services:
 
   conreg.upgrade.storage:
     class: Drupal\conreg\Service\UpgradeStorage
-    autowire: true
   Drupal\conreg\Service\UpgradeStorage: '@conreg.upgrade.storage'

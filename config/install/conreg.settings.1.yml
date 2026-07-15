@@ -74,7 +74,7 @@ thanks:
   thank_you_message: "<p>Thank you for registering for [event_name]!</p>\r\n\r\n<p>You will also receive an email confirmation. If you don't see it, please check your Spam folder.</p>\r\n\r\n<p>Your payment reference is <strong>[reference]</strong>.</p>\r\n\r\n<p>If you have chosen to appear on the public membership list, you will be added once your membership has been processed by the registration team.</p>\r\n"
   thank_you_format: basic_html
 member_check:
-  intro: 'To check your membership details, please enter your email address below. For privacy reasons, we can only confirm your membership by email. If you don''t receive an email within a few minutes, please check your spam folder.'
+  intro: "To check your membership details, please enter your email address below. For privacy reasons, we can only confirm your membership by email. If you don't receive an email within a few minutes, please check your spam folder."
   confirm_subject: 'Your [event_name] Membership Status'
   confirm_body: "<p>Hi [first_name],</p>\r\n\r\n<p>This is to confirm your membership status for [event_name].</p>\r\n\r\n<p>Your member details are:</p>\r\n\r\n<p>[member_details]</p>\r\n\r\n<p>If you need to change anything, please log in by clicking here: [login_url]</p>\r\n\r\n<p>Best wishes,</p>\r\n\r\n<p>The [event_name] team.</p>\r\n"
   confirm_format: basic_html

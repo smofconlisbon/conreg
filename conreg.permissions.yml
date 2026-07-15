@@ -7,7 +7,7 @@
 'view public members':
   title: View public membership list
   description: Allow users to view list of members who opted in
-  
+
 'check membership':
   title: Check membership
   description: Allow users to check if they have registered
@@ -16,9 +16,13 @@
   title: Access Member Portal
   description: Allow users to check if they have registered
 
+'lookup registered member emails':
+  title: Lookup registered member emails
+  description: Allow users to check member email addresses for duplicates while editing forms
+
 'access conreg events':
   title: Access ConReg events
-  description: Allow access to ConReg event menu items.
+  description: Allow access to ConReg event menu items
 
 'configure convention registration':
   title: Configure convention registration

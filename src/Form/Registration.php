@@ -129,6 +129,7 @@ class Registration extends FormBase {
 
     $lead_member = NULL;
     $first_user_email = NULL;
+    $memberEmails = [];
     $paidMembers = [];
     $unpaidMembers = [];
     // Check if user logged in and should be first member.
@@ -141,6 +142,7 @@ class Registration extends FormBase {
           $first_user_email = $email;
         }
         $memberGroup = Member::loadMemberGroupByEmail($eid, $email);
+        $memberEmails = array_column(array_filter($memberGroup, fn($member) => !empty($member->email)), 'email');
         $mapFn = fn($member) => $member->badge_name;
         $paidMembers = array_map($mapFn, array_filter($memberGroup, fn($member) => $member->is_paid));
         $unpaidMembers = array_map($mapFn, array_filter($memberGroup, fn($member) => !$member->is_paid));
@@ -188,9 +190,31 @@ class Registration extends FormBase {
           'conreg/conreg_form',
           'conreg/conreg_field_options',
           'conreg/conreg_disable_on_click',
+          'conreg/member_email_check',
         ],
         'drupalSettings' => [],
       ],
+    ];
+
+    // Get member portal URL for logged in an anonymous users.
+    $url = $this->currentUser->isAuthenticated()
+      ? Url::fromRoute('conreg_portal', ['eid' => $eid])
+      : Url::fromRoute('conreg_check', ['eid' => $eid]);
+    // Add attached data for email uniqueness validation.
+    $form['#attached']['drupalSettings']['conreg'] = [
+      'eid' => $eid,
+      'currentFormEmails' => [],
+      'userEmails' => $memberEmails,
+      'commonDomains' => [
+        'gmail.com',
+        'hotmail.com',
+        'outlook.com',
+        'yahoo.com',
+        'icloud.com',
+        // Etc - move to config later.
+      ],
+      'memberPortalUrl' => $url->toString(),
+      'emailLookupEnabled' => $this->currentUser()->hasPermission('lookup registered member emails'),
     ];
 
     if ($paidMembers && $return != 'fantable') {
@@ -351,6 +375,11 @@ class Registration extends FormBase {
         $form['members']['member' . $cnt]['email'] = [
           '#type' => 'email',
           '#title' => $curMemberClass->fields->email,
+          '#description' => $this->t('Email address required for first member.'),
+          '#attributes' => [
+            'id' => "edit-members-member$cnt-email",
+            'class' => ['edit-members-email'],
+          ],
         ];
         if (!$paidMembers && $cnt == 1) {
           $form['members']['member' . $cnt]['email']['#required'] = TRUE;
@@ -460,7 +489,7 @@ class Registration extends FormBase {
       if (empty($badgename_max_length)) {
         $badgename_max_length = 128;
       }
-      $form['#attached']['drupalSettings']['conreg'] = ['badge_name_max' => $badgename_max_length];
+      $form['#attached']['drupalSettings']['conreg']['badge_name_max'] = $badgename_max_length;
 
       $firstName = $form_values['members']['member' . $cnt]['first_name'] ?? '';
       $lastName = $form_values['members']['member' . $cnt]['last_name'] ?? '';

@@ -79,6 +79,15 @@ conreg_disable_on_click:
     - core/drupal.form
     - core/jquery
 
+# JS to check email unique.
+member_email_check:
+  version: 1.x
+  css:
+    theme:
+      css/member_email_check.css: {}
+  js:
+    js/member_email_check.js: {}
+
 # CSS for navigation icon.
 icon:
   version: 1.x
