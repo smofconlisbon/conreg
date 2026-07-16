@@ -4,6 +4,7 @@ namespace Drupal\conreg\Form;
 
 use Drupal\Component\Datetime\TimeInterface;
 use Drupal\conreg\Addons;
+use Drupal\conreg\ConregConfig;
 use Drupal\conreg\ConregOptions;
 use Drupal\conreg\Service\EventStorage;
 use Drupal\conreg\Member;
@@ -275,6 +276,7 @@ class Checkout extends FormBase {
    * Process a line of payment information from Stripe.
    */
   private function processPaymentLine(PaymentLine $line, object $session) {
+    $config = ConregConfig::getConfig($this->eid);
     switch ($line->type) {
       case "member":
         // Only update member if not already paid.
@@ -294,6 +296,18 @@ class Checkout extends FormBase {
           // If email address populated, send confirmation email.
           if (!empty($member->email)) {
             $this->sendConfirmationEmail((array) $member);
+          }
+
+          // Check if event has a role to add to user account.
+          $add_role = $config->get('member_portal.add_role');
+          if ($add_role) {
+            $account = user_load_by_mail($member->email);
+            // Check if user has role already.
+            if ($account && !$account->hasRole($add_role)) {
+              // They don't, so we need to add it.
+              $account->addRole($add_role);
+              $account->save();
+            }
           }
         }
         break;

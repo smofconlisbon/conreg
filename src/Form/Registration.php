@@ -295,9 +295,10 @@ class Registration extends FormBase {
     $selectedClassChanged = FALSE;
 
     for ($cnt = 1; $cnt <= $memberQty; $cnt++) {
+      $member_values = $form_values['members']['member' . $cnt] ?? [];
       // Get the member class for the current member type,
       // or if none defined, get the default member class.
-      $memberType = $form_values['members']['member' . $cnt]['type'] ?? $defaultType;
+      $memberType = $member_values['type'] ?? $defaultType;
       $curMemberTypes[$cnt] = $memberType;
       $curMemberClassRef = $types->types[$memberType]->memberClass ?? array_key_first($memberClasses->classes);
       $selectedClasses[$cnt] = $curMemberClassRef;
@@ -423,8 +424,8 @@ class Registration extends FormBase {
       ];
       // Get the current member type.
       // If none selected, take the first entry in the options array.
-      if (!empty($form_values['members']['member' . $cnt]['type'])) {
-        $currentType = $form_values['members']['member' . $cnt]['type'];
+      if (!empty($member_values['type'])) {
+        $currentType = $member_values['type'];
         // If current member type has day options, display.
         if (isset($types->types[$currentType]) && isset($types->types[$currentType]->dayOptions) && count($types->types[$currentType]->dayOptions)) {
           // Track that the member has days set.
@@ -459,7 +460,7 @@ class Registration extends FormBase {
       }
 
       // Get member add-on details.
-      $addon = $form_values['members']['member' . $cnt]['add_on'] ?? [];
+      $addon = $member_values['add_on'] ?? [];
       $form['members']['member' . $cnt]['add_on'] = Addons::getAddon(
         $config,
         $addon,
@@ -491,8 +492,8 @@ class Registration extends FormBase {
       }
       $form['#attached']['drupalSettings']['conreg']['badge_name_max'] = $badgename_max_length;
 
-      $firstName = $form_values['members']['member' . $cnt]['first_name'] ?? '';
-      $lastName = $form_values['members']['member' . $cnt]['last_name'] ?? '';
+      $firstName = $member_values['first_name'] ?? '';
+      $lastName = $member_values['last_name'] ?? '';
       $form['members']['member' . $cnt]['badge_name_option'] = [
         '#type' => 'radios',
         '#title' => $curMemberClass->fields->badge_name_option,
@@ -570,11 +571,11 @@ class Registration extends FormBase {
         '#suffix' => '</div>',
       ];
 
-      if (empty($form_values['members']['member' . $cnt]['same_address'])) {
+      if (empty($member_values['same_address'])) {
         $same = FALSE;
       }
       else {
-        $same = $form_values['members']['member' . $cnt]['same_address'];
+        $same = $member_values['same_address'];
       }
 
       // Always show address for member 1, and for other members
@@ -989,35 +990,36 @@ class Registration extends FormBase {
     $form_values = $form_state->getValues();
     $memberQty = $form_values['global']['member_quantity'];
     for ($cnt = 1; $cnt <= $memberQty; $cnt++) {
+      $member_values = $form_values['members']['member' . $cnt];
       // Check that either first name or last name has been entered.
-      if ((empty($form_values['members']['member' . $cnt]['first_name']) ||
-        empty(trim($form_values['members']['member' . $cnt]['first_name']))) &&
-        (empty($form_values['members']['member' . $cnt]['last_name']) ||
-        empty(trim($form_values['members']['member' . $cnt]['last_name'])))
+      if ((empty($member_values['first_name']) ||
+        empty(trim($member_values['first_name']))) &&
+        (empty($member_values['last_name']) ||
+        empty(trim($member_values['last_name'])))
       ) {
         $form_state->setErrorByName('members][member' . $cnt . '][first_name', $this->t('You must enter either first name or last name.'));
         $form_state->setErrorByName('members][member' . $cnt . '][last_name');
       }
       // If first name selected for badge, first name must be entered.
       if (
-        !isset($form_values['members']['member' . $cnt]['badge_name_option']) ||
-        $form_values['members']['member' . $cnt]['badge_name_option'] == 'F' &&
-        (empty($form_values['members']['member' . $cnt]['first_name']) ||
-        empty(trim($form_values['members']['member' . $cnt]['first_name'])))
+        !isset($member_values['badge_name_option']) ||
+        $member_values['badge_name_option'] == 'F' &&
+        (empty($member_values['first_name']) ||
+        empty(trim($member_values['first_name'])))
       ) {
         $form_state->setErrorByName('members][member' . $cnt . '][first_name', $this->t('You cannot choose first name for badge unless you enter a first name.'));
       }
       // If the "other" option has been chosen, a badge name must be entered.
       if (
-        !isset($form_values['members']['member' . $cnt]['badge_name_option']) ||
-        $form_values['members']['member' . $cnt]['badge_name_option'] == 'O' &&
-        (empty($form_values['members']['member' . $cnt]['badge_name']['other']) ||
-        empty(trim($form_values['members']['member' . $cnt]['badge_name']['other'])))
+        !isset($member_values['badge_name_option']) ||
+        $member_values['badge_name_option'] == 'O' &&
+        (empty($member_values['badge_name']['other']) ||
+        empty(trim($member_values['badge_name']['other'])))
       ) {
         $form_state->setErrorByName('members][member' . $cnt . '][badge_name][other', $this->t('Please enter your badge name.'));
       }
       // Validate that email address is valid and unique for member.
-      $email = $form_values['members']['member' . $cnt]['email'];
+      $email = $member_values['email'];
       if ($email) {
         if ($email && !$this->emailValidator->isValid($email)) {
           $form_state->setErrorByName('members][member' . $cnt . '][email', $this->t('Please enter a valid email address'));
@@ -1060,16 +1062,19 @@ class Registration extends FormBase {
     $eid = $form_state->get('eid');
     $event = $this->eventStorage->load(['eid' => $eid]);
     $return = $form_state->get('return');
+    $config = ConregConfig::getConfig($eid);
     $memberClasses = ConregOptions::memberClasses($eid, $config);
 
     $form_values = $form_state->getValues();
 
-    $config = ConregConfig::getConfig($eid);
     $symbol = $config->get('payments.symbol');
     $discountEnabled = $config->get('discount.enable');
     $discountFreeEvery = $config->get('discount.free_every');
     $types = ConregOptions::memberTypes($eid, $config);
     [, $addOnPrices] = ConregOptions::memberAddons($eid, $config);
+
+    // Load the member role for the event, if any.
+    $add_role = $config->get('member_portal.add_role');
 
     // Find out number of members.
     $memberQty = $form_values['global']['member_quantity'];
@@ -1115,8 +1120,9 @@ class Registration extends FormBase {
     }
 
     for ($cnt = 1; $cnt <= $memberQty; $cnt++) {
+      $member_values = $form_values['members']['member' . $cnt];
       // Look up the member type, and get the default badge type.
-      $member_type = $form_values['members']['member' . $cnt]['type'];
+      $member_type = $member_values['type'];
       if (isset($types->types[$member_type]->badgeType)) {
         $badge_type = $types->types[$member_type]->badgeType;
       }
@@ -1129,7 +1135,7 @@ class Registration extends FormBase {
       $memberClass = $types->types[$member_type]->memberClass ?? array_key_first($memberClasses->classes);
       $optionVals = [];
       // Process option fields to remove any modifications from form values.
-      $fieldOptions->processOptionFields($memberClass, $form_values['members']['member' . $cnt], 0, $optionVals);
+      $fieldOptions->processOptionFields($memberClass, $member_values, 0, $optionVals);
 
       // Also process global options for each member.
       if (array_key_exists('global_options', $form_values)) {
@@ -1141,26 +1147,29 @@ class Registration extends FormBase {
         $badgename_max_length = 128;
       }
       // Check whether to use name or "other" badge name...
-      switch ($form_values['members']['member' . $cnt]['badge_name_option']) {
+      switch ($member_values['badge_name_option']) {
         case 'F':
-          $badge_name = substr(trim($form_values['members']['member' . $cnt]['first_name']), 0, $badgename_max_length);
+          $badge_name = substr(trim($member_values['first_name']), 0, $badgename_max_length);
           break;
 
         case 'N':
-          $badge_name = substr(trim($form_values['members']['member' . $cnt]['first_name']) . ' ' . trim($form_values['members']['member' . $cnt]['last_name']), 0, $badgename_max_length);
+          $badge_name = substr(trim($member_values['first_name']) . ' ' . trim($member_values['last_name']), 0, $badgename_max_length);
           break;
 
         case 'L':
-          $badge_name = substr(trim($form_values['members']['member' . $cnt]['last_name']) . ', ' . trim($form_values['members']['member' . $cnt]['first_name']), 0, $badgename_max_length);
+          $badge_name = substr(trim($member_values['last_name']) . ', ' . trim($member_values['first_name']), 0, $badgename_max_length);
           break;
 
         case 'O':
-          $badge_name = substr(trim($form_values['members']['member' . $cnt]['badge_name']['other']), 0, $badgename_max_length);
+          $badge_name = substr(trim($member_values['badge_name']['other']), 0, $badgename_max_length);
           break;
+
+        default:
+          $badge_name = substr(trim($member_values['first_name']), 0, $badgename_max_length);
       }
 
       // If "same" checkbox ticked for member, use member 1 for address fields.
-      if ($cnt == 1 || $form_values['members']['member' . $cnt]['same_address']) {
+      if ($cnt == 1 || $member_values['same_address']) {
         $addressMember = 1;
       }
       else {
@@ -1169,8 +1178,8 @@ class Registration extends FormBase {
       // Assign random key for payment URL.
       $rand_key = mt_rand();
       // If no date, use NULL.
-      if (isset($form_values['members']['member' . $cnt]['birth_date']) && preg_match("/^(\d{4})-(\d{2})-(\d{2})$/", $form_values['members']['member' . $cnt]['birth_date'])) {
-        $birth_date = $form_values['members']['member' . $cnt]['birth_date'];
+      if (isset($member_values['birth_date']) && preg_match("/^(\d{4})-(\d{2})-(\d{2})$/", $member_values['birth_date'])) {
+        $birth_date = $member_values['birth_date'];
       }
       else {
         $birth_date = NULL;
@@ -1182,22 +1191,22 @@ class Registration extends FormBase {
         'random_key' => $rand_key,
         'member_type' => $memberPrices[$cnt]->memberType,
         'days' => $memberPrices[$cnt]->days,
-        'first_name' => $form_values['members']['member' . $cnt]['first_name'],
-        'last_name' => $form_values['members']['member' . $cnt]['last_name'],
+        'first_name' => $member_values['first_name'],
+        'last_name' => $member_values['last_name'],
         'badge_name' => $badge_name,
         'badge_type' => $badge_type,
-        'display' => $form_values['members']['member' . $cnt]['display'] ?? 'N',
-        'communication_method' => $form_values['members']['member' . $cnt]['communication_method'] ?? '',
-        'email' => $form_values['members']['member' . $cnt]['email'],
+        'display' => $member_values['display'] ?? 'N',
+        'communication_method' => $member_values['communication_method'] ?? '',
+        'email' => $member_values['email'],
         'street' => $form_values['members']['member' . $addressMember]['address']['street'] ?? '',
         'street2' => $form_values['members']['member' . $addressMember]['address']['street2'] ?? '',
         'city' => $form_values['members']['member' . $addressMember]['address']['city'] ?? '',
         'county' => $form_values['members']['member' . $addressMember]['address']['county'] ?? '',
         'postcode' => $form_values['members']['member' . $addressMember]['address']['postcode'] ?? '',
         'country' => $form_values['members']['member' . $addressMember]['address']['country'] ?? '',
-        'phone' => $form_values['members']['member' . $cnt]['phone'] ?? '',
+        'phone' => $member_values['phone'] ?? '',
         'birth_date' => $birth_date,
-        'age' => $form_values['members']['member' . $cnt]['age'] ?? 0,
+        'age' => $member_values['age'] ?? 0,
         'member_price' => $memberPrices[$cnt]->basePrice,
         'member_total' => $memberPrices[$cnt]->price,
         'add_on_price' => $memberPrices[$cnt]->addOnPrice,

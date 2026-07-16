@@ -3,7 +3,6 @@
 namespace Drupal\conreg\Controller;
 
 use Drupal\Component\Datetime\TimeInterface;
-use Drupal\conreg\ConregConfig;
 use Drupal\conreg\Service\MemberStorage;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\user\Entity\User;
@@ -85,18 +84,6 @@ class LoginController extends ControllerBase {
       // NOTE: login will fail silently if not activated!
       $user->activate();
       $user->save();
-    }
-
-    // Check if role needs to be added.
-    $config = ConregConfig::getConfig($member['eid']);
-    $addRole = $config->get('member_portal.add_role');
-    if ($addRole) {
-      // Check if user has role already.
-      if (!$user->hasRole($addRole)) {
-        // They don't, so we need to add it.
-        $user->addRole($addRole);
-        $user->save();
-      }
     }
 
     // Login user.
