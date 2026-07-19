@@ -35,14 +35,14 @@ class Checkout extends FormBase {
    *
    * @var int
    */
-  private int $eid;
+  protected int $eid;
 
   /**
    * If true, members auto approved on payment.
    *
    * @var bool
    */
-  private bool $autoApprove;
+  protected bool $autoApprove;
 
   /**
    * Constructs a new Checkout form.
@@ -232,7 +232,9 @@ class Checkout extends FormBase {
 
     $form['#title'] = $config->get('thanks.title');
     $form['message'] = [
-      '#markup' => check_markup($message, $format),
+      '#type' => 'processed_text',
+      '#text' => $message,
+      '#format' => $format,
     ];
 
     return $form;

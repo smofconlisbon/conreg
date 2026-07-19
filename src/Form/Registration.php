@@ -215,6 +215,7 @@ class Registration extends FormBase {
       ],
       'memberPortalUrl' => $url->toString(),
       'emailLookupEnabled' => $this->currentUser()->hasPermission('lookup registered member emails'),
+      'allowDuplicates' => $types->allowDuplicates,
     ];
 
     if ($paidMembers && $return != 'fantable') {
@@ -287,6 +288,8 @@ class Registration extends FormBase {
     $prevMemberDays = $form_state->get('member_days');
     // Array to store class for each member.
     $selectedClasses = [];
+    // Store allow duplicates for each member.
+    $memberAllowDuplicates = [];
     // Get the previous classes to compare.
     $prevSelectedClasses = $form_state->get('member_classes');
     if (is_null($prevSelectedClasses)) {
@@ -987,6 +990,9 @@ class Registration extends FormBase {
    */
   public function validateForm(array &$form, FormStateInterface $form_state): void {
     $eid = $form_state->get('eid');
+    $config = ConregConfig::getConfig($eid);
+    $types = ConregOptions::memberTypes($eid, $config);
+
     $form_values = $form_state->getValues();
     $memberQty = $form_values['global']['member_quantity'];
     for ($cnt = 1; $cnt <= $memberQty; $cnt++) {
@@ -1018,6 +1024,12 @@ class Registration extends FormBase {
       ) {
         $form_state->setErrorByName('members][member' . $cnt . '][badge_name][other', $this->t('Please enter your badge name.'));
       }
+      // Validate member type.
+      $memberType = $member_values['type'];
+      if (!$memberType) {
+        $form_state->setErrorByName('members][member' . $cnt . '][type', $this->t('Please select a member type'));
+      }
+      $allowDuplicates = $memberType ? $types->allowDuplicates[$memberType] : TRUE;
       // Validate that email address is valid and unique for member.
       $email = $member_values['email'];
       if ($email) {
@@ -1033,23 +1045,25 @@ class Registration extends FormBase {
             ]));
           }
         }
-        // Check a user hasn't already been registered with the same email.
-        $member = Member::loadMemberByEmail($eid, $email);
-        if ($member) {
-          $url = $this->currentUser->isAuthenticated()
-            ? Url::fromRoute('conreg_portal')
-            : Url::fromRoute('conreg_check');
-          $link = Link::fromTextAndUrl($this->t('member portal'), $url)->toRenderable();
-          $form_state->setErrorByName(
-            'members][member' . $cnt . '][email',
-            $this->t(
-              'A member has previously been registered with the address :email. Please visit our @member_portal to confirm your membership status.',
-              [
-                ':email' => $email,
-                '@member_portal' => $this->renderer->render($link),
-              ],
-            )
-          );
+        if (!$allowDuplicates) {
+          // Check a user hasn't already been registered with the same email.
+          $member = Member::loadMemberByEmail($eid, $email);
+          if ($member) {
+            $url = $this->currentUser->isAuthenticated()
+              ? Url::fromRoute('conreg_portal')
+              : Url::fromRoute('conreg_check');
+            $link = Link::fromTextAndUrl($this->t('member portal'), $url)->toRenderable();
+            $form_state->setErrorByName(
+              'members][member' . $cnt . '][email',
+              $this->t(
+                'A member has previously been registered with the address :email. Please visit our @member_portal to confirm your membership status.',
+                [
+                  ':email' => $email,
+                  '@member_portal' => $this->renderer->render($link),
+                ],
+              )
+            );
+          }
         }
       }
     }

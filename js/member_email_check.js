@@ -84,7 +84,7 @@
   }
 
   // Locally validate against other emails on form and members for user.
-  function validateLocal(element, emailFields) {
+  function validateLocal(element, emailFields, allowDuplicates) {
     const value = element.value.trim().toLowerCase();
     const status = element.nextElementSibling;
 
@@ -134,6 +134,12 @@
         ),
       );
       return false;
+    }
+
+    // If duplicates allowed for member type
+    if (allowDuplicates) {
+      setStateIfValid(status, element);
+      return;
     }
 
     // Check current user's previously registered emails.
@@ -289,11 +295,17 @@
           element.addEventListener(
             'input',
             Drupal.debounce(() => {
+              // Get the member type.
+              const typeField = element
+                .closest('.member-wrapper')
+                ?.querySelector('.edit-member-type');
+              const memberType = typeField?.value;
+              const allowDuplicates = memberType ? drupalSettings.conreg.allowDuplicates[memberType] : true;
               // Carry out local validation within the form.
-              const localValid = validateLocal(element, emailFields);
+              const localValid = validateLocal(element, emailFields, allowDuplicates);
 
               // If email lookup is not enabled, end validation.
-              if (!remoteLookupEnabled) {
+              if (!remoteLookupEnabled || allowDuplicates) {
                 return;
               }
 
@@ -304,6 +316,34 @@
             }, 300),
           );
         },
+      );
+
+      once('member-type-email-validation', '.edit-member-type', context).forEach(
+        (element) => {
+          element.addEventListener(
+            'change',
+            Drupal.debounce(() => {
+              // Get the member type.
+              const thisEmailField = element
+                .closest('.member-wrapper')
+                ?.querySelector('.edit-members-email');
+              const memberType = element.value;
+              const allowDuplicates = memberType ? drupalSettings.conreg.allowDuplicates[memberType] : true;
+              // Carry out local validation within the form.
+              const localValid = validateLocal(thisEmailField, emailFields, allowDuplicates);
+
+              // If email lookup is not enabled, end validation.
+              if (!remoteLookupEnabled || allowDuplicates) {
+                return;
+              }
+
+              // Carry out remote validation.
+              if (localValid && thisEmailField.value.includes('@')) {
+                validateRemote(thisEmailField);
+              }
+            }, 300),
+          );
+        }
       );
     },
   };

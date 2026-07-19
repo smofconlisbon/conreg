@@ -215,6 +215,7 @@ class ConregOptions {
 
     $memberTypes = new \stdClass();
     $memberTypes->types = [];
+    $memberTypes->allowDuplicates = [];
     $memberTypes->firstOptions = [];
     $memberTypes->publicOptions = [];
     $memberTypes->privateOptions = [];
@@ -281,6 +282,8 @@ class ConregOptions {
         $displayDescription = $type->description;
       }
       $memberTypes->types[$typeCode] = $type;
+      // If duplicates allowed for type, set in array for front end.
+      $memberTypes->allowDuplicates[$typeCode] = $type->allowDuplicates ?? FALSE;
       if ($type->active && $type->allowFirst && !$soldOut) {
         $memberTypes->firstOptions[$typeCode] = $displayDescription;
       }

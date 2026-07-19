@@ -30,7 +30,7 @@ final class PriceAvailabilityBlock extends BlockBase implements ContainerFactory
     array $configuration,
     $plugin_id,
     $plugin_definition,
-    private ConfigFactoryInterface $configFactory,
+    protected ConfigFactoryInterface $configFactory,
   ) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
   }

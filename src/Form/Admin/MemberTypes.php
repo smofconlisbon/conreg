@@ -167,6 +167,11 @@ class MemberTypes extends ConfigFormBase {
         '#title' => $this->t('Active (if unchecked, member type will be hidden on registration form, but may be assigned by administrators).'),
         '#default_value' => $type->active,
       ];
+      $form[$typeRef]['type']['allowDuplicates'] = [
+        '#type' => 'checkbox',
+        '#title' => $this->t('Allow duplicate registrations (if checked, registrations of this type will not prevent duplicate email addresses).'),
+        '#default_value' => $type->allowDuplicates ?? FALSE,
+      ];
       $form[$typeRef]['type']['defaultDays'] = [
         '#type' => 'select',
         '#title' => $this->t('Default days option'),

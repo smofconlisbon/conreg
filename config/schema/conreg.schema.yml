@@ -264,6 +264,9 @@ conreg.settings.*:
                 type: integer
               active:
                 type: integer
+              allowDuplicates:
+                type: boolean
+                label: 'Allow duplicate emails to be registered for type'
               defaultDays:
                 type: string
               fieldset:

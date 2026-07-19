@@ -28,21 +28,21 @@ class ConfigDiscordForm extends ConfigFormBase {
    *
    * @var \Drupal\Core\Config\ImmutableConfig
    */
-  private ImmutableConfig $config;
+  protected ImmutableConfig $config;
 
   /**
    * Discord API helper.
    *
    * @var \Drupal\conreg_discord\Discord|null
    */
-  private $discord;
+  protected $discord;
 
   /**
    * Enabled member types for Discord invitations.
    *
    * @var array
    */
-  private $memberTypes;
+  protected $memberTypes;
 
   /**
    * Constructs the form.
