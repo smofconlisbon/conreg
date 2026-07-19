@@ -67,6 +67,7 @@ class MemberTypes extends ConfigFormBase {
       return parent::buildForm($form, $form_state);
     }
 
+    // Get working member types from form, or saved types if first load.
     $memberTypes = $form_state->get('member_types');
     if (!isset($memberTypes)) {
       $memberTypes = ConregOptions::memberTypes($eid);
@@ -433,9 +434,10 @@ class MemberTypes extends ConfigFormBase {
       $this->messenger()->addMessage($this->t('@type already exists. Choose a different name.', ['@type' => $cloneTo]), 'error');
     }
     else {
-      $memberTypes->types[$cloneTo] = clone $memberTypes->types[$cloneMemberTypeID];
-      $memberTypes->types[$cloneTo]->name = $vals['clone_to_name'];
-      $memberTypes->options[$cloneTo] = $vals['clone_to_name'];
+      $cloned = [];
+      $cloned[$cloneTo] = clone $memberTypes->types[$cloneMemberTypeID];
+      $cloned[$cloneTo]->name = $vals['clone_to_name'];
+      $memberTypes->types = $cloned + $memberTypes->types;
       $form_state->set('clone_member_type_id', NULL);
     }
     $form_state->set('member_types', $memberTypes);
@@ -456,7 +458,6 @@ class MemberTypes extends ConfigFormBase {
 
     // Update the member types stored in the form.
     $vals = $form_state->getValues();
-    $this->updateMemberTypes($memberTypes, $vals, $eid);
     $form_state->set('member_types', $memberTypes);
 
     $form_state->setRebuild();
@@ -472,7 +473,6 @@ class MemberTypes extends ConfigFormBase {
     // Load member types from form state, delete type, write back to form state.
     $memberTypes = $form_state->get('member_types');
     unset($memberTypes->types[$deleteMemberTypeID]);
-    unset($memberTypes->options[$deleteMemberTypeID]);
     $form_state->set('member_types', $memberTypes);
 
     // Deletion complete, so remove deletion flag from form state.
