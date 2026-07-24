@@ -2,6 +2,8 @@
 
 namespace Drupal\conreg;
 
+use Drupal\conreg\Service\PaymentStorage;
+
 /**
  * Class for handling a payment that may contain multiple lines.
  */
@@ -71,9 +73,14 @@ class Payment {
   public $paymentLines;
 
   /**
-   * Construct upgrade manager. Store event ID and set up array.
+   * Constructs a Payment object.
+   *
+   * @param \Drupal\conreg\Service\PaymentStorage $paymentStorage
+   *   The payment storage service.
    */
-  public function __construct() {
+  public function __construct(
+    protected PaymentStorage $paymentStorage,
+  ) {
     $this->paymentLines = [];
   }
 
@@ -135,10 +142,10 @@ class Payment {
     // If payId is set, updating an existing payment.
     if (!empty($this->payId) && $this->payId > 0) {
       $pay['payid'] = $this->payId;
-      PaymentStorage::update($pay);
+      $this->paymentStorage->update($pay);
     }
     else {
-      $this->payId = PaymentStorage::insert($pay);
+      $this->payId = $this->paymentStorage->insert($pay);
     }
     // Save Stripe session ID to payment_sessions table.
     if (!(empty($this->payId) || empty($this->sessionId))) {
@@ -166,8 +173,9 @@ class Payment {
    * Load the payment with the requested ID, and return payment object.
    */
   public static function load(int $payId): Payment|null {
-    if ($payEntry = PaymentStorage::load(['payid' => $payId])) {
-      $payment = new self();
+    $storage = \Drupal::service(PaymentStorage::class);
+    if ($payEntry = $storage->load(['payid' => $payId])) {
+      $payment = new self($storage);
       $payment->payId = $payId;
       $payment->randomKey = $payEntry['random_key'];
       $payment->createdDate = $payEntry['created_date'];

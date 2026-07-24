@@ -10,8 +10,8 @@ use Drupal\conreg\Service\EventStorage;
 use Drupal\conreg\Member;
 use Drupal\conreg\Payment;
 use Drupal\conreg\PaymentLine;
-use Drupal\conreg\PaymentStorage;
 use Drupal\conreg\Service\MemberStorage;
+use Drupal\conreg\Service\PaymentStorage;
 use Drupal\conreg\Service\StripeServiceInterface;
 use Drupal\conreg\Service\UpgradeStorage;
 use Drupal\conreg\UpgradeManager;
@@ -59,6 +59,8 @@ class Checkout extends FormBase {
    *   The event storage service.
    * @param \Drupal\conreg\Service\UpgradeStorage $upgradeStorage
    *   The upgrade storage service.
+   * @param \Drupal\conreg\Service\PaymentStorage $paymentStorage
+   *   The payment storage service.
    * @param \Drupal\Component\Datetime\TimeInterface $time
    *   The time service.
    */
@@ -69,6 +71,7 @@ class Checkout extends FormBase {
     protected StripeServiceInterface $stripeService,
     protected EventStorage $eventStorage,
     protected UpgradeStorage $upgradeStorage,
+    protected PaymentStorage $paymentStorage,
     protected TimeInterface $time,
   ) {}
 
@@ -87,7 +90,7 @@ class Checkout extends FormBase {
     $form_state->set('return', $return);
 
     // Load payment details.
-    if (is_numeric($payid) && is_numeric($key) && PaymentStorage::checkPaymentKey($payid, $key)) {
+    if (is_numeric($payid) && is_numeric($key) && $this->paymentStorage->checkPaymentKey($payid, $key)) {
       $payment = Payment::load($payid);
     }
     else {

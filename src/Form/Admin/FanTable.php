@@ -12,6 +12,7 @@ use Drupal\conreg\Payment;
 use Drupal\conreg\PaymentLine;
 use Drupal\conreg\Service\EventStorage;
 use Drupal\conreg\Service\MemberStorage;
+use Drupal\conreg\Service\PaymentStorage;
 use Drupal\conreg\Service\UpgradeStorage;
 use Drupal\conreg\Upgrade;
 use Drupal\conreg\UpgradeManager;
@@ -39,6 +40,8 @@ class FanTable extends FormBase {
    *   The language manager.
    * @param \Drupal\conreg\Service\EventStorage $eventStorage
    *   The event storage service.
+   * @param \Drupal\conreg\Service\PaymentStorage $paymentStorage
+   *   The payment storage service.
    * @param \Drupal\conreg\Service\UpgradeStorage $upgradeStorage
    *   The upgrade storage service.
    * @param \Drupal\Component\Datetime\TimeInterface $time
@@ -49,6 +52,7 @@ class FanTable extends FormBase {
     protected MailManagerInterface $mailManager,
     protected LanguageManagerInterface $languageManager,
     protected EventStorage $eventStorage,
+    protected PaymentStorage $paymentStorage,
     protected UpgradeStorage $upgradeStorage,
     protected TimeInterface $time,
   ) {}
@@ -448,9 +452,7 @@ class FanTable extends FormBase {
         if (isset($upgrade->upgradePrice)) {
           $mgr->Add($upgrade);
           $member = $this->memberStorage->load(['mid' => $mid]);
-          $payment->add(new PaymentLine(
-            $mid,
-            'upgrade',
+          $payment->add(new PaymentLine($this->paymentStorage, $mid, 'upgrade',
             $this->t("Upgrade for @first_name @last_name", [
               '@first_name' => $member['first_name'],
               '@last_name' => $member['last_name'],
@@ -477,9 +479,7 @@ class FanTable extends FormBase {
     foreach ($form_values['unpaid'] as $mid => $member) {
       if (isset($member['is_selected']) && $member['is_selected']) {
         $member = Member::loadMember($mid);
-        $payment->add(new PaymentLine(
-          $mid,
-          'member',
+        $payment->add(new PaymentLine($this->paymentStorage, $mid, 'member',
           $this->t("Member registration to @event_name for @first_name @last_name",
           [
             '@event_name' => $event['event_name'],
@@ -491,9 +491,7 @@ class FanTable extends FormBase {
         $addons = Addons::getMemberAddons($config, $mid);
         foreach ($addons as $addon) {
           // Add a payment line for the add-on.
-          $payment->add(new PaymentLine(
-            $mid,
-            'addon',
+          $payment->add(new PaymentLine($this->paymentStorage, $mid, 'addon',
             t("Add-on @add_on for @first_name @last_name",
             [
               '@add_on' => $addon->name,
@@ -516,7 +514,7 @@ class FanTable extends FormBase {
     $eid = $form_state->get('eid');
     $form_values = $form_state->getValues();
 
-    $payment = new Payment();
+    $payment = new Payment($this->paymentStorage);
     // Save any member upgrades.
     $lead_mid = $this->saveUpgrades($eid, $form_values, $upgrade_price, $payment);
     $toPay = $this->addMembersToPayment($eid, $form_values, $payment);
@@ -631,7 +629,7 @@ class FanTable extends FormBase {
     $eid = $form_state->get('eid');
     $form_values = $form_state->getValues();
 
-    $payment = new Payment();
+    $payment = new Payment($this->paymentStorage);
     // Save any member upgrades.
     $lead_mid = $this->saveUpgrades($eid, $form_values, $upgrade_price, $payment);
 

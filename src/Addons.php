@@ -2,6 +2,7 @@
 
 namespace Drupal\conreg;
 
+use Drupal\conreg\Service\PaymentStorage;
 use Drupal\Core\Config\ImmutableConfig;
 use Drupal\Core\Form\FormStateInterface;
 
@@ -392,6 +393,7 @@ class Addons {
 
     // Fetch conreg.addon_storage service once for reused on the method.
     $storage = \Drupal::service('conreg.addon_storage');
+    $paymentStorage = \Drupal::service(PaymentStorage::class);
 
     foreach ($addOns as $addOnName => $addOnVals) {
       // If add-on set, get values.
@@ -429,9 +431,7 @@ class Addons {
             $insert['addon_amount'] = $price;
             $storage->insert($insert);
             // Add a payment line for the global add-on.
-            $payment->add(new PaymentLine(
-              $mid,
-              'addon',
+            $payment->add(new PaymentLine($paymentStorage, $mid, 'addon',
               t(
                 "Add-on @add_on",
                 ['@add_on' => $addOnLabel]
@@ -473,9 +473,7 @@ class Addons {
             }
             // Add a payment line for the add-on.
             $payment->add(
-              new PaymentLine(
-                $mid,
-                'addon',
+              new PaymentLine($paymentStorage, $mid, 'addon',
                 t(
                   "Add-on @add_on for @first_name @last_name",
                   [

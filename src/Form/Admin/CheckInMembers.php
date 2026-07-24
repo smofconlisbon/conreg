@@ -9,6 +9,7 @@ use Drupal\conreg\Payment;
 use Drupal\conreg\PaymentLine;
 use Drupal\conreg\Service\EventStorage;
 use Drupal\conreg\Service\MemberStorage;
+use Drupal\conreg\Service\PaymentStorage;
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Config\ImmutableConfig;
 use Drupal\Core\DependencyInjection\AutowireTrait;
@@ -30,12 +31,15 @@ class CheckInMembers extends FormBase {
    *   The member storage service.
    * @param \Drupal\conreg\Service\EventStorage $eventStorage
    *   The event storage service.
+   * @param \Drupal\conreg\Service\PaymentStorage $paymentStorage
+   *   The payment storage service.
    * @param \Drupal\Core\Language\LanguageManagerInterface $languageManager
    *   The site's language manager.
    */
   public function __construct(
     protected MemberStorage $memberStorage,
     protected EventStorage $eventStorage,
+    protected PaymentStorage $paymentStorage,
     protected LanguageManagerInterface $languageManager,
   ) {}
 
@@ -728,7 +732,7 @@ class CheckInMembers extends FormBase {
     $form_values = $form_state->getValues();
 
     // Create a payment object.
-    $payment = new Payment();
+    $payment = new Payment($this->paymentStorage);
 
     $payment_amount = 0;
     $lead_mid = 0;
@@ -737,8 +741,7 @@ class CheckInMembers extends FormBase {
       if (isset($member["is_selected"]) && $member["is_selected"]) {
         if ($member = $this->memberStorage->load(['mid' => $mid])) {
           // Add member to payment.
-          $payment->add(new PaymentLine($mid,
-            'member',
+          $payment->add(new PaymentLine($this->paymentStorage, $mid, 'member',
             $this->t("Member registration for @first_name @last_name",
           [
             '@first_name' => $member['first_name'],

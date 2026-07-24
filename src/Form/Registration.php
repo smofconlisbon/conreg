@@ -12,6 +12,7 @@ use Drupal\conreg\Member;
 use Drupal\conreg\Payment;
 use Drupal\conreg\PaymentLine;
 use Drupal\conreg\Service\EventStorage;
+use Drupal\conreg\Service\PaymentStorage;
 use Drupal\Core\DependencyInjection\AutowireTrait;
 use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\HtmlCommand;
@@ -47,6 +48,8 @@ class Registration extends FormBase {
    *   The module handler service.
    * @param \Drupal\conreg\Service\EventStorage $eventStorage
    *   The event storage service.
+   * @param \Drupal\conreg\Service\PaymentStorage $paymentStorage
+   *   The payment storage service.
    */
   final public function __construct(
     protected AccountProxyInterface $currentUser,
@@ -55,6 +58,7 @@ class Registration extends FormBase {
     protected CountryServiceInterface $countryService,
     protected ModuleHandlerInterface $moduleHandler,
     protected EventStorage $eventStorage,
+    protected PaymentStorage $paymentStorage,
   ) {}
 
   /**
@@ -1125,7 +1129,7 @@ class Registration extends FormBase {
     $confirm_params["members"] = [];
     $confirm_params['from'] = $config->get('confirmation.from_name') . ' <' . $config->get('confirmation.from_email') . '>';
 
-    $payment = new Payment();
+    $payment = new Payment($this->paymentStorage);
 
     // Get field options from form state. If not set, get from config.
     $fieldOptions = $form_state->get('fieldOptions');
@@ -1243,9 +1247,7 @@ class Registration extends FormBase {
         // Store the member ID for use when saving add-ons.
         $memberIDs[$cnt] = $member->mid;
         // Add a payment line for the member.
-        $payment->add(new PaymentLine(
-          $result,
-          'member',
+        $payment->add(new PaymentLine($this->paymentStorage, $result, 'member',
           $this->t("Member registration to @event_name for @first_name @last_name", [
             '@event_name' => $event['event_name'],
             '@first_name' => $entry['first_name'],

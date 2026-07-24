@@ -8,6 +8,7 @@ use Drupal\conreg\Payment;
 use Drupal\conreg\PaymentLine;
 use Drupal\conreg\Service\AddonStorage;
 use Drupal\conreg\Service\MemberStorage;
+use Drupal\conreg\Service\PaymentStorage;
 use Drupal\conreg\Service\UpgradeStorage;
 use Drupal\conreg\Upgrade;
 use Drupal\conreg\UpgradeManager;
@@ -31,6 +32,8 @@ class MemberPortal extends FormBase {
    *   The member storage service.
    * @param \Drupal\conreg\Service\AddonStorage $addonStorage
    *   The addon storage service.
+   * @param \Drupal\conreg\Service\PaymentStorage $paymentStorage
+   *   The payment storage service.
    * @param \Drupal\conreg\Service\UpgradeStorage $upgradeStorage
    *   The upgrade storage service.
    * @param \Drupal\Component\Datetime\TimeInterface $time
@@ -39,6 +42,7 @@ class MemberPortal extends FormBase {
   public function __construct(
     protected MemberStorage $memberStorage,
     protected AddonStorage $addonStorage,
+    protected PaymentStorage $paymentStorage,
     protected UpgradeStorage $upgradeStorage,
     protected TimeInterface $time,
   ) {}
@@ -295,9 +299,7 @@ class MemberPortal extends FormBase {
         if (isset($upgrade->upgradePrice)) {
           $mgr->Add($upgrade);
           $member = $this->memberStorage->load(['mid' => $mid]);
-          $payment->add(new PaymentLine(
-            $mid,
-            'upgrade',
+          $payment->add(new PaymentLine($this->paymentStorage, $mid, 'upgrade',
             $this->t("Upgrade for @first_name @last_name", [
               '@first_name' => $member['first_name'],
               '@last_name' => $member['last_name'],
@@ -321,7 +323,7 @@ class MemberPortal extends FormBase {
     $form_values = $form_state->getValues();
 
     // Create a payment.
-    $payment = new Payment();
+    $payment = new Payment($this->paymentStorage);
 
     // Save any member upgrades.
     $upgrade_price = 0;
@@ -354,9 +356,7 @@ class MemberPortal extends FormBase {
 
       // If member unpaid, add to payment.
       if (!$is_paid) {
-        $payment->add(new PaymentLine(
-          $mid,
-          'member',
+        $payment->add(new PaymentLine($this->paymentStorage, $mid, 'member',
           $this->t("Member registration for @first_name @last_name", [
             '@first_name' => $entry['first_name'],
             '@last_name' => $entry['last_name'],
@@ -368,9 +368,7 @@ class MemberPortal extends FormBase {
 
       // Loop through unpaid upgrades for member, and add those to payment.
       foreach ($this->addonStorage->loadAll(['mid' => $mid, 'is_paid' => 0]) as $addon) {
-        $payment->add(new PaymentLine(
-          $mid,
-          'addon',
+        $payment->add(new PaymentLine($this->paymentStorage, $mid, 'addon',
           $this->t("Add-on @add_on for @first_name @last_name", [
             '@add_on' => $addon['addon_name'],
             '@first_name' => $entry['first_name'],

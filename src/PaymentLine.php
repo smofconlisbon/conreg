@@ -2,6 +2,8 @@
 
 namespace Drupal\conreg;
 
+use Drupal\conreg\Service\PaymentStorage;
+
 /**
  * Provides a value object for storing payment line data.
  */
@@ -52,6 +54,8 @@ class PaymentLine {
   /**
    * Constructs a new PaymentLine object.
    *
+   * @param \Drupal\conreg\Service\PaymentStorage $paymentStorage
+   *   The payment storage service.
    * @param int|null $mid
    *   Member ID.
    * @param string|null $type
@@ -61,7 +65,13 @@ class PaymentLine {
    * @param float|null $amount
    *   Payment amount.
    */
-  public function __construct($mid = NULL, $type = NULL, $lineDesc = NULL, $amount = NULL) {
+  public function __construct(
+    protected PaymentStorage $paymentStorage,
+    $mid = NULL,
+    $type = NULL,
+    $lineDesc = NULL,
+    $amount = NULL,
+  ) {
     $this->mid = $mid;
     $this->type = $type;
     $this->lineDesc = $lineDesc;
@@ -88,12 +98,12 @@ class PaymentLine {
     // If we have a Line ID, we are updating an existing payment line.
     if (isset($this->payLineId)) {
       $payLine['lineid'] = $this->payLineId;
-      PaymentStorage::updateLine($payLine);
+      $this->paymentStorage->updateLine($payLine);
       return $this->payLineId;
     }
     // No Line ID, so inserting a new line.
     else {
-      $this->payLineId = PaymentStorage::insertLine($payLine);
+      $this->payLineId = $this->paymentStorage->insertLine($payLine);
       return $this->payLineId;
     }
   }
@@ -108,8 +118,9 @@ class PaymentLine {
    *   The loaded payment line, or NULL if not found.
    */
   public static function load($lineId) {
-    if ($payLine = PaymentStorage::loadLine(['lineid' => $lineId])) {
-      $line = new self($payLine['mid'], $payLine['payment_type'], $payLine['line_desc'], $payLine['amount']);
+    $storage = \Drupal::service(PaymentStorage::class);
+    if ($payLine = $storage->loadLine(['lineid' => $lineId])) {
+      $line = new self($storage, $payLine['mid'], $payLine['payment_type'], $payLine['line_desc'], $payLine['amount']);
       $line->payId = $payLine['payid'];
       $line->payLineId = $lineId;
       return $line;
@@ -130,9 +141,10 @@ class PaymentLine {
    */
   public static function loadLines($payId) {
     $lines = [];
-    if ($payLines = PaymentStorage::loadAllLines(['payid' => $payId])) {
+    $storage = \Drupal::service(PaymentStorage::class);
+    if ($payLines = $storage->loadAllLines(['payid' => $payId])) {
       foreach ($payLines as $payLine) {
-        $line = new PaymentLine($payLine['mid'], $payLine['payment_type'], $payLine['line_desc'], $payLine['amount']);
+        $line = new PaymentLine($storage, $payLine['mid'], $payLine['payment_type'], $payLine['line_desc'], $payLine['amount']);
         $line->payId = $payLine['payid'];
         $line->payLineId = $payLine['lineid'];
         $lines[] = $line;
