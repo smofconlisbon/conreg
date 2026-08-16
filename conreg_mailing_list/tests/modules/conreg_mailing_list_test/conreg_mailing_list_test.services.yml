@@ -1,0 +1,8 @@
+services:
+  _defaults:
+    autowire: true
+    autoconfigure: true
+
+  conreg_mailing_list_test.recorder:
+    class: Drupal\conreg_mailing_list_test\FakeProviderCallRecorder
+  Drupal\conreg_mailing_list_test\FakeProviderCallRecorder: '@conreg_mailing_list_test.recorder'

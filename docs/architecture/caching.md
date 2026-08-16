@@ -15,4 +15,6 @@
 
 ## Explicit non-use
 
-- No queue worker processing in current architecture.
+- Core member/event data uses no queue worker processing — writes are synchronous.
+  `conreg_mailing_list` is the exception: `MailingListSubscriptionWorker` queues
+  provider subscriptions and processes them on cron.

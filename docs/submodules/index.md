@@ -13,7 +13,9 @@ schema additions, and member lifecycle hooks.
 | `conreg_discord` | Discord invite generation and email sending |
 | `conreg_lookup` | Staff member lookup UI |
 | `conreg_planz` | PlanZ/Zambia bridge and invite flow |
-| `conreg_simplenews` | Packaging stub; parent module hosts logic |
+| `conreg_mailing_list` | Subscription-rule framework and provider plugin type |
+| `conreg_mailerlite` | MailerLite `MailingListProvider` plugin |
+| `conreg_simplenews` | Simplenews `MailingListProvider` plugin |
 
 ## Hook propagation
 
@@ -26,4 +28,7 @@ flowchart LR
   updated --> airtable
   updated --> clickup
   updated --> planz
+  added --> mailing_list[conreg_mailing_list]
+  mailing_list --> mailerlite
+  mailing_list --> simplenews
 ```

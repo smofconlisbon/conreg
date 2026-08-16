@@ -1,0 +1,9 @@
+name: ConReg Mailing List Mailerlite Provider
+type: module
+description: 'Mailerlite provider for the ConReg mailing list integration.'
+package: 'conreg'
+core_version_requirement: ^11.3 || ^12
+dependencies:
+  - conreg:conreg
+  - conreg:conreg_mailing_list
+  - key:key

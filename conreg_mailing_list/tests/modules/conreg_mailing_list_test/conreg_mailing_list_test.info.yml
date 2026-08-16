@@ -1,0 +1,5 @@
+name: 'Conreg Mailing List Test'
+type: module
+description: 'Test-only fake mailing list provider for conreg_mailing_list kernel tests.'
+package: Testing
+core_version_requirement: ^10 || ^11

@@ -1,0 +1,43 @@
+entity.conreg_subscription_rule.collection:
+  path: '/admin/config/conreg/{eid}/subscription-rule'
+  defaults:
+    _entity_list: 'conreg_subscription_rule'
+    _title: 'Mailing list rules'
+  requirements:
+    _permission: 'administer conreg_subscription_rule'
+    eid: ^[0-9]+$
+
+entity.conreg_subscription_rule.add_form:
+  path: '/admin/config/conreg/{eid}/subscription-rule/add'
+  defaults:
+    _entity_form: 'conreg_subscription_rule.add'
+    _title: 'Add a subscription rule'
+  requirements:
+    _permission: 'administer conreg_subscription_rule'
+    eid: ^[0-9]+$
+
+entity.conreg_subscription_rule.edit_form:
+  path: '/admin/config/conreg/{eid}/subscription-rule/{conreg_subscription_rule}/edit'
+  defaults:
+    _entity_form: 'conreg_subscription_rule.edit'
+    _title: 'Edit a subscription rule'
+  requirements:
+    _permission: 'administer conreg_subscription_rule'
+    eid: ^[0-9]+$
+
+entity.conreg_subscription_rule.delete_form:
+  path: '/admin/config/conreg/{eid}/subscription-rule/{conreg_subscription_rule}/delete'
+  defaults:
+    _entity_form: 'conreg_subscription_rule.delete'
+    _title: 'Delete a subscription rule'
+  requirements:
+    _permission: 'administer conreg_subscription_rule'
+    eid: ^[0-9]+$
+
+entity.conreg_subscription_rule.sync:
+  path: '/admin/config/conreg/{eid}/subscription-rule/{conreg_subscription_rule}/sync'
+  defaults:
+    _controller: '\Drupal\conreg_mailing_list\Controller\SyncSubscriptionRuleController::sync'
+  requirements:
+    _permission: 'administer conreg_subscription_rule'
+    eid: ^[0-9]+$

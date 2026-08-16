@@ -28,3 +28,11 @@
 | `conreg_airtable` | `conreg_airtable_members` |
 | `conreg_discord` | `conreg_discord` |
 | `conreg_planz` | `conreg_planz` |
+
+## First Drupal entity type: `conreg_subscription_rule`
+
+`conreg_mailing_list` defines `conreg_subscription_rule` — the first actual Drupal
+entity type anywhere in this codebase (everything else above is a custom table with a
+storage service, per "No Drupal entity type is defined for members" above). It's a
+**config** entity, deliberately with no database table: each rule is stored as a config
+object, not a row.

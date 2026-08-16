@@ -22,3 +22,5 @@
 | `conreg_discord` | `conreg_config_discord_invitebot` |
 | `conreg_lookup` | `conreg_member_lookup` |
 | `conreg_planz` | `conreg_config_planz_options`, `conreg_config_planz_admin` |
+| `conreg_mailing_list` | `entity.conreg_subscription_rule.{collection,add_form,edit_form,delete_form}`, all under `/admin/config/conreg/{eid}/subscription-rule` |
+| `conreg_mailerlite` | `conreg_config_mailerlite` (`/admin/config/conreg/mailerlite`) |

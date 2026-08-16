@@ -291,7 +291,8 @@ class MemberPortal extends FormBase {
     // Get lead MID from .
     $lead_mid = $this->getUserLeadMid($eid);
 
-    $upgrades = $form_values["table"];
+    // Get upgrades (or empty array if table not present).
+    $upgrades = $form_values['table'] ?? [];
     if (isset($upgrades) && is_array($upgrades)) {
       foreach ($upgrades as $mid => $memberRow) {
         $upgrade = new Upgrade($this->upgradeStorage, $this->memberStorage, $this->time, $eid, $mid, $memberRow["member_type"], $lead_mid);

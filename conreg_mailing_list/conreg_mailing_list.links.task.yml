@@ -1,0 +1,5 @@
+conreg_mailing_list.subscription_rule.overview:
+  title: Mailing lists
+  route_name: entity.conreg_subscription_rule.collection
+  base_route: conreg_config
+  weight: 39

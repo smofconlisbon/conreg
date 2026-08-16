@@ -7,6 +7,7 @@
 | `conreg.settings.{eid}` | Event-scoped runtime configuration |
 | `conreg.email_templates` | Shared template storage |
 | `conreg.clickup` | Global ClickUp OAuth/token settings |
+| `conreg_mailerlite.settings` | Global MailerLite API key, shared by all events (schema `conreg_mailerlite/config/schema/conreg_mailerlite.schema.yml`) |
 
 ## Schema-defined groups (`config/schema/conreg.schema.yml`)
 
@@ -33,4 +34,11 @@ fully represented in `config/schema/conreg.schema.yml`:
 | `clickup_option_groups` | `conreg_clickup` options form |
 | `discord.*` | `conreg_discord` config form |
 | `planz.*` | `conreg_planz` config form |
-| `simplenews.options` | Parent `conreg.module` form submit logic |
+
+## Mailing-list config entity
+
+`conreg_subscription_rule` (`conreg_mailing_list`) is a **config entity**, not a
+runtime key group — each subscription rule is its own config object
+(`conreg_mailing_list.conreg_subscription_rule.*`, schema
+`conreg_mailing_list/config/schema/conreg_mailing_list.schema.yml`), scoped to an event
+via its own `eid` property rather than nested under `conreg.settings.{eid}`.

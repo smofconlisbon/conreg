@@ -1,0 +1,7 @@
+name: 'Conreg Mailing List'
+type: module
+description: 'Manage subscription of conreg members to mailing lists.'
+package: 'conreg'
+core_version_requirement: ^11.3 || ^12
+dependencies:
+  - conreg:conreg

@@ -1,0 +1,5 @@
+conreg_mailing_list.subscription_rule.add_form:
+  route_name: 'entity.conreg_subscription_rule.add_form'
+  title: 'Add subscription rule'
+  appears_on:
+    - entity.conreg_subscription_rule.collection

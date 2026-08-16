@@ -18,7 +18,6 @@ use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\HtmlCommand;
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Config\ImmutableConfig;
-use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Link;
@@ -44,8 +43,6 @@ class Registration extends FormBase {
    *   The email validator service.
    * @param \Drupal\conreg\Service\CountryServiceInterface $countryService
    *   The country service.
-   * @param \Drupal\Core\Extension\ModuleHandlerInterface $moduleHandler
-   *   The module handler service.
    * @param \Drupal\conreg\Service\EventStorage $eventStorage
    *   The event storage service.
    * @param \Drupal\conreg\Service\PaymentStorage $paymentStorage
@@ -56,7 +53,6 @@ class Registration extends FormBase {
     protected RendererInterface $renderer,
     protected EmailValidatorInterface $emailValidator,
     protected CountryServiceInterface $countryService,
-    protected ModuleHandlerInterface $moduleHandler,
     protected EventStorage $eventStorage,
     protected PaymentStorage $paymentStorage,
   ) {}
@@ -1267,34 +1263,6 @@ class Registration extends FormBase {
       if (empty($lead_mid)) {
         // For first member, make lead member.
         $lead_mid = $member->mid;
-      }
-
-      // Check Simplenews module loaded.
-      if ($this->moduleHandler->moduleExists('simplenews')) {
-        // Get Drupal SimpleNews subscription manager.
-        /** @var \Drupal\simplenews\Subscription\SubscriptionManagerInterface */
-        $subscription_manager = \Drupal::service('simplenews.subscription_manager');
-        // Simplenews is active, so check mailing lists to subscribed to.
-        $simplenews_options = $config->get('simplenews.options');
-        if (isset($simplenews_options)) {
-          foreach ($simplenews_options as $newsletter_id => $options) {
-            if ($options['active']) {
-              // Get communications methods selected for newsletter.
-              $communications_methods = $simplenews_options[$newsletter_id]['communications_methods'];
-              // Check if member matches newsletter criteria.
-              if (
-                isset($entry['email']) &&
-                $entry['email'] != '' &&
-                isset($entry['communication_method']) &&
-                isset($communications_methods[$entry['communication_method']]) &&
-                $communications_methods[$entry['communication_method']]
-              ) {
-                // Subscribe member if criteria met.
-                $subscription_manager->subscribe($entry['email'], $newsletter_id);
-              }
-            }
-          }
-        }
       }
     }
 

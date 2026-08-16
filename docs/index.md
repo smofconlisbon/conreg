@@ -2,7 +2,8 @@
 
 ConReg is a Drupal 10.1/11 convention registration project with one parent
 module (`conreg`) and optional submodules for badges, lookup, Airtable,
-ClickUp, Discord, PlanZ, and Simplenews integration.
+ClickUp, Discord, PlanZ, and mailing-list integrations (MailerLite and Simplenews, via
+the `conreg_mailing_list` framework).
 
 ## What ConReg provides
 
@@ -29,7 +30,9 @@ flowchart LR
   core --> clickup[conreg_clickup]
   core --> discord[conreg_discord]
   core --> planz[conreg_planz]
-  core --> simplenews_stub[conreg_simplenews]
+  core --> mailing_list[conreg_mailing_list]
+  mailing_list --> mailerlite[conreg_mailerlite]
+  mailing_list --> simplenews[conreg_simplenews]
 ```
 
 ## Notes

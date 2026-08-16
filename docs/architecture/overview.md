@@ -1,6 +1,8 @@
 # Architecture Overview
 
-ConReg uses custom tables and service classes, not Drupal content entities.
+ConReg uses custom tables and service classes, not Drupal content entities (the one
+exception is `conreg_mailing_list`'s `conreg_subscription_rule`, a config entity — see
+`docs/architecture/data-model.md`).
 
 ## Core building blocks
 
@@ -9,7 +11,7 @@ ConReg uses custom tables and service classes, not Drupal content entities.
 | Domain object | `Drupal\conreg\Member` (`stdClass`-based) |
 | Storage services | `MemberStorage`, `EventStorage`, `AddonStorage`, `UpgradeStorage` |
 | Event config | `conreg.settings.{eid}` (core keys schema-backed, integration keys partly runtime-only) |
-| Extension points | `hook_convention_member_added/updated/deleted` |
+| Extension points | `hook_convention_member_added/updated/deleted` — most subscribers act directly; `conreg_mailing_list` instead fans `convention_member_added` out into a queue-driven subscription pipeline (see below) |
 | Payment | Stripe Checkout + `conreg_payments*` tables |
 
 ## High-level flow
@@ -28,4 +30,5 @@ flowchart LR
 
 - Parent code invokes `convention_member_added`, not
   `convention_member_inserted`.
-- Queue API is not used in current core architecture.
+- Core registration/payment flow doesn't use the Queue API. `conreg_mailing_list` does:
+  `MailingListSubscriptionWorker` processes queued provider subscriptions on cron.

@@ -92,7 +92,7 @@ class UpgradeManager {
    * @return int|null
    *   Lead member ID.
    */
-  public function saveUpgrades() {
+  public function saveUpgrades(): ?int {
     $this->upgradeStorage->deleteUnpaidByLeadMid($this->leadMid);
 
     $total = $this->getTotalPrice();
@@ -100,7 +100,7 @@ class UpgradeManager {
     foreach ($this->upgrades as $upgrade) {
       $upgrade->saveUpgrade($total);
     }
-    return $this->leadMid;
+    return $this->leadMid ?? 0;
   }
 
   /**

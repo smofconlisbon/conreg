@@ -20,3 +20,13 @@
 
 `conreg.api.php` documents `$member` as array, while runtime emitters pass a
 `Drupal\conreg\Member` object in current implementations.
+
+## OOP hook implementations
+
+`conreg_mailing_list` implements `convention_member_added` using Drupal's newer
+attribute-based hook style instead of a procedural `hook_convention_member_added()`
+function: `ConregMailingListHooks::memberAdded()`
+(`conreg_mailing_list/src/Hook/ConregMailingListHooks.php`), tagged
+`#[Hook('convention_member_added')]`, takes a typed `Member $member` parameter
+(consistent with the payload note above) and fans matching members out to the
+mailing-list subscription queue.

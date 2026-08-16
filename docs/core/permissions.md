@@ -9,6 +9,7 @@
 | Member operations | `manage convention members`, `check in convention members`, `fan table registration` |
 | Reporting/export | `view membership details`, `view membership options`, `view membership add-ons`, `view child members`, `view membership summary` |
 | Comms | `bulk email sending`, `manage mailout lists` |
+| Mailing list | `administer conreg_subscription_rule`, `configure mailerlite integration` |
 
 ## Dynamic permissions
 
@@ -24,3 +25,7 @@ which creates per-option, per-event permissions named:
   dedicated routes.
 - Badge-related permissions are defined in
   `conreg_badges/conreg_badges.permissions.yml`.
+- `administer conreg_subscription_rule` is defined in
+  `conreg_mailing_list/conreg_mailing_list.permissions.yml`; `configure mailerlite
+  integration` (`restrict access: true`) is defined in
+  `conreg_mailerlite/conreg_mailerlite.permissions.yml`.

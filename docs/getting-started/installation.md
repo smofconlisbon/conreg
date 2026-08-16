@@ -25,7 +25,10 @@ Enable `conreg` first, then optional submodules as needed:
 - `conreg_discord`
 - `conreg_lookup`
 - `conreg_planz`
-- `conreg_simplenews`
+- `conreg_mailing_list` — enable before `conreg_mailerlite`/`conreg_simplenews`, both
+  declare it as a dependency
+- `conreg_mailerlite`
+- `conreg_simplenews` — also requires the contrib `simplenews` module
 
 ## Initial configuration
 

@@ -1,0 +1,7 @@
+conreg_mailerlite.settings:
+  type: config_object
+  label: 'MailerLite settings'
+  mapping:
+    api_key:
+      type: string
+      label: 'MailerLite API key (Key ID)'

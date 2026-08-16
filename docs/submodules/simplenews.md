@@ -2,18 +2,24 @@
 
 ## Module shape
 
-`conreg_simplenews` is a packaging stub: it has `conreg_simplenews.info.yml`
-and an empty module file.
+`conreg_simplenews` provides a `MailingListProvider` plugin for the
+`conreg_mailing_list` framework — the same pattern `conreg_mailerlite` uses for
+MailerLite.
 
 ## Actual implementation location
 
-Simplenews behavior is implemented in parent `conreg.module`:
+All Simplenews behavior lives in
+`conreg_simplenews/src/Plugin/MailingListProvider/SimplenewsProvider.php`:
 
-- `hook_form_alter()` for newsletter edit/add forms.
-- `conreg_simplenews_form_submit()` to store event-specific simplenews options.
-- Subscription updates through `simplenews.subscription_manager`.
+- `getLists()` returns every `simplenews_newsletter` config entity as `id => label`.
+- `subscribe()` calls Simplenews's own `simplenews.subscription_manager` service.
+
+There is no `hook_form_alter()`, no admin form, and no bespoke config storage — matching
+a mailing list to an event and a communications method is handled entirely by
+`conreg_mailing_list`'s `ConregSubscriptionRule` entity, the same as for any other
+provider.
 
 ## Config footprint
 
-Event-level options are stored under `conreg.settings.{eid}` at
-`simplenews.options`.
+None. `conreg_simplenews` owns no config of its own; Simplenews's own newsletters and
+subscribers are queried/updated directly through its entity API.

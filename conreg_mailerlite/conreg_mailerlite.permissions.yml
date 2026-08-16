@@ -1,0 +1,4 @@
+configure mailerlite integration:
+  title: 'Configure Mailerlite integration'
+  description: 'Set Mailerlite API credentials.'
+  restrict access: true

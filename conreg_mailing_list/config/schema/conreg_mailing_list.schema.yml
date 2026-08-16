@@ -1,0 +1,40 @@
+conreg_mailing_list.conreg_subscription_rule.*:
+  type: config_entity
+  label: Subscription rule
+  mapping:
+    id:
+      type: string
+      label: 'Machine name'
+    label:
+      type: label
+      label: 'Label'
+    uuid:
+      type: string
+      label: 'UUID'
+    description:
+      type: string
+      label: 'Description'
+    status:
+      type: boolean
+      label: 'Enabled'
+    weight:
+      type: integer
+      label: 'Weight'
+    eid:
+      type: integer
+      label: 'Event ID'
+    provider:
+      type: string
+      label: 'Mailing list provider'
+    list_id:
+      type: string
+      label: 'Remote mailing list ID'
+    list_name:
+      type: string
+      label: 'Remote mailing list name'
+    communication_method:
+      type: string
+      label: 'Communication method'
+    member_option:
+      type: integer
+      label: 'Required member option'

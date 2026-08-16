@@ -1,0 +1,18 @@
+services:
+  _defaults:
+    autowire: true
+    autoconfigure: true
+
+  conreg.mailing_list.provider:
+    class: Drupal\conreg_mailing_list\MailingListProviderPluginManager
+    parent: default_plugin_manager
+  Drupal\conreg_mailing_list\MailingListProviderPluginManager: '@conreg.mailing_list.provider'
+
+  conreg.mailing_list.sync:
+    class: Drupal\conreg_mailing_list\MailingListSyncService
+  Drupal\conreg_mailing_list\MailingListSyncService: '@conreg.mailing_list.sync'
+
+  logger.channel.conreg_mailing_list:
+    parent: logger.channel_base
+    arguments:
+      - 'conreg_mailing_list'

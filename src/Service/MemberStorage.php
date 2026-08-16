@@ -963,8 +963,8 @@ class MemberStorage {
   /**
    * Get list of members and communications members.
    *
-   * Function to return a list of members and communications methods for
-   * integration with Simplenews module.
+   * Returns paid, non-deleted members for an event, filtered by
+   * communication method and language, for the admin bulk mailout form.
    */
   public function adminMailoutListLoad(int $eid, array $methods, array $languages) {
     // Run this query: select email, min(communication_method) from
@@ -986,32 +986,6 @@ class MemberStorage {
     $select->condition("is_deleted", FALSE);
     $select->condition('m.communication_method', $methods, 'IN');
     $select->condition('m.language', $languages, 'IN');
-
-    $entries = $select->execute()->fetchAll(\PDO::FETCH_ASSOC);
-
-    return $entries;
-  }
-
-  /**
-   * Get members to subscribe to newsletter.
-   *
-   * Function to return a list of members and communications methods for
-   * integration with Simplenews module.
-   */
-  public function adminSimplenewsSubscribeListLoad(int $eid) {
-    // Run this query: select email, min(communication_method) from
-    // conreg_members where email is not null and email<>'' and
-    // communication_method is not null group by email;.
-    $select = $this->connection->select('conreg_members', 'm');
-    // Select these specific fields for the output.
-    $select->addField('m', 'email');
-    $select->addField('m', 'communication_method)');
-    $select->condition('m.eid', $eid);
-    $select->isNotNull('m.email');
-    $select->condition('m.email', '', '<>');
-    // Only include members who aren't deleted.
-    $select->condition("is_deleted", FALSE);
-    $select->isNotNull('m.communication_method');
 
     $entries = $select->execute()->fetchAll(\PDO::FETCH_ASSOC);
 

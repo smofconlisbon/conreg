@@ -1,6 +1,9 @@
-name: ConReg SimpleNews
+name: 'Conreg Simplenews'
 type: module
-description: 'Add SimpleNews integration to ConReg.'
-core_version_requirement: ^10.1 || ^11.0
+description: 'Simplenews provider for the ConReg mailing list integration.'
+package: 'conreg'
+core_version_requirement: ^11.3 || ^12
 dependencies:
   - conreg:conreg
+  - conreg:conreg_mailing_list
+  - simplenews:simplenews

@@ -1,0 +1,6 @@
+conreg_mailerlite.config:
+  title: 'Mailerlite Integration'
+  route_name: conreg_config_mailerlite
+  menu_name: admin
+  parent: conreg.overview
+  weight: -99

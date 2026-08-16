@@ -4,10 +4,12 @@
   "description": "Allows a simple convention registration form.",
   "license": "GPL-2.0+",
   "require": {
+    "drupal/key": "^1.22",
     "stripe/stripe-php": "~19.0"
   },
   "require-dev": {
     "drush/drush": ">=12",
+    "drupal/simplenews": "^4.1",
     "drupal/navigation_extra_tools": "^1.3"
   },
   "minimum-stability": "dev"

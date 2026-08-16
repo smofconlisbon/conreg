@@ -1,0 +1,7 @@
+conreg_config_mailerlite:
+  path: 'admin/config/conreg/mailerlite'
+  defaults:
+    _title: 'ConReg Mailerlite Integration'
+    _form: '\Drupal\conreg_mailerlite\Form\ConfigMailerliteForm'
+  requirements:
+    _permission: 'configure mailerlite integration'

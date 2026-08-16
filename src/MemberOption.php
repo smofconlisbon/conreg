@@ -19,7 +19,7 @@ class MemberOption {
    *
    * @var int
    */
-  public $optionId;
+  public int $optionId;
 
   /**
    * Whether the option is selected (1 or 0).

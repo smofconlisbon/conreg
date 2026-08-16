@@ -27,7 +27,19 @@ These runtime keys are not fully described in `conreg.schema.yml`:
 - `clickup_option_groups`
 - `discord.*`
 - `planz.*`
-- `simplenews.options`
+
+## Mailing-list config: two different patterns
+
+`conreg_mailing_list` and its provider plugins don't follow the per-event
+`conreg.settings.{eid}` pattern above:
+
+- **`conreg_mailerlite.settings`** — a normal, fully schema-backed, **global** config
+  object (one `api_key`, shared by every event — not per-event like the integrations
+  above).
+- **`conreg_subscription_rule`** — a **config entity** type, not a config key at all.
+  Each subscription rule is its own config object
+  (`conreg_mailing_list.conreg_subscription_rule.*`), scoped to an event via its own
+  `eid` property rather than by being nested under `conreg.settings.{eid}`.
 
 ## Pipe-delimited lists
 

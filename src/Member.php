@@ -23,9 +23,9 @@ class Member extends \stdClass {
   /**
    * Member options.
    *
-   * @var array
+   * @var MemberOption[]
    */
-  public $options;
+  public array $options;
 
   /**
    * Constructs a new Member object.
@@ -350,6 +350,27 @@ class Member extends \stdClass {
       default:
         return $this->$field;
     }
+  }
+
+  /**
+   * Check if member has a member option.
+   *
+   * @param int $optionId
+   *   The option ID to check for.
+   *
+   * @return bool
+   *   Returns true if member has option.
+   */
+  public function hasOption(int $optionId): bool {
+    // If no options, member does not have option.
+    if (!$this->options) {
+      return FALSE;
+    }
+
+    // Search member options for option. If null returned, no option matches.
+    return !is_null(
+      array_find($this->options, fn(MemberOption $option) => $option->optionId === $optionId && $option->isSelected)
+    );
   }
 
 }
