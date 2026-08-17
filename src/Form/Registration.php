@@ -400,11 +400,22 @@ class Registration extends FormBase {
       if ($config->get('payments.show_remaining') ?? FALSE) {
         $tags[] = 'event:' . $eid . ':remaining';
       }
+      $isFirstMember = empty($return) && empty($lead_mid) && $cnt == 1;
+      // Show all public options, but track which are disabled for first member.
+      $disabledOptions = [];
+      if ($isFirstMember) {
+        $disabledOptions = array_diff_key($types->publicOptions, $types->firstOptions);
+      }
+      // Filter member types to only include public ones.
+      $filteredTypes = array_intersect_key($types->types, $types->publicOptions);
       $form['members']['member' . $cnt]['type'] = [
-        '#type' => 'select',
+        '#type' => 'member_type_cards',
         '#title' => $curMemberClass->fields->membership_type,
         '#description' => $curMemberClass->fields->membership_type_description,
-        '#options' => ((empty($return) && empty($lead_mid) && $cnt == 1) ? $types->firstOptions : $types->publicOptions),
+        '#options' => $types->publicOptions,
+        '#disabled_options' => $disabledOptions,
+        '#member_types' => $filteredTypes,
+        '#currency_symbol' => $symbol,
         '#required' => TRUE,
         '#attributes' => ['class' => ['edit-member-type']],
         '#ajax' => [
@@ -421,10 +432,6 @@ class Registration extends FormBase {
         $form['members']['member' . $cnt]['type']['#default_value'] = $defaultType;
       }
 
-      $form['members']['member' . $cnt]['dayOptions'] = [
-        '#prefix' => '<div id="memberDayOptions' . $cnt . '">',
-        '#suffix' => '</div>',
-      ];
       // Get the current member type.
       // If none selected, take the first entry in the options array.
       if (!empty($member_values['type'])) {
@@ -436,12 +443,20 @@ class Registration extends FormBase {
           // If day options available, we need to give them Ajax callbacks,
           // can't do partial form update, so treat like member class change.
           $selectedClassChanged = TRUE;
-          // Checkboxes for days.
-          $form['members']['member' . $cnt]['dayOptions']['days'] = [
-            '#type' => 'checkboxes',
+          // Checkboxes for days, nested under the selected type card so they
+          // render (and Tab-order) inside it. #parents is set explicitly so
+          // the submitted value still lands at the same path regardless of
+          // where the element is nested for display - member_type_cards
+          // already owns the values path for 'type' itself, so day options
+          // can't be a real child of it without an explicit #parents.
+          $form['members']['member' . $cnt]['type']['day_options'] = [
+            '#type' => 'member_day_options',
             '#title' => $curMemberClass->fields->membership_days,
             '#description' => $curMemberClass->fields->membership_days_description,
             '#options' => $types->types[$currentType]->dayOptions,
+            '#day_data' => $types->types[$currentType]->days,
+            '#currency_symbol' => $symbol,
+            '#parents' => ['members', 'member' . $cnt, 'dayOptions', 'days'],
             '#attributes' => [
               'class' => ['edit-members-days'],
             ],

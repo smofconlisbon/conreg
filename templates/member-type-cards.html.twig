@@ -1,0 +1,44 @@
+{#
+/**
+ * @file
+ * Theme template for member type card selection element.
+ *
+ * Displays membership types as styled cards with title, description, and price.
+ *
+ * Available variables:
+ * - element: The form element containing radio options.
+ * - attributes: HTML attributes for the containing element.
+ * - cards: Themed card render arrays, one per option, built in
+ *   conreg_preprocess_member_type_cards(). Each renders via the
+ *   member_type_card theme hook (see member-type-card.html.twig).
+ */
+#}
+{% set classes = [
+  'member-type-cards',
+  'js-form-item',
+  'form-item',
+  'js-form-type-member-type-cards',
+  'form-type-member-type-cards',
+  element['#required'] ? 'required',
+] %}
+{% set label_id = element['#id'] ~ '-label' %}
+
+<div{{ attributes.addClass(classes) }} role="radiogroup" aria-labelledby="{{ label_id }}">
+  {% if element['#title'] %}
+    <div id="{{ label_id }}" class="member-type-cards__title form-item__label{% if element['#required'] %} form-required{% endif %}">
+      {{ element['#title'] }}
+    </div>
+  {% endif %}
+
+  <div class="member-type-cards__options">
+    {% for card in cards %}
+      {{ card }}
+    {% endfor %}
+  </div>
+
+  {% if element['#errors'] %}
+    <div class="member-type-cards__error form-item--error-message">
+      {{ element['#errors'] }}
+    </div>
+  {% endif %}
+</div>

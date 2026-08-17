@@ -9,13 +9,15 @@ use Drupal\Core\Database\Database;
 use Drupal\Core\Form\FormState;
 use Drupal\Core\Session\UserSession;
 use Drupal\KernelTests\KernelTestBase;
+use PHPUnit\Framework\Attributes\Group;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 use Symfony\Component\Routing\Route;
 
 /**
  * Tests that forms load correctly.
- *
- * @group conreg
  */
+#[Group('conreg')]
+#[RunTestsInSeparateProcesses]
 class FormBuildTest extends KernelTestBase {
 
   /**

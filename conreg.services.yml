@@ -34,3 +34,6 @@ services:
   conreg.upgrade.storage:
     class: Drupal\conreg\Service\UpgradeStorage
   Drupal\conreg\Service\UpgradeStorage: '@conreg.upgrade.storage'
+
+  Drupal\conreg\Hook\ConregThemeHooks:
+    class: Drupal\conreg\Hook\ConregThemeHooks

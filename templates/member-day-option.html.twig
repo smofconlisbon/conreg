@@ -1,0 +1,25 @@
+{#
+/**
+ * @file
+ * Theme template for a single member day option.
+ *
+ * Available variables:
+ * - element: The day-option render array, wrapping a checkbox
+ *   ('#checkbox') plus the day's price and description.
+ */
+#}
+<label class="member-day-option">
+  <span class="member-day-option__checkbox">{{ element['#checkbox'] }}</span>
+  {% if element['#day_price'] is not empty or element['#day_price'] == 0 %}
+    <span class="member-day-option__price">
+      {%- if element['#day_price'] == 0 or element['#day_price'] == '0' -%}
+        {{ 'Free'|t }}
+      {%- else -%}
+        {{ element['#currency_symbol'] }}{{ element['#day_price'] }}
+      {%- endif -%}
+    </span>
+  {% endif %}
+  {% if element['#day_description'] %}
+    <span class="member-day-option__description">{{ element['#day_description'] }}</span>
+  {% endif %}
+</label>

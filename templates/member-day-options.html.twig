@@ -1,0 +1,61 @@
+{#
+/**
+ * @file
+ * Theme template for member day-options selection element.
+ *
+ * Displays a member type's per-day pricing options as checkboxes, each
+ * showing its price and description.
+ *
+ * Available variables:
+ * - element: The form element containing checkbox options.
+ * - attributes: HTML attributes for the containing element.
+ * - options: Themed day-option render arrays, one per option, built in
+ *   ConregThemeHooks::preprocessMemberDayOptions(). Each renders via the
+ *   member_day_option theme hook (see member-day-option.html.twig).
+ *
+ * element['#description'] (if present) renders below the day checkboxes,
+ * styled like description text on any other field - see
+ * form-element.html.twig's own form-item__description for the convention
+ * this matches.
+ */
+#}
+{% set classes = [
+  'member-day-options',
+  'js-form-item',
+  'form-item',
+  'js-form-type-member-day-options',
+  'form-type-member-day-options',
+] %}
+{% set label_id = element['#id'] ~ '-label' %}
+
+<div{{ attributes.addClass(classes) }} role="group" aria-labelledby="{{ label_id }}">
+  {% if element['#title'] %}
+    <div id="{{ label_id }}" class="member-day-options__title form-item__label">
+      {{ element['#title'] }}
+    </div>
+  {% endif %}
+
+  <div class="member-day-options__options">
+    {% for option in options %}
+      {{ option }}
+    {% endfor %}
+  </div>
+
+  {% if element['#errors'] %}
+    <div class="member-day-options__error form-item--error-message">
+      {{ element['#errors'] }}
+    </div>
+  {% endif %}
+
+  {% if element['#description'] %}
+    {#
+      FormBuilder always adds aria-describedby="{id}--description" to this
+      element's own attributes whenever #description is set (regardless of
+      theme hook), so the id here must match for that reference to resolve
+      to a real element instead of nothing.
+    #}
+    <div id="{{ element['#id'] }}--description" class="member-day-options__description form-item__description">
+      {{ element['#description'] }}
+    </div>
+  {% endif %}
+</div>

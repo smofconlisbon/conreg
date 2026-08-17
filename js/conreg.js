@@ -4,6 +4,206 @@
  */
 
 (function (Drupal, once) {
+  // Track focus for restoration after AJAX.
+  let focusedRadioName = null;
+  let focusedRadioValue = null;
+
+  // Timeout for delayed visual feedback.
+  let processingVisualTimeout = null;
+
+  // Function to restore focus to a card after AJAX.
+  function restoreFocus() {
+    if (focusedRadioName) {
+      const selector = `input[type="radio"][name="${CSS.escape(focusedRadioName)}"][value="${CSS.escape(focusedRadioValue)}"]`;
+      const input = document.querySelector(selector);
+      const card = input?.closest('.member-type-card');
+      if (card) {
+        card.focus();
+      }
+      focusedRadioName = null;
+      focusedRadioValue = null;
+    }
+  }
+
+  // Function to return the enabled cards in a group, in DOM order.
+  function getEnabledCards(group) {
+    return Array.from(group.querySelectorAll('.member-type-card')).filter(
+      (c) => !c.classList.contains('member-type-card--disabled'),
+    );
+  }
+
+  // Function to update roving tabindex so only one card in the group is a tab stop.
+  function updateTabIndexes(group, activeCard) {
+    const enabledCards = getEnabledCards(group);
+    const target = enabledCards.includes(activeCard)
+      ? activeCard
+      : enabledCards[0];
+    enabledCards.forEach((c) => {
+      c.setAttribute('tabindex', c === target ? '0' : '-1');
+    });
+  }
+
+  // Function to return the day-option checkboxes in a group, in DOM order.
+  function getDayCheckboxes(group) {
+    return Array.from(group.querySelectorAll('input[type="checkbox"]'));
+  }
+
+  // Function to update roving tabindex so only one day checkbox is a tab
+  // stop. Unlike updateTabIndexes() for cards, this never changes which
+  // checkbox is checked - moving focus and toggling a value are independent
+  // for a group of checkboxes (they aren't mutually exclusive like cards).
+  function updateDayCheckboxTabIndexes(group, activeCheckbox) {
+    const checkboxes = getDayCheckboxes(group);
+    const target = checkboxes.includes(activeCheckbox)
+      ? activeCheckbox
+      : checkboxes[0];
+    checkboxes.forEach((c) => {
+      c.setAttribute('tabindex', c === target ? '0' : '-1');
+    });
+  }
+
+  // Function to update card selection visual and ARIA state.
+  function updateCardSelection(card) {
+    const group = card.closest('.member-type-cards__options');
+    if (group) {
+      group.querySelectorAll('.member-type-card').forEach((c) => {
+        c.classList.remove('member-type-card--selected');
+        c.setAttribute('aria-checked', 'false');
+      });
+      updateTabIndexes(group, card);
+    }
+    card.classList.add('member-type-card--selected');
+    card.setAttribute('aria-checked', 'true');
+  }
+
+  // Function to disable all radio buttons in a member type cards group.
+  function disableCardRadios(card) {
+    const group = card.closest('.member-type-cards__options');
+    if (group) {
+      group
+        .querySelectorAll('.member-type-card input[type="radio"]')
+        .forEach((radio) => {
+          radio.disabled = true;
+        });
+    }
+  }
+
+  // Function to show processing indicator on a card (called after delay).
+  function showProcessingVisual(card) {
+    const indicator = document.createElement('span');
+    indicator.className = 'member-type-card__processing';
+    indicator.textContent = Drupal.t('Processing...');
+    const nameEl = card.querySelector('.member-type-card__name');
+    if (nameEl) {
+      nameEl.appendChild(indicator);
+    }
+    // Add visual processing state to cards.
+    const group = card.closest('.member-type-cards__options');
+    if (group) {
+      group.querySelectorAll('.member-type-card').forEach((c) => {
+        c.classList.add('member-type-card--processing');
+      });
+    }
+  }
+
+  // Function to cancel pending visual feedback.
+  function cancelProcessingVisual() {
+    if (processingVisualTimeout) {
+      clearTimeout(processingVisualTimeout);
+      processingVisualTimeout = null;
+    }
+  }
+
+  // Function to schedule delayed visual feedback.
+  function scheduleProcessingVisual(card) {
+    // Cancel any existing timeout.
+    cancelProcessingVisual();
+    // Schedule visual feedback after 200ms.
+    processingVisualTimeout = setTimeout(() => {
+      showProcessingVisual(card);
+      processingVisualTimeout = null;
+    }, 200);
+  }
+
+  // Function to hide processing indicator and cancel any pending visual feedback.
+  function hideProcessing() {
+    cancelProcessingVisual();
+    document.querySelectorAll('.member-type-card__processing').forEach((el) => {
+      el.remove();
+    });
+    document.querySelectorAll('.member-type-card--processing').forEach((el) => {
+      el.classList.remove('member-type-card--processing');
+    });
+  }
+
+  // Function to select a card: checks its radio and triggers the change/AJAX flow.
+  function selectCard(card) {
+    if (card.classList.contains('member-type-card--disabled')) {
+      return;
+    }
+
+    const input = card.querySelector('input[type="radio"]');
+    if (!input || input.disabled) {
+      return;
+    }
+
+    // Store focus info for restoration after any AJAX.
+    focusedRadioName = input.name;
+    focusedRadioValue = input.value;
+
+    if (!input.checked) {
+      input.checked = true;
+      updateCardSelection(card);
+
+      // Trigger change event for AJAX.
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+
+      // Defer disabling until after event handlers complete to not interfere with AJAX.
+      setTimeout(() => {
+        disableCardRadios(card);
+        scheduleProcessingVisual(card);
+      }, 0);
+    } else {
+      // No AJAX will happen, so focus immediately.
+      card.focus();
+      focusedRadioName = null;
+      focusedRadioValue = null;
+    }
+  }
+
+  // Function to re-enable all radio buttons after AJAX completes.
+  function enableAllCardRadios() {
+    document
+      .querySelectorAll('.member-type-cards__options')
+      .forEach((group) => {
+        group
+          .querySelectorAll('.member-type-card input[type="radio"]')
+          .forEach((radio) => {
+            // Only re-enable if not permanently disabled (e.g., not available for member 1).
+            const card = radio.closest('.member-type-card');
+            if (
+              card &&
+              !card.classList.contains('member-type-card--disabled')
+            ) {
+              radio.disabled = false;
+            }
+          });
+      });
+  }
+
+  // Restore focus and clear processing state once AJAX completes. Drupal's
+  // AJAX subsystem still runs on jQuery, so completion only surfaces as
+  // jQuery's global 'ajaxComplete' event, not a native DOM event; there is
+  // no non-jQuery hook available to listen for Drupal AJAX completion.
+  // eslint-disable-next-line no-jquery/no-ajax-events
+  jQuery(document).on('ajaxComplete', () => {
+    hideProcessing();
+    enableAllCardRadios();
+    requestAnimationFrame(() => {
+      restoreFocus();
+    });
+  });
+
   function showBadgeNameOther(element) {
     if (!element.checked) {
       return;
@@ -29,6 +229,223 @@
 
   Drupal.behaviors.conreg = {
     attach(context) {
+      // Restore focus if we have stored focus info (handles AJAX refresh).
+      if (focusedRadioName && context !== document) {
+        requestAnimationFrame(() => {
+          restoreFocus();
+        });
+      }
+
+      // Member type card click handler.
+      // Clicking anywhere on the card selects the radio and triggers AJAX.
+      once('member-type-card', '.member-type-card', context).forEach((card) => {
+        // Make links in cards open in new tabs.
+        card
+          .querySelectorAll('.member-type-card__description a')
+          .forEach((link) => {
+            link.setAttribute('target', '_blank');
+            link.setAttribute('rel', 'noopener noreferrer');
+          });
+
+        card.addEventListener('click', (event) => {
+          // Don't handle clicks on links - let them navigate normally.
+          if (event.target.closest('a')) {
+            return;
+          }
+
+          // Don't handle clicks inside the day-options block - let the
+          // checkboxes there behave normally, without the card stealing
+          // focus back via selectCard() below.
+          if (event.target.closest('.member-type-card__day-options')) {
+            return;
+          }
+
+          const input = card.querySelector('input[type="radio"]');
+          // Don't handle if clicking directly on the (hidden) input.
+          if (event.target === input) {
+            return;
+          }
+
+          selectCard(card);
+        });
+
+        // Keyboard support: Enter/Space selects the focused card. Arrow keys
+        // move focus to (and select) the previous/next enabled card, matching
+        // the native radiogroup interaction pattern.
+        card.addEventListener('keydown', (event) => {
+          // Only handle keys pressed on the card itself. Without this, key
+          // presses on nested interactive descendants (e.g. the day-options
+          // checkboxes rendered inside the selected card) bubble up here too,
+          // stealing arrow-key/Space handling meant for those descendants.
+          if (event.target !== card) {
+            return;
+          }
+
+          const group = card.closest('.member-type-cards__options');
+          if (!group) {
+            return;
+          }
+
+          switch (event.key) {
+            case 'Enter':
+            case ' ':
+            case 'Spacebar':
+              event.preventDefault();
+              selectCard(card);
+              break;
+
+            case 'ArrowDown':
+            case 'ArrowRight': {
+              event.preventDefault();
+              const enabledCards = getEnabledCards(group);
+              const index = enabledCards.indexOf(card);
+              if (index === -1) {
+                break;
+              }
+              const next = enabledCards[(index + 1) % enabledCards.length];
+              next.focus();
+              selectCard(next);
+              break;
+            }
+
+            case 'ArrowUp':
+            case 'ArrowLeft': {
+              event.preventDefault();
+              const enabledCards = getEnabledCards(group);
+              const index = enabledCards.indexOf(card);
+              if (index === -1) {
+                break;
+              }
+              const prev =
+                enabledCards[
+                  (index - 1 + enabledCards.length) % enabledCards.length
+                ];
+              prev.focus();
+              selectCard(prev);
+              break;
+            }
+
+            default:
+              break;
+          }
+        });
+      });
+
+      // Handle direct input changes (e.g., keyboard navigation).
+      once(
+        'member-type-card-radio',
+        '.member-type-card input[type="radio"]',
+        context,
+      ).forEach((input) => {
+        input.addEventListener('change', () => {
+          const card = input.closest('.member-type-card');
+          if (!card) {
+            return;
+          }
+          updateCardSelection(card);
+
+          // Store focus info for restoration after AJAX, but only when the
+          // change was actually user-driven (the input or its card
+          // currently has focus) - the synthetic change dispatched below to
+          // sync a browser-restored selection on page load isn't, and
+          // shouldn't steal focus onto the card once its AJAX completes.
+          if (document.activeElement === input || document.activeElement === card) {
+            focusedRadioName = input.name;
+            focusedRadioValue = input.value;
+          }
+
+          // Defer disabling until after event handlers complete to not interfere with AJAX.
+          setTimeout(() => {
+            disableCardRadios(card);
+            scheduleProcessingVisual(card);
+          }, 0);
+        });
+
+        // Sync visual state with actual radio state (e.g., after browser
+        // back/forward, or the browser restoring form state on a plain page
+        // refresh).
+        if (input.checked) {
+          const card = input.closest('.member-type-card');
+          if (card) {
+            updateCardSelection(card);
+          }
+
+          // A plain page reload submits nothing to the server, so a radio
+          // the browser re-checks from its own memory of the previous page
+          // is unknown server-side - day options (if this type has any)
+          // were never rendered. Only do this on the initial full-page
+          // attach (context === document), not on the reattach after our
+          // own #ajax rebuild replaces this markup, or every AJAX refresh
+          // would trigger another one. Dispatching the same change event a
+          // real click fires re-runs that #ajax rebuild so day options load
+          // in, exactly as if the user had just clicked the card.
+          if (context === document) {
+            // Defer until other behaviors attaching on this same page load
+            // (notably Drupal's own core/drupal.ajax behavior, which binds
+            // the listener that actually sends the #ajax request) have had
+            // a chance to run - dispatching immediately risks firing before
+            // that listener exists yet, silently going nowhere.
+            setTimeout(() => {
+              input.dispatchEvent(new Event('change', { bubbles: true }));
+            }, 0);
+          }
+        }
+      });
+
+      // Day-option checkboxes inside the selected card: arrow keys move
+      // focus between checkboxes (roving tabindex), without toggling any of
+      // them - Space still toggles the focused one natively, and Tab still
+      // moves focus out of the group entirely, both unchanged from default
+      // browser behavior.
+      once(
+        'member-type-day-option',
+        '.member-type-card__day-options input[type="checkbox"]',
+        context,
+      ).forEach((checkbox) => {
+        const group = checkbox.closest('.member-type-card__day-options');
+        if (!group) {
+          return;
+        }
+
+        // The first checkbox in each group is the initial tab stop.
+        const checkboxes = getDayCheckboxes(group);
+        checkbox.setAttribute(
+          'tabindex',
+          checkboxes.indexOf(checkbox) === 0 ? '0' : '-1',
+        );
+
+        // Keep the roving tabindex in sync with wherever focus actually is,
+        // regardless of how it got there (arrow keys, click, etc.).
+        checkbox.addEventListener('focus', () => {
+          updateDayCheckboxTabIndexes(group, checkbox);
+        });
+
+        checkbox.addEventListener('keydown', (event) => {
+          const boxes = getDayCheckboxes(group);
+          const index = boxes.indexOf(checkbox);
+          if (index === -1) {
+            return;
+          }
+
+          switch (event.key) {
+            case 'ArrowDown':
+            case 'ArrowRight':
+              event.preventDefault();
+              boxes[(index + 1) % boxes.length].focus();
+              break;
+
+            case 'ArrowUp':
+            case 'ArrowLeft':
+              event.preventDefault();
+              boxes[(index - 1 + boxes.length) % boxes.length].focus();
+              break;
+
+            default:
+              break;
+          }
+        });
+      });
+
       // Update badge name options.
       once(
         'conreg-name',

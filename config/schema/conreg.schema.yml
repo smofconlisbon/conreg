@@ -251,6 +251,9 @@ conreg.settings.*:
               description:
                 type: label
                 label: 'Description of member type - normally includes age requirement and price'
+              descriptionFormat:
+                type: string
+                label: 'Text format for description of member type'
               price:
                 type: string
               number_allowed:

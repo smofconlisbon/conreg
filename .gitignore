@@ -2,6 +2,8 @@
 *.lst
 *~
 
+*.key
+
 .ddev
 .editorconfig
 .gitattributes
@@ -9,5 +11,6 @@
 phpcs.xml.dist
 
 recipes/
+site/
 vendor/
 web/

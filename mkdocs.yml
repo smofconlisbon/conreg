@@ -84,6 +84,7 @@ nav:
   - Development:
       - Extending ConReg: development/extending.md
       - Hooks API: development/hooks.md
+      - Theming: development/theming.md
       - Testing: development/testing.md
   - Reference:
       - Routes: reference/routes.md

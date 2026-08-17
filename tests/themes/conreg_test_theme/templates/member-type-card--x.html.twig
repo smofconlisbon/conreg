@@ -1,0 +1,13 @@
+{#
+/**
+ * @file
+ * Test-only override of member-type-card.html.twig for option key "x",
+ * proving a theme-provided per-member-type template override is picked up
+ * by Drupal's theme suggestion mechanism.
+ *
+ * Available variables: same as member-type-card.html.twig.
+ */
+#}
+<div class="conreg-test-card-override" data-card-value="{{ element['#return_value'] }}">
+  {{ element['#title'] }}
+</div>

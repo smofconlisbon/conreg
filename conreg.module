@@ -5,9 +5,11 @@
  * Module file for ConReg.
  */
 
+use Drupal\Core\Hook\Attribute\LegacyHook;
 use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\conreg\ConregEmailer;
 use Drupal\conreg\ConregConfig;
+use Drupal\conreg\Hook\ConregThemeHooks;
 use Drupal\conreg\Member;
 use Drupal\conreg\Service\EventStorage;
 use Drupal\user\UserInterface;
@@ -79,4 +81,28 @@ function conreg_user_login(UserInterface $account) {
       }
     }
   }
+}
+
+/**
+ * Implements hook_theme().
+ */
+#[LegacyHook]
+function conreg_theme(): array {
+  return \Drupal::service(ConregThemeHooks::class)->theme();
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for member_type_cards.
+ */
+#[LegacyHook]
+function conreg_preprocess_member_type_cards(array &$variables): void {
+  \Drupal::service(ConregThemeHooks::class)->preprocessMemberTypeCards($variables);
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for member_day_options.
+ */
+#[LegacyHook]
+function conreg_preprocess_member_day_options(array &$variables): void {
+  \Drupal::service(ConregThemeHooks::class)->preprocessMemberDayOptions($variables);
 }

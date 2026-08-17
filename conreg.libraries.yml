@@ -7,6 +7,8 @@ conreg_form:
     js/conreg.js: {}
   dependencies:
     - core/jquery
+    - core/once
+    - core/drupal.ajax
 
 conreg_field_options:
   version: 1.x

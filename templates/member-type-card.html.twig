@@ -1,0 +1,52 @@
+{#
+/**
+ * @file
+ * Theme template for a single member type card.
+ *
+ * Available variables:
+ * - element: The card render array, wrapping a radio ('#radio') plus the
+ *   card's title, description, price, and selected/disabled/tabbable state.
+ *   '#day_options' (checkboxes render array or NULL) is only present on the
+ *   currently selected card.
+ */
+#}
+{% set is_selected = element['#is_selected'] %}
+{% set is_disabled = element['#card_disabled'] is defined and element['#card_disabled'] %}
+{% set is_tabbable = element['#is_tabbable'] %}
+{% set name_id = element['#id'] ~ '-name' %}
+
+<div class="member-type-card{% if is_selected %} member-type-card--selected{% endif %}{% if is_disabled %} member-type-card--disabled{% endif %}" data-card-value="{{ element['#return_value'] }}" role="radio" aria-checked="{{ is_selected ? 'true' : 'false' }}" aria-labelledby="{{ name_id }}"{% if element['#card_description'] %} aria-describedby="{{ element['#card_description_id'] }}"{% endif %}{% if is_disabled %} aria-disabled="true"{% endif %} tabindex="{{ is_disabled ? '-1' : (is_tabbable ? '0' : '-1') }}">
+  <div class="member-type-card__radio">
+    {{ element['#radio'] }}
+  </div>
+  <div class="member-type-card__content">
+    <span id="{{ name_id }}" class="member-type-card__name">
+      {{- element['#title'] -}}
+      {%- if is_disabled %}
+        <span class="member-type-card__disabled-message">{{ 'Not available for Member 1'|t }}</span>
+      {%- endif %}
+    </span>
+    {% if element['#card_price'] is not empty or element['#card_price'] == 0 %}
+      <span class="member-type-card__price">
+        {%- if element['#card_price'] == 0 or element['#card_price'] == '0' -%}
+          {{ 'Free'|t }}
+        {%- else -%}
+          {{ element['#currency_symbol'] }}{{ element['#card_price'] }}
+        {%- endif -%}
+      </span>
+    {% endif %}
+    {% if element['#card_description'] %}
+      <span id="{{ element['#card_description_id'] }}" class="member-type-card__description">{{ element['#card_description'] }}</span>
+    {% endif %}
+  </div>
+  {% if element['#day_options'] %}
+    {#
+      Rendered as-is: the member_day_options theme hook already wraps this
+      in its own grouped markup (see member-day-options.html.twig) - no
+      extra role/aria needed on top of that.
+    #}
+    <div class="member-type-card__day-options">
+      {{ element['#day_options'] }}
+    </div>
+  {% endif %}
+</div>
