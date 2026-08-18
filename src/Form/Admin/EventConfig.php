@@ -2,6 +2,7 @@
 
 namespace Drupal\conreg\Form\Admin;
 
+use Drupal\Component\Utility\EmailValidatorInterface;
 use Drupal\conreg\ConregTokens;
 use Drupal\conreg\ConregOptions;
 use Drupal\conreg\Service\EventStorage;
@@ -12,6 +13,7 @@ use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Language\LanguageManagerInterface;
+use Drupal\Core\Messenger\MessengerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
 /**
@@ -34,6 +36,10 @@ class EventConfig extends ConfigFormBase {
    *   The entity type manager.
    * @param \Drupal\conreg\Service\EventStorage $eventStorage
    *   The event storage service.
+   * @param \Drupal\Component\Utility\EmailValidatorInterface $emailValidator
+   *   The email validator.
+   * @param \Drupal\Core\Messenger\MessengerInterface $messenger
+   *   The messenger.
    */
   public function __construct(
     protected CacheTagsInvalidatorInterface $cacheInvalidator,
@@ -42,7 +48,14 @@ class EventConfig extends ConfigFormBase {
     protected LanguageManagerInterface $languageManager,
     protected EntityTypeManagerInterface $entityTypeManager,
     protected EventStorage $eventStorage,
-  ) {}
+    protected EmailValidatorInterface $emailValidator,
+    MessengerInterface $messenger,
+  ) {
+    // MessengerTrait (via FormBase) already declares an untyped $messenger
+    // property, so it can't also be constructor-promoted here - set it via
+    // the trait's own setter instead.
+    $this->setMessenger($messenger);
+  }
 
   /**
    * {@inheritdoc}
@@ -341,7 +354,7 @@ class EventConfig extends ConfigFormBase {
     $form['conreg_options']['option_groups'] = [
       '#type' => 'textarea',
       '#title' => $this->t('Option Groups'),
-      '#description' => $this->t('Put each option group on a line with group ID, field name to attach to, group title, local/global (0/1), and private/public (0/1 - groups with 0 will only be visible to admins), separated by | character (e.g. "1|checkboxes|Please tick the areas you\'d like to volunteer|0|1").'),
+      '#description' => $this->t('Put each option group on a line with group ID, field type, field name to attach to, group title, local/global (0/1), and private/public (0/1 - groups with 0 will only be visible to admins), separated by | character (e.g. "1|checkboxes|volunteer|Please tick the areas you\'d like to volunteer|0|1").'),
       '#default_value' => $config->get('conreg_options.option_groups'),
     ];
 
@@ -685,6 +698,283 @@ class EventConfig extends ConfigFormBase {
     ];
 
     return parent::buildForm($form, $form_state);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function validateForm(array &$form, FormStateInterface $form_state) {
+    parent::validateForm($form, $form_state);
+
+    $optionGroups = (string) $form_state->getValue([
+      'conreg_options',
+      'option_groups',
+    ]);
+    $options = (string) $form_state->getValue([
+      'conreg_options',
+      'options',
+    ]);
+
+    $eid = (int) $form_state->get('eid');
+    $config = $this->config('conreg.settings.' . $eid);
+    $memberClasses = ConregOptions::memberClasses($eid, $config);
+    $memberClassIds = array_fill_keys(array_keys($memberClasses->classes), TRUE);
+
+    $groupIds = $this->validateOptionGroups($optionGroups, $form_state);
+    $this->validateOptions($options, $groupIds, $memberClassIds, $form_state);
+  }
+
+  /**
+   * Validates the option group configuration lines.
+   *
+   * @param string $value
+   *   The option group configuration.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The form state.
+   *
+   * @return array
+   *   Valid group IDs keyed by their integer value.
+   */
+  protected function validateOptionGroups(string $value, FormStateInterface $form_state): array {
+    $groupIds = [];
+
+    foreach (explode("\n", $value) as $index => $line) {
+      if (trim($line) === '') {
+        continue;
+      }
+
+      $lineNumber = $index + 1;
+      $fields = array_map('trim', explode('|', $line));
+      if (count($fields) !== 6) {
+        $form_state->setErrorByName(
+          'conreg_options][option_groups',
+          $this->t('Option Groups line @line must contain exactly 6 pipe-separated values.', [
+            '@line' => $lineNumber,
+          ])
+        );
+        continue;
+      }
+
+      [$groupId, $fieldType, $fieldName, $title, $global, $public] = $fields;
+      if (!ctype_digit($groupId)) {
+        $form_state->setErrorByName(
+          'conreg_options][option_groups',
+          $this->t('Option Groups line @line has an invalid group ID. It must be a non-negative integer.', [
+            '@line' => $lineNumber,
+          ])
+        );
+      }
+      elseif (isset($groupIds[(int) $groupId])) {
+        $form_state->setErrorByName(
+          'conreg_options][option_groups',
+          $this->t('Option Groups line @line uses duplicate group ID @id.', [
+            '@line' => $lineNumber,
+            '@id' => $groupId,
+          ])
+        );
+      }
+      else {
+        $groupIds[(int) $groupId] = TRUE;
+      }
+
+      if (!in_array($fieldType, ['checkboxes', 'textfields'], TRUE)) {
+        $form_state->setErrorByName(
+          'conreg_options][option_groups',
+          $this->t('Option Groups line @line has an invalid field type. Use "checkboxes" or "textfields".', [
+            '@line' => $lineNumber,
+          ])
+        );
+      }
+      if ($fieldName === '' || $title === '') {
+        $form_state->setErrorByName(
+          'conreg_options][option_groups',
+          $this->t('Option Groups line @line requires both a field name and a title.', [
+            '@line' => $lineNumber,
+          ])
+        );
+      }
+      if (!in_array($global, ['0', '1'], TRUE) || !in_array($public, ['0', '1'], TRUE)) {
+        $form_state->setErrorByName(
+          'conreg_options][option_groups',
+          $this->t('Option Groups line @line must use 0 or 1 for the local/global and private/public values.', [
+            '@line' => $lineNumber,
+          ])
+        );
+      }
+    }
+
+    return $groupIds;
+  }
+
+  /**
+   * Validates the membership option configuration lines.
+   *
+   * @param string $value
+   *   The membership option configuration.
+   * @param array $groupIds
+   *   Valid option group IDs.
+   * @param array $memberClassIds
+   *   Valid member class IDs.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The form state.
+   */
+  protected function validateOptions(
+    string $value,
+    array $groupIds,
+    array $memberClassIds,
+    FormStateInterface $form_state,
+  ): void {
+    $optionIds = [];
+
+    foreach (explode("\n", $value) as $index => $line) {
+      if (trim($line) === '') {
+        continue;
+      }
+
+      $lineNumber = $index + 1;
+      $fields = array_map('trim', explode('|', $line));
+      if (count($fields) !== 10) {
+        $form_state->setErrorByName(
+          'conreg_options][options',
+          $this->t('Options line @line must contain exactly 10 pipe-separated values.', [
+            '@line' => $lineNumber,
+          ])
+        );
+        continue;
+      }
+
+      [
+        0 => $optionId,
+        1 => $groupId,
+        2 => $title,
+        4 => $detailRequired,
+        5 => $weight,
+        6 => $memberClasses,
+        7 => $mustSelect,
+        8 => $private,
+        9 => $informEmail,
+      ] = $fields;
+
+      if (!ctype_digit($optionId)) {
+        $form_state->setErrorByName(
+          'conreg_options][options',
+          $this->t('Options line @line has an invalid option ID. It must be a non-negative integer.', [
+            '@line' => $lineNumber,
+          ])
+        );
+      }
+      elseif (isset($optionIds[(int) $optionId])) {
+        $form_state->setErrorByName(
+          'conreg_options][options',
+          $this->t('Options line @line uses duplicate option ID @id.', [
+            '@line' => $lineNumber,
+            '@id' => $optionId,
+          ])
+        );
+      }
+      else {
+        $optionIds[(int) $optionId] = TRUE;
+      }
+
+      if (!ctype_digit($groupId)) {
+        $form_state->setErrorByName(
+          'conreg_options][options',
+          $this->t('Options line @line has an invalid group ID. It must be a non-negative integer.', [
+            '@line' => $lineNumber,
+          ])
+        );
+      }
+      elseif (!isset($groupIds[(int) $groupId])) {
+        $form_state->setErrorByName(
+          'conreg_options][options',
+          $this->t('Options line @line refers to undefined group ID @id.', [
+            '@line' => $lineNumber,
+            '@id' => $groupId,
+          ])
+        );
+      }
+
+      $classEntries = array_filter(
+        array_map('trim', explode(',', $memberClasses)),
+        static fn(string $class): bool => $class !== '',
+      );
+
+      if ($classEntries === [] && $title !== '') {
+        // Not an error - a bare "" field or a trailing comma after the last
+        // entry is valid, and the option can legitimately apply to no
+        // classes yet while it's being set up. But FieldOptions only ever
+        // surfaces an option via $this->memberClasses[$classRef] (see its
+        // constructor and addOptionFields()), keyed from inMemberClasses -
+        // an option with no class assigned never lands in that structure,
+        // so it never appears on the registration form for anyone. Warn
+        // rather than staying silent about that.
+        $this->messenger()->addWarning($this->t('Option "@title" (line @line) will never appear on the registration form because it is not assigned to a member class.', [
+          '@title' => $title,
+          '@line' => $lineNumber,
+        ]));
+      }
+
+      foreach ($classEntries as $memberClass) {
+        if (!isset($memberClassIds[$memberClass])) {
+          $form_state->setErrorByName(
+            'conreg_options][options',
+            $this->t('Options line @line refers to undefined member class "@class".', [
+              '@line' => $lineNumber,
+              '@class' => $memberClass,
+            ])
+          );
+        }
+      }
+
+      if ($title === '') {
+        $form_state->setErrorByName(
+          'conreg_options][options',
+          $this->t('Options line @line requires an option title.', [
+            '@line' => $lineNumber,
+          ])
+        );
+      }
+      if (!in_array($detailRequired, ['0', '1'], TRUE)) {
+        $form_state->setErrorByName(
+          'conreg_options][options',
+          $this->t('Options line @line must use 0 or 1 for detail required.', [
+            '@line' => $lineNumber,
+          ])
+        );
+      }
+      if (!in_array($mustSelect, ['0', '1'], TRUE)) {
+        $form_state->setErrorByName(
+          'conreg_options][options',
+          $this->t('Options line @line must use 0 or 1 for must be checked.', [
+            '@line' => $lineNumber,
+          ])
+        );
+      }
+      if (!in_array($private, ['0', '1'], TRUE)) {
+        $form_state->setErrorByName(
+          'conreg_options][options',
+          $this->t('Options line @line must use 0 or 1 for private.', [
+            '@line' => $lineNumber,
+          ])
+        );
+      }
+      if (!preg_match('/^-?\d+$/', $weight)) {
+        $form_state->setErrorByName(
+          'conreg_options][options',
+          $this->t('Options line @line has an invalid weight. It must be an integer.', [
+            '@line' => $lineNumber,
+          ])
+        );
+      }
+      if ($informEmail !== '' && !$this->emailValidator->isValid($informEmail)) {
+        $form_state->setErrorByName(
+          'conreg_options][options',
+          $this->t('Options line @line has an invalid notification email address.', [
+            '@line' => $lineNumber,
+          ])
+        );
+      }
+    }
   }
 
   /**
