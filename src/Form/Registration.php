@@ -361,17 +361,12 @@ class Registration extends FormBase {
 
         // Display email of logged in user.
         $form['members']['member' . $cnt]['email'] = [
-          '#type' => 'hidden',
+          '#type' => 'value',
           '#value' => $first_user_email,
         ];
-        $form['members']['member' . $cnt]['email_label'] = [
-          '#prefix' => '<div class="form-item__label">',
-          '#suffix' => '</div>',
-          '#markup' => $this->t('Email'),
-        ];
         $form['members']['member' . $cnt]['email_display'] = [
-          '#prefix' => '<div id="edit-members-member$cnt-email">',
-          '#suffix' => '</div>',
+          '#type' => 'item',
+          '#title' => $curMemberClass->fields->email,
           '#markup' => $first_user_email,
         ];
       }
