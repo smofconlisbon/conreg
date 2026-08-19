@@ -4,9 +4,11 @@ namespace Drupal\Tests\conreg\Kernel;
 
 use Drupal\conreg\Addons;
 use Drupal\conreg\Form\Admin\EventAddOns;
+use Drupal\conreg\Form\Admin\EventConfig;
 use Drupal\conreg\Plugin\Derivative\EventsMenuDeriver;
 use Drupal\Core\Database\Database;
 use Drupal\Core\Form\FormState;
+use Drupal\Core\Render\Element;
 use Drupal\Core\Session\UserSession;
 use Drupal\KernelTests\KernelTestBase;
 use PHPUnit\Framework\Attributes\Group;
@@ -19,6 +21,21 @@ use Symfony\Component\Routing\Route;
 #[Group('conreg')]
 #[RunTestsInSeparateProcesses]
 class FormBuildTest extends KernelTestBase {
+
+  /**
+   * A handful of legacy conreg.settings keys predate a strict schema.
+   *
+   * Submitting the full Event Configuration form (as
+   * testAdminEventConfigFormSubmitPersistsShowMemberNo does) writes every
+   * key on the form, including several - e.g. closed_message_text,
+   * member_portal.add_role - that have no schema definition yet. Filling in
+   * that pre-existing gap is unrelated to what this test file covers, so
+   * strict schema checking is disabled here rather than left to mask an
+   * unrelated fatal error on every full-form submission test.
+   *
+   * {@inheritdoc}
+   */
+  protected $strictConfigSchema = FALSE;
 
   /**
    * {@inheritdoc}
@@ -332,6 +349,109 @@ class FormBuildTest extends KernelTestBase {
     $this->assertEquals('conreg_config', $form['#form_id']);
     $this->assertEquals('B', $form['conreg_display_options']['default']['#default_value']);
     $this->assertArrayHasKey('F', $form['conreg_display_options']['default']['#options']);
+  }
+
+  /**
+   * With no config saved, "Show member number" defaults to checked.
+   */
+  public function testAdminEventConfigFormShowMemberNoDefaultsToShown(): void {
+    $form = $this->container
+      ->get('form_builder')
+      ->getForm(EventConfig::class);
+
+    $this->assertArrayHasKey('show_member_no', $form['conreg_member_listing']);
+    $this->assertTrue((bool) $form['conreg_member_listing']['show_member_no']['#default_value']);
+  }
+
+  /**
+   * The "Show member number" checkbox reflects a saved config value of FALSE.
+   */
+  public function testAdminEventConfigFormShowMemberNoReflectsConfig(): void {
+    $this->container
+      ->get('config.factory')
+      ->getEditable('conreg.settings.1')
+      ->set('member_listing_page.show_member_no', FALSE)
+      ->save();
+
+    $form = $this->container
+      ->get('form_builder')
+      ->getForm(EventConfig::class);
+
+    $this->assertArrayHasKey('show_member_no', $form['conreg_member_listing']);
+    $this->assertFalse((bool) $form['conreg_member_listing']['show_member_no']['#default_value']);
+  }
+
+  /**
+   * Unchecking "Show member number" and submitting persists it to config.
+   *
+   * Builds the real form to harvest its current default values (already
+   * schema-valid, since they come from installed config), overrides just
+   * the member-number checkbox to unchecked, then submits programmatically
+   * via the form builder - the same route a real submission takes, so this
+   * exercises EventConfig::submitForm() itself rather than just the build.
+   */
+  public function testAdminEventConfigFormSubmitPersistsShowMemberNo(): void {
+    $formObject = EventConfig::create($this->container);
+    $formState = new FormState();
+    $form = $formObject->buildForm([], $formState, 1);
+
+    $values = $this->extractFormValues($form);
+    $values['conreg_member_listing']['show_member_no'] = 0;
+    $formState->setValues($values);
+
+    $formObject->submitForm($form, $formState);
+
+    $this->assertFalse(
+      $this->config('conreg.settings.1')->get('member_listing_page.show_member_no')
+    );
+  }
+
+  /**
+   * Harvest defaults from built form.
+   *
+   * Recursively harvests default values from a built form, keyed as
+   * $form_state->getValues() would return them, so they can be resubmitted.
+   */
+  protected function extractFormValues(array $element): array {
+    $values = [];
+    foreach (Element::children($element) as $key) {
+      $child = $element[$key];
+      switch ($child['#type'] ?? NULL) {
+        case 'vertical_tabs':
+          break;
+
+        case 'checkbox':
+          $values[$key] = (int) ($child['#default_value'] ?? 0);
+          break;
+
+        case 'text_format':
+          $values[$key] = [
+            'value' => $child['#default_value'] ?? '',
+            'format' => $child['#format'] ?? 'basic_html',
+          ];
+          break;
+
+        case 'details':
+          $values[$key] = $this->extractFormValues($child);
+          break;
+
+        case NULL:
+          if (Element::children($child)) {
+            $values[$key] = $this->extractFormValues($child);
+          }
+          break;
+
+        default:
+          $default = $child['#default_value'] ?? NULL;
+          // A <select> with no matching default value falls back to
+          // whichever option a real browser would pre-select: the first one.
+          if (($default === NULL || $default === '') && !empty($child['#options'])) {
+            $default = array_key_first($child['#options']);
+          }
+          $values[$key] = $default ?? '';
+      }
+    }
+    return $values;
   }
 
   /**

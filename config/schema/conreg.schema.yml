@@ -73,6 +73,9 @@ conreg.settings.*:
         show_members:
           type: boolean
           label: 'True if member listing page is available'
+        show_member_no:
+          type: boolean
+          label: 'True if member numbers to be shown'
         show_countries:
           type: boolean
           label: 'True if member countries to be shown'

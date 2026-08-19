@@ -6,6 +6,7 @@ use Drupal\conreg\ConregConfig;
 use Drupal\conreg\ConregOptions;
 use Drupal\conreg\Service\EventStorage;
 use Drupal\conreg\Service\MemberStorage;
+use Drupal\conreg\Trait\ShowBadgeNumberTrait;
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Datetime\DateHelper;
@@ -15,6 +16,8 @@ use Symfony\Component\HttpFoundation\RequestStack;
  * Controller for ConReg.
  */
 class ConregController extends ControllerBase {
+
+  use ShowBadgeNumberTrait;
 
   /**
    * Constructor for member lookup form.
@@ -59,6 +62,7 @@ class ConregController extends ControllerBase {
     $digits = $config->get('member_no_digits');
 
     $showMemberList = $config->get('member_listing_page.show_members') ?? TRUE;
+    $showMemberNo = $config->get('member_listing_page.show_member_no') ?? TRUE;
     $showCountries = $config->get('member_listing_page.show_countries') ?? TRUE;
     $showSummary = $config->get('member_listing_page.show_summary') ?? TRUE;
 
@@ -111,21 +115,22 @@ class ConregController extends ControllerBase {
     ];
 
     $rows = [];
-    $headers = [
-      'member_no' => [
+    $headers = [];
+    if ($showMemberNo) {
+      $headers['member_no'] = [
         'data' => $this->t('Member No'),
         'field' => 'm.member_no',
         'sort' => 'asc',
-      ],
-      'member_name' => [
-        'data' => $this->t('Name'),
-        'field' => 'name',
-      ],
-      'badge_type' => [
-        'data' => $this->t('Type'),
-        'field' => 'm.badge_type',
-        'class' => [RESPONSIVE_PRIORITY_LOW],
-      ],
+      ];
+    }
+    $headers['member_name'] = [
+      'data' => $this->t('Name'),
+      'field' => 'name',
+    ];
+    $headers['badge_type'] = [
+      'data' => $this->t('Type'),
+      'field' => 'm.badge_type',
+      'class' => [RESPONSIVE_PRIORITY_LOW],
     ];
     if ($showCountries) {
       $headers['member_country'] = [
@@ -139,8 +144,10 @@ class ConregController extends ControllerBase {
     foreach ($this->memberStorage->adminPublicListLoad($eid) as $entry) {
       // Sanitize each entry.
       $badge_type = trim($entry['badge_type']);
-      $member_no = sprintf("%0" . $digits . "d", $entry['member_no']);
-      $member = ['member_no' => $badge_type . $member_no];
+      $member = [];
+      if ($showMemberNo) {
+        $member['member_no'] = $this->showBadgeNumber($entry, $config);
+      }
       switch ($entry['display']) {
         case 'F':
           $fullname = trim(trim($entry['first_name']) . ' ' . trim($entry['last_name']));
@@ -164,12 +171,13 @@ class ConregController extends ControllerBase {
       }
 
       // Set key to field to be sorted by.
+      $paddedMemberNo = sprintf("%0" . $digits . "d", $entry['member_no']);
       if ($order == 'member_no') {
-        $key = $member_no;
+        $key = $paddedMemberNo;
       }
       // Append member number to ensure uniqueness.
       else {
-        $key = $member[$order] . $member_no;
+        $key = $member[$order] . $paddedMemberNo;
       }
       if (!empty($entry['display']) && $entry['display'] != 'N' && !empty($entry['country'])) {
         $rows[$key] = $member;
@@ -582,7 +590,6 @@ class ConregController extends ControllerBase {
     $communicationsOptions = ConregOptions::communicationMethod($eid, $config);
     $displayOptions = ConregOptions::display();
     $yesNo = ConregOptions::yesNo();
-    $digits = $config->get('member_no_digits');
 
     $content = [
       '#cache' => [
@@ -712,7 +719,7 @@ class ConregController extends ControllerBase {
 
     foreach ($this->memberStorage->adminPaidMemberListLoad($eid, $direction, $order) as $entry) {
       if (!empty($entry['member_no'])) {
-        $entry['member_no'] = $entry['badge_type'] . sprintf("%0" . $digits . "d", $entry['member_no']);
+        $entry['member_no'] = $this->showBadgeNumber($entry, $config);
       }
       if (!empty($entry['days'])) {
         $dayDescriptions = [];

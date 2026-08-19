@@ -10,6 +10,7 @@ use Drupal\conreg\PaymentLine;
 use Drupal\conreg\Service\EventStorage;
 use Drupal\conreg\Service\MemberStorage;
 use Drupal\conreg\Service\PaymentStorage;
+use Drupal\conreg\Trait\ShowBadgeNumberTrait;
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Config\ImmutableConfig;
 use Drupal\Core\DependencyInjection\AutowireTrait;
@@ -22,7 +23,7 @@ use Drupal\Core\Language\LanguageManagerInterface;
  */
 class CheckInMembers extends FormBase {
 
-  use AutowireTrait;
+  use AutowireTrait, ShowBadgeNumberTrait;
 
   /**
    * Construct the form.
@@ -811,19 +812,6 @@ class CheckInMembers extends FormBase {
       }
     }
     Cache::invalidateTags(['conreg-member-list']);
-  }
-
-  /**
-   * Format the badge number (@todo: move to trait).
-   */
-  protected function showBadgeNumber(array $member, ImmutableConfig $config): string {
-    if (!$member['member_no']) {
-      return '';
-    }
-    $digits = $config->get('member_no_digits');
-    $badge_type = trim($member['badge_type']);
-    $member_no = sprintf("%0" . $digits . "d", $member['member_no']);
-    return $badge_type . $member_no;
   }
 
 }

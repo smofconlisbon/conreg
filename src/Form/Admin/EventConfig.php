@@ -381,6 +381,12 @@ class EventConfig extends ConfigFormBase {
       '#default_value' => $config->get('member_listing_page.show_members') ?? TRUE,
     ];
 
+    $form['conreg_member_listing']['show_member_no'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Show member numbers on public list'),
+      '#default_value' => $config->get('member_listing_page.show_member_no') ?? TRUE,
+    ];
+
     $form['conreg_member_listing']['show_countries'] = [
       '#type' => 'checkbox',
       '#title' => $this->t('Show member countries on public list'),
@@ -1021,6 +1027,7 @@ class EventConfig extends ConfigFormBase {
     $config->set('conreg_options.option_groups', $vals['conreg_options']['option_groups']);
     $config->set('conreg_options.options', $vals['conreg_options']['options']);
     $config->set('member_listing_page.show_members', $vals['conreg_member_listing']['show_members']);
+    $config->set('member_listing_page.show_member_no', $vals['conreg_member_listing']['show_member_no']);
     $config->set('member_listing_page.show_countries', $vals['conreg_member_listing']['show_countries']);
     $config->set('member_listing_page.show_summary', $vals['conreg_member_listing']['show_summary']);
     $config->set('display.page_size', intval($vals['conreg_display']['page_size']));
