@@ -557,9 +557,6 @@ class MemberClasses extends ConfigFormBase {
           $memberClasses->classes[$classRef]->max_length->$fieldName = intval($max_len);
         }
       }
-      foreach ($class->extras as $fieldName => $oldVal) {
-        $memberClasses->classes[$classRef]->extras->$fieldName = $vals[$classRef]['extras'][$fieldName];
-      }
     }
     $this->cacheInvalidator->invalidateTags(['event:' . $eid . ':registration']);
   }
