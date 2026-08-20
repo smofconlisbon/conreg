@@ -5,6 +5,8 @@
  * Module file for conreg_planz.
  */
 
+use Drupal\Core\Hook\Attribute\LegacyHook;
+use Drupal\conreg_planz\Hook\ConregPlanzHooks;
 use Drupal\conreg\Member;
 use Drupal\conreg_planz\PlanZ;
 use Drupal\conreg_planz\PlanZUser;
@@ -13,15 +15,17 @@ use Drupal\conreg_planz\BadgeIdSource;
 /**
  * Implements hook_convention_member_inserted().
  */
+#[LegacyHook]
 function conreg_planz_convention_member_inserted(Member $member): void {
-  _conreg_planz_check_user($member);
+  \Drupal::service(ConregPlanzHooks::class)->conventionMemberInserted($member);
 }
 
 /**
  * Implements hook_convention_member_updated().
  */
+#[LegacyHook]
 function conreg_planz_convention_member_updated(Member $member): void {
-  _conreg_planz_check_user($member);
+  \Drupal::service(ConregPlanzHooks::class)->conventionMemberUpdated($member);
 }
 
 /**

@@ -58,7 +58,8 @@ class LoginController extends ControllerBase {
     }
 
     // Check if user already exists.
-    $user = user_load_by_mail($member['email']);
+    $users = $this->entityTypeManager()->getStorage('user')->loadByProperties(['mail' => $member['email']]);
+    $user = $users ? reset($users) : NULL;
     $currentUser = $this->currentUser();
 
     // Check if user already logged in. If so, redirect to member portal.

@@ -1,0 +1,5 @@
+
+services:
+  Drupal\conreg_clickup\Hook\ConregClickupHooks:
+    class: Drupal\conreg_clickup\Hook\ConregClickupHooks
+    autowire: true

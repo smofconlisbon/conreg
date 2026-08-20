@@ -2,7 +2,9 @@
 
 namespace Drupal\conreg\Service;
 
+use Drupal\Component\Utility\DeprecationHelper;
 use Drupal\Core\Database\Connection;
+use Drupal\Core\Database\Statement\FetchAs;
 use Drupal\Core\Messenger\MessengerInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\Core\StringTranslation\TranslationInterface;
@@ -197,7 +199,7 @@ class PaymentStorage {
     foreach ($entry as $field => $value) {
       $select->condition($field, $value);
     }
-    return $select->execute()->fetchAll(\PDO::FETCH_ASSOC);
+    return DeprecationHelper::backwardsCompatibleCall(\Drupal::VERSION, '11.2.0', fn() => $select->execute()->fetchAll(FetchAs::Associative), fn() => $select->execute()->fetchAll(\PDO::FETCH_ASSOC));
   }
 
   /**
@@ -216,7 +218,7 @@ class PaymentStorage {
     foreach ($entry as $field => $value) {
       $select->condition($field, $value);
     }
-    return $select->execute()->fetchAll(\PDO::FETCH_ASSOC);
+    return DeprecationHelper::backwardsCompatibleCall(\Drupal::VERSION, '11.2.0', fn() => $select->execute()->fetchAll(FetchAs::Associative), fn() => $select->execute()->fetchAll(\PDO::FETCH_ASSOC));
   }
 
   /**

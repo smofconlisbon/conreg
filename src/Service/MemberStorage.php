@@ -2,6 +2,8 @@
 
 namespace Drupal\conreg\Service;
 
+use Drupal\Component\Utility\DeprecationHelper;
+use Drupal\Core\Database\Statement\FetchAs;
 use Drupal\Core\Database\Connection;
 use Drupal\Core\Database\Query\SelectInterface;
 use Drupal\Core\Messenger\MessengerInterface;
@@ -172,7 +174,7 @@ class MemberStorage {
       $select->condition("is_deleted", FALSE);
     }
     // Return the result in associative array format.
-    $entries = $select->execute()->fetchAll(\PDO::FETCH_ASSOC);
+    $entries = DeprecationHelper::backwardsCompatibleCall(\Drupal::VERSION, '11.2.0', fn() => $select->execute()->fetchAll(FetchAs::Associative), fn() => $select->execute()->fetchAll(\PDO::FETCH_ASSOC));
 
     return $entries;
   }
@@ -229,7 +231,7 @@ class MemberStorage {
     $select->condition("is_deleted", FALSE);
     $select->orderBy('m.member_no');
 
-    $entries = $select->execute()->fetchAll(\PDO::FETCH_ASSOC);
+    $entries = DeprecationHelper::backwardsCompatibleCall(\Drupal::VERSION, '11.2.0', fn() => $select->execute()->fetchAll(FetchAs::Associative), fn() => $select->execute()->fetchAll(\PDO::FETCH_ASSOC));
 
     return $entries;
   }
@@ -374,7 +376,7 @@ class MemberStorage {
     // Make sure we only get items 0-49, for scalability reasons.
     $select->range(($page - 1) * $pageSize, $pageSize);
 
-    $entries = $select->execute()->fetchAll(\PDO::FETCH_ASSOC);
+    $entries = DeprecationHelper::backwardsCompatibleCall(\Drupal::VERSION, '11.2.0', fn() => $select->execute()->fetchAll(FetchAs::Associative), fn() => $select->execute()->fetchAll(\PDO::FETCH_ASSOC));
 
     // Run query to get total count.
     $select = $this->connection->select('conreg_members', 'm');
@@ -464,7 +466,7 @@ class MemberStorage {
     // Sort by specified field and direction.
     $select->orderby('m.mid', 'ASC');
 
-    $entries = $select->execute()->fetchAll(\PDO::FETCH_ASSOC);
+    $entries = DeprecationHelper::backwardsCompatibleCall(\Drupal::VERSION, '11.2.0', fn() => $select->execute()->fetchAll(FetchAs::Associative), fn() => $select->execute()->fetchAll(\PDO::FETCH_ASSOC));
 
     return $entries;
   }
@@ -499,7 +501,7 @@ class MemberStorage {
     // Sort by specified field and direction.
     $select->orderby('m.mid', 'ASC');
 
-    $entries = $select->execute()->fetchAll(\PDO::FETCH_ASSOC);
+    $entries = DeprecationHelper::backwardsCompatibleCall(\Drupal::VERSION, '11.2.0', fn() => $select->execute()->fetchAll(FetchAs::Associative), fn() => $select->execute()->fetchAll(\PDO::FETCH_ASSOC));
 
     return $entries;
   }
@@ -540,7 +542,7 @@ class MemberStorage {
     // Sort by specified field and direction.
     $select->orderby('m.mid', 'ASC');
 
-    $entries = $select->execute()->fetchAll(\PDO::FETCH_ASSOC);
+    $entries = DeprecationHelper::backwardsCompatibleCall(\Drupal::VERSION, '11.2.0', fn() => $select->execute()->fetchAll(FetchAs::Associative), fn() => $select->execute()->fetchAll(\PDO::FETCH_ASSOC));
 
     return $entries;
   }
@@ -559,7 +561,7 @@ class MemberStorage {
     // Only include members who aren't deleted.
     $select->condition("is_deleted", FALSE);
 
-    $entries = $select->execute()->fetchAll(\PDO::FETCH_ASSOC);
+    $entries = DeprecationHelper::backwardsCompatibleCall(\Drupal::VERSION, '11.2.0', fn() => $select->execute()->fetchAll(FetchAs::Associative), fn() => $select->execute()->fetchAll(\PDO::FETCH_ASSOC));
     $members = [];
     // Turn numeric array into associative array by mid.
     foreach ($entries as $member) {
@@ -628,7 +630,7 @@ class MemberStorage {
     $select->orderby($order, $direction);
     // Make sure we only get items 0-49, for scalability reasons.
     // $select->range(0, 50);.
-    $entries = $select->execute()->fetchAll(\PDO::FETCH_ASSOC);
+    $entries = DeprecationHelper::backwardsCompatibleCall(\Drupal::VERSION, '11.2.0', fn() => $select->execute()->fetchAll(FetchAs::Associative), fn() => $select->execute()->fetchAll(\PDO::FETCH_ASSOC));
 
     return $entries;
   }
@@ -727,7 +729,7 @@ class MemberStorage {
       $select->range(0, $max_num_badges);
     }
 
-    $entries = $select->execute()->fetchAll(\PDO::FETCH_ASSOC);
+    $entries = DeprecationHelper::backwardsCompatibleCall(\Drupal::VERSION, '11.2.0', fn() => $select->execute()->fetchAll(FetchAs::Associative), fn() => $select->execute()->fetchAll(\PDO::FETCH_ASSOC));
 
     return $entries;
   }
@@ -746,7 +748,7 @@ class MemberStorage {
     $select->condition("is_deleted", FALSE);
     $select->groupby('m.member_type');
 
-    $entries = $select->execute()->fetchAll(\PDO::FETCH_ASSOC);
+    $entries = DeprecationHelper::backwardsCompatibleCall(\Drupal::VERSION, '11.2.0', fn() => $select->execute()->fetchAll(FetchAs::Associative), fn() => $select->execute()->fetchAll(\PDO::FETCH_ASSOC));
 
     return $entries;
   }
@@ -765,7 +767,7 @@ class MemberStorage {
     $select->condition("is_deleted", FALSE);
     $select->groupby('m.badge_type');
 
-    $entries = $select->execute()->fetchAll(\PDO::FETCH_ASSOC);
+    $entries = DeprecationHelper::backwardsCompatibleCall(\Drupal::VERSION, '11.2.0', fn() => $select->execute()->fetchAll(FetchAs::Associative), fn() => $select->execute()->fetchAll(\PDO::FETCH_ASSOC));
 
     return $entries;
   }
@@ -784,7 +786,7 @@ class MemberStorage {
     $select->condition("is_deleted", FALSE);
     $select->groupby('m.days');
 
-    $entries = $select->execute()->fetchAll(\PDO::FETCH_ASSOC);
+    $entries = DeprecationHelper::backwardsCompatibleCall(\Drupal::VERSION, '11.2.0', fn() => $select->execute()->fetchAll(FetchAs::Associative), fn() => $select->execute()->fetchAll(\PDO::FETCH_ASSOC));
 
     return $entries;
   }
@@ -803,7 +805,7 @@ class MemberStorage {
     $select->condition("is_deleted", FALSE);
     $select->groupby('m.payment_method');
 
-    $entries = $select->execute()->fetchAll(\PDO::FETCH_ASSOC);
+    $entries = DeprecationHelper::backwardsCompatibleCall(\Drupal::VERSION, '11.2.0', fn() => $select->execute()->fetchAll(FetchAs::Associative), fn() => $select->execute()->fetchAll(\PDO::FETCH_ASSOC));
 
     return $entries;
   }
@@ -822,7 +824,7 @@ class MemberStorage {
     $select->condition("is_deleted", FALSE);
     $select->groupby('m.member_price');
 
-    $entries = $select->execute()->fetchAll(\PDO::FETCH_ASSOC);
+    $entries = DeprecationHelper::backwardsCompatibleCall(\Drupal::VERSION, '11.2.0', fn() => $select->execute()->fetchAll(FetchAs::Associative), fn() => $select->execute()->fetchAll(\PDO::FETCH_ASSOC));
 
     return $entries;
   }
@@ -843,7 +845,7 @@ class MemberStorage {
     $select->groupby('m.member_type');
     $select->groupby('m.member_price');
 
-    $entries = $select->execute()->fetchAll(\PDO::FETCH_ASSOC);
+    $entries = DeprecationHelper::backwardsCompatibleCall(\Drupal::VERSION, '11.2.0', fn() => $select->execute()->fetchAll(FetchAs::Associative), fn() => $select->execute()->fetchAll(\PDO::FETCH_ASSOC));
 
     return $entries;
   }
@@ -865,7 +867,7 @@ class MemberStorage {
     $select->groupby('year');
     $select->groupby('month');
 
-    $entries = $select->execute()->fetchAll(\PDO::FETCH_ASSOC);
+    $entries = DeprecationHelper::backwardsCompatibleCall(\Drupal::VERSION, '11.2.0', fn() => $select->execute()->fetchAll(FetchAs::Associative), fn() => $select->execute()->fetchAll(\PDO::FETCH_ASSOC));
 
     return $entries;
   }
@@ -884,7 +886,7 @@ class MemberStorage {
     $select->condition("is_deleted", FALSE);
     $select->groupby('m.is_checked_in');
 
-    $entries = $select->execute()->fetchAll(\PDO::FETCH_ASSOC);
+    $entries = DeprecationHelper::backwardsCompatibleCall(\Drupal::VERSION, '11.2.0', fn() => $select->execute()->fetchAll(FetchAs::Associative), fn() => $select->execute()->fetchAll(\PDO::FETCH_ASSOC));
 
     return $entries;
   }
@@ -908,7 +910,7 @@ class MemberStorage {
     // Only list members if they have an add-on.
     $select->condition("add_on_price", 0, ">");
 
-    $entries = $select->execute()->fetchAll(\PDO::FETCH_ASSOC);
+    $entries = DeprecationHelper::backwardsCompatibleCall(\Drupal::VERSION, '11.2.0', fn() => $select->execute()->fetchAll(FetchAs::Associative), fn() => $select->execute()->fetchAll(\PDO::FETCH_ASSOC));
 
     return $entries;
   }
@@ -934,7 +936,7 @@ class MemberStorage {
     // Only include members who aren't deleted.
     $select->condition("m.is_deleted", FALSE);
 
-    $entries = $select->execute()->fetchAll(\PDO::FETCH_ASSOC);
+    $entries = DeprecationHelper::backwardsCompatibleCall(\Drupal::VERSION, '11.2.0', fn() => $select->execute()->fetchAll(FetchAs::Associative), fn() => $select->execute()->fetchAll(\PDO::FETCH_ASSOC));
 
     return $entries;
   }
@@ -955,7 +957,7 @@ class MemberStorage {
     $select->orderby('num', $direction = 'DESC');
     // Make sure we only get items 0-49, for scalability reasons.
     // $select->range(0, 50);.
-    $entries = $select->execute()->fetchAll(\PDO::FETCH_ASSOC);
+    $entries = DeprecationHelper::backwardsCompatibleCall(\Drupal::VERSION, '11.2.0', fn() => $select->execute()->fetchAll(FetchAs::Associative), fn() => $select->execute()->fetchAll(\PDO::FETCH_ASSOC));
 
     return $entries;
   }
@@ -987,7 +989,7 @@ class MemberStorage {
     $select->condition('m.communication_method', $methods, 'IN');
     $select->condition('m.language', $languages, 'IN');
 
-    $entries = $select->execute()->fetchAll(\PDO::FETCH_ASSOC);
+    $entries = DeprecationHelper::backwardsCompatibleCall(\Drupal::VERSION, '11.2.0', fn() => $select->execute()->fetchAll(FetchAs::Associative), fn() => $select->execute()->fetchAll(\PDO::FETCH_ASSOC));
 
     return $entries;
   }

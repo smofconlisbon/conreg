@@ -2,6 +2,8 @@
 
 namespace Drupal\conreg\Service;
 
+use Drupal\Component\Utility\DeprecationHelper;
+use Drupal\Core\Database\Statement\FetchAs;
 use Drupal\Core\Database\Connection;
 use Drupal\Core\Messenger\MessengerInterface;
 
@@ -128,7 +130,7 @@ class EventStorage {
       $select->condition($field, $value);
     }
 
-    return $select->execute()->fetchAll(\PDO::FETCH_ASSOC);
+    return DeprecationHelper::backwardsCompatibleCall(\Drupal::VERSION, '11.2.0', fn() => $select->execute()->fetchAll(FetchAs::Associative), fn() => $select->execute()->fetchAll(\PDO::FETCH_ASSOC));
   }
 
   /**
@@ -138,12 +140,17 @@ class EventStorage {
    *   An associative array keyed by event ID, containing event names.
    */
   public function eventOptions(): array {
-    return $this->connection
+    return DeprecationHelper::backwardsCompatibleCall(\Drupal::VERSION, '11.2.0', fn() => $this->connection
       ->select('conreg_events', 'e')
       ->fields('e', ['eid', 'event_name'])
       ->orderBy('event_name')
       ->execute()
-      ->fetchAll(\PDO::FETCH_ASSOC);
+      ->fetchAll(FetchAs::Associative), fn() => $this->connection
+      ->select('conreg_events', 'e')
+      ->fields('e', ['eid', 'event_name'])
+      ->orderBy('event_name')
+      ->execute()
+      ->fetchAll(\PDO::FETCH_ASSOC));
   }
 
 }

@@ -1,0 +1,5 @@
+
+services:
+  Drupal\conreg_planz\Hook\ConregPlanzHooks:
+    class: Drupal\conreg_planz\Hook\ConregPlanzHooks
+    autowire: true

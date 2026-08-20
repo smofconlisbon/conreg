@@ -5,13 +5,14 @@
  * Module file for conreg_clickup.
  */
 
+use Drupal\Core\Hook\Attribute\LegacyHook;
+use Drupal\conreg_clickup\Hook\ConregClickupHooks;
 use Drupal\conreg\Member;
-use Drupal\conreg_clickup\ConregClickUp;
 
 /**
  * Implements hook_convention_member_updated().
  */
+#[LegacyHook]
 function conreg_clickup_convention_member_updated(Member $member) {
-  // Create ClickUp tasks for options.
-  ConregClickUp::createMemberTasks($member->eid, $member->mid, $member->getOptions());
+  \Drupal::service(ConregClickupHooks::class)->conventionMemberUpdated($member);
 }

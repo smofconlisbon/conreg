@@ -2,6 +2,8 @@
 
 namespace Drupal\conreg_lookup\Form;
 
+use Drupal\Component\Utility\DeprecationHelper;
+use Drupal\Core\Database\Statement\FetchAs;
 use Drupal\Component\Utility\Html;
 use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\AlertCommand;
@@ -299,7 +301,7 @@ class LookupMemberForm extends FormBase {
     $select->condition("m.is_paid", TRUE);
     $select->orderby("member_no");
 
-    $entries = $select->execute()->fetchAll(\PDO::FETCH_ASSOC);
+    $entries = DeprecationHelper::backwardsCompatibleCall(\Drupal::VERSION, '11.2.0', fn() => $select->execute()->fetchAll(FetchAs::Associative), fn() => $select->execute()->fetchAll(\PDO::FETCH_ASSOC));
 
     return $entries;
   }

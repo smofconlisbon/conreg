@@ -17,6 +17,7 @@ use Drupal\conreg\Service\UpgradeStorage;
 use Drupal\conreg\UpgradeManager;
 use Drupal\Core\Config\ImmutableConfig;
 use Drupal\Core\DependencyInjection\AutowireTrait;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Language\LanguageManagerInterface;
@@ -63,6 +64,8 @@ class Checkout extends FormBase {
    *   The payment storage service.
    * @param \Drupal\Component\Datetime\TimeInterface $time
    *   The time service.
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager
+   *   The entity type manager.
    */
   public function __construct(
     protected MemberStorage $memberStorage,
@@ -73,6 +76,7 @@ class Checkout extends FormBase {
     protected UpgradeStorage $upgradeStorage,
     protected PaymentStorage $paymentStorage,
     protected TimeInterface $time,
+    protected EntityTypeManagerInterface $entityTypeManager,
   ) {}
 
   /**
@@ -306,7 +310,8 @@ class Checkout extends FormBase {
           // Check if event has a role to add to user account.
           $add_role = $config->get('member_portal.add_role');
           if ($add_role) {
-            $account = user_load_by_mail($member->email);
+            $accounts = $this->entityTypeManager->getStorage('user')->loadByProperties(['mail' => $member->email]);
+            $account = $accounts ? reset($accounts) : NULL;
             // Check if user has role already.
             if ($account && !$account->hasRole($add_role)) {
               // They don't, so we need to add it.

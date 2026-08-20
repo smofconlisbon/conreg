@@ -5,45 +5,30 @@
  * Module file for conreg_airtable.
  */
 
+use Drupal\Core\Hook\Attribute\LegacyHook;
+use Drupal\conreg_airtable\Hook\ConregAirtableHooks;
 use Drupal\conreg\Member;
-use Drupal\conreg_airtable\AirTable;
 
 /**
  * Implements hook_convention_member_added().
  */
+#[LegacyHook]
 function conreg_airtable_convention_member_added(Member $member) {
-  AirTable::addMembers($member->eid, [$member->mid]);
+  \Drupal::service(ConregAirtableHooks::class)->conventionMemberAdded($member);
 }
 
 /**
  * Implements hook_convention_member_updated().
  */
+#[LegacyHook]
 function conreg_airtable_convention_member_updated(Member $member) {
-  $connection = \Drupal::database();
-  $query = $connection->select('conreg_airtable_members', 'a');
-  $query->addField('a', 'airtable_id');
-  $query->condition('a.mid', $member->mid);
-  $airtable_id = $query->execute()->fetchField();
-
-  if (empty($airtable_id)) {
-    AirTable::addMembers($member->eid, [$member->mid]);
-  }
-  else {
-    AirTable::updateMembers($member->eid, [$member->mid => $airtable_id]);
-  }
+  \Drupal::service(ConregAirtableHooks::class)->conventionMemberUpdated($member);
 }
 
 /**
  * Implements hook_convention_member_deleted().
  */
+#[LegacyHook]
 function conreg_airtable_convention_member_deleted(Member $member) {
-  $connection = \Drupal::database();
-  $query = $connection->select('conreg_airtable_members', 'a');
-  $query->addField('a', 'airtable_id');
-  $query->condition('a.mid', $member->mid);
-  $airtable_id = $query->execute()->fetchField();
-
-  if (!empty($airtable_id)) {
-    AirTable::deleteMember($member->eid, $airtable_id);
-  }
+  \Drupal::service(ConregAirtableHooks::class)->conventionMemberDeleted($member);
 }

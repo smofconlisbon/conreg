@@ -1,0 +1,5 @@
+
+services:
+  Drupal\conreg_airtable\Hook\ConregAirtableHooks:
+    class: Drupal\conreg_airtable\Hook\ConregAirtableHooks
+    autowire: true

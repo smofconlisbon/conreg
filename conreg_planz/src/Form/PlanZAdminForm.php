@@ -2,6 +2,8 @@
 
 namespace Drupal\conreg_planz\Form;
 
+use Drupal\Component\Utility\DeprecationHelper;
+use Drupal\Core\Database\Statement\FetchAs;
 use Drupal\conreg\FieldOptions;
 use Drupal\conreg\Member;
 use Drupal\conreg_planz\PlanZ;
@@ -192,7 +194,7 @@ class PlanZAdminForm extends FormBase {
     $select->orderBy('m.member_no');
     // Make sure we only get items 0-49, for scalability reasons.
     // $select->range(0, 50);.
-    $entries = $select->execute()->fetchAll(\PDO::FETCH_ASSOC);
+    $entries = DeprecationHelper::backwardsCompatibleCall(\Drupal::VERSION, '11.2.0', fn() => $select->execute()->fetchAll(FetchAs::Associative), fn() => $select->execute()->fetchAll(\PDO::FETCH_ASSOC));
 
     $rows = [];
     $headers = [

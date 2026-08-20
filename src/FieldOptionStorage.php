@@ -2,6 +2,9 @@
 
 namespace Drupal\conreg;
 
+use Drupal\Component\Utility\DeprecationHelper;
+use Drupal\Core\Database\Statement\FetchAs;
+
 /**
  * Class to manage database storage for member options.
  */
@@ -150,7 +153,7 @@ class FieldOptionStorage {
       $select->condition('m.is_selected', 1);
     }
 
-    $entries = $select->execute()->fetchAll(\PDO::FETCH_ASSOC);
+    $entries = DeprecationHelper::backwardsCompatibleCall(\Drupal::VERSION, '11.2.0', fn() => $select->execute()->fetchAll(FetchAs::Associative), fn() => $select->execute()->fetchAll(\PDO::FETCH_ASSOC));
 
     // Turn result into associative array.
     $memberOptions = [];
@@ -204,7 +207,7 @@ class FieldOptionStorage {
     $select->orderby('m.mid', 'ASC');
     $select->orderby('o.optid', 'ASC');
 
-    $entries = $select->execute()->fetchAll(\PDO::FETCH_ASSOC);
+    $entries = DeprecationHelper::backwardsCompatibleCall(\Drupal::VERSION, '11.2.0', fn() => $select->execute()->fetchAll(FetchAs::Associative), fn() => $select->execute()->fetchAll(\PDO::FETCH_ASSOC));
 
     return $entries;
   }

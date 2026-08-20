@@ -2,6 +2,8 @@
 
 namespace Drupal\conreg\Form\Admin;
 
+use Drupal\Component\Utility\DeprecationHelper;
+use Drupal\filter\FilterFormatRepositoryInterface;
 use Drupal\Component\Utility\Html;
 use Drupal\conreg\Service\EventStorage;
 use Drupal\conreg\ConregOptions;
@@ -394,7 +396,7 @@ class MemberTypes extends ConfigFormBase {
    */
   private function getDefaultTextFormat(int $eid): string {
     if (function_exists('filter_default_format')) {
-      return filter_default_format($this->currentUser());
+      return DeprecationHelper::backwardsCompatibleCall(\Drupal::VERSION, '11.4.0', fn() => \Drupal::service(FilterFormatRepositoryInterface::class)->getDefaultFormat($this->currentUser())->id(), fn() => filter_default_format($this->currentUser()));
     }
 
     return $this->config('conreg.settings.' . $eid)->get('confirmation.template_format') ?: 'plain_text';

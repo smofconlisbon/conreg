@@ -5,6 +5,8 @@
  * Install file for Conreg. Install database schema.
  */
 
+use Drupal\Component\Utility\DeprecationHelper;
+use Drupal\Core\Extension\Requirement\RequirementSeverity;
 use Drupal\Core\Database\Database;
 
 /**
@@ -16,7 +18,7 @@ function conreg_requirements($phase) {
     if (!class_exists('\Stripe\Stripe')) {
       $requirements['addressing_library'] = [
         'description' => t('ConReg requires the stripe/stripe-php library. Please see README for install instructions.'),
-        'severity' => REQUIREMENT_ERROR,
+        'severity' => DeprecationHelper::backwardsCompatibleCall(\Drupal::VERSION, '11.2.0', fn() => RequirementSeverity::Error, fn() => REQUIREMENT_ERROR),
       ];
     }
   }

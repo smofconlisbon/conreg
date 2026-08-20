@@ -6,8 +6,8 @@
  */
 
 use Drupal\Core\Hook\Attribute\LegacyHook;
+use Drupal\conreg\Hook\ConregHooks;
 use Drupal\Core\Routing\RouteMatchInterface;
-use Drupal\conreg\ConregEmailer;
 use Drupal\conreg\ConregConfig;
 use Drupal\conreg\Hook\ConregThemeHooks;
 use Drupal\conreg\Member;
@@ -17,38 +17,26 @@ use Drupal\user\UserInterface;
 /**
  * Implements hook_help().
  */
+#[LegacyHook]
 function conreg_help($route_name, RouteMatchInterface $route_match) {
-  switch ($route_name) {
-    // Case 'conreg_register':
-    // Help text for the simple page registered for this path.
-    // return t('Please register your details.');.
-    case 'help.page.conreg':
-      // Help text for the admin section, using the module name in the path.
-      return t("Configure settings for convention registration.");
-  }
+  return \Drupal::service(ConregHooks::class)->help($route_name, $route_match);
 }
 
 /**
  * Implements hook_mail().
  */
+#[LegacyHook]
 function conreg_mail($key, &$message, $params) {
 
-  switch ($key) {
-    // Use template handler.
-    case 'template':
-      ConregEmailer::createEmail($message, $params);
-      break;
-  }
+  \Drupal::service(ConregHooks::class)->mail($key, $message, $params);
 }
 
 /**
  * Implements hook_page_attachments().
  */
+#[LegacyHook]
 function conreg_page_attachments(&$variables) {
-  // Include Icon CSS if Drupal earlier than 11.1 - after this use Icon API.
-  if (version_compare(\Drupal::VERSION, '11.1', '<')) {
-    $variables['#attached']['library'][] = 'conreg/icon';
-  }
+  \Drupal::service(ConregHooks::class)->pageAttachments($variables);
 }
 
 /**
