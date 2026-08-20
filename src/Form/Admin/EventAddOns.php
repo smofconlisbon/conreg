@@ -123,6 +123,13 @@ class EventAddOns extends ConfigFormBase {
         '#default_value' => ($addon['global'] ?? ''),
       ];
 
+      $form['addons'][$addOnId]['addon']['free'] = [
+        '#type' => 'checkbox',
+        '#title' => $this->t('Allow a free input amount'),
+        '#description' => $this->t('Allow the registrant to enter an amount instead of selecting an option.'),
+        '#default_value' => ($addon['free'] ?? FALSE),
+      ];
+
       $form['addons'][$addOnId]['addon']['label'] = [
         '#type' => 'textfield',
         '#title' => $this->t('Label'),
@@ -140,6 +147,11 @@ class EventAddOns extends ConfigFormBase {
         '#title' => $this->t('Options'),
         '#description' => $this->t('Put each option on a line with name, description and price separated by | character (e.g. "tshirt|Include a T-shirt|10").'),
         '#default_value' => ($addon['options'] ?? ''),
+        '#states' => [
+          'visible' => [
+            ':input[name="addons[' . $addOnId . '][addon][free]"]' => ['checked' => FALSE],
+          ],
+        ],
       ];
 
       $form['addons'][$addOnId]['addon']['weight'] = [
@@ -169,25 +181,6 @@ class EventAddOns extends ConfigFormBase {
         '#default_value' => ($info['description'] ?? ''),
       ];
 
-      $free = ($addOnVals['free'] ?? []);
-
-      $form['addons'][$addOnId]['free'] = [
-        '#type' => 'fieldset',
-        '#title' => $this->t('Add-on Free Input Amount'),
-        '#tree' => TRUE,
-      ];
-
-      $form['addons'][$addOnId]['free']['label'] = [
-        '#type' => 'textfield',
-        '#title' => $this->t('Label'),
-        '#default_value' => ($free['label'] ?? ''),
-      ];
-
-      $form['addons'][$addOnId]['free']['description'] = [
-        '#type' => 'textarea',
-        '#title' => $this->t('Description'),
-        '#default_value' => ($free['description'] ?? ''),
-      ];
     }
 
     return parent::buildForm($form, $form_state);
@@ -205,15 +198,13 @@ class EventAddOns extends ConfigFormBase {
 
     foreach ($vals['addons'] ?? [] as $addOnId => $addOnVals) {
       $addon = $addOnVals['addon'] ?? [];
-      $free = $addOnVals['free'] ?? [];
       if (
         !empty($addon['active']) &&
-        trim((string) ($addon['label'] ?? '')) === '' &&
-        trim((string) ($free['label'] ?? '')) === ''
+        trim((string) ($addon['label'] ?? '')) === ''
       ) {
         $form_state->setErrorByName(
           'addons][' . $addOnId . '][addon][label',
-          $this->t('Label or free amount label is required for active add-on %addon.', [
+          $this->t('Label is required for active add-on %addon.', [
             '%addon' => $addOnId,
           ])
         );
@@ -238,14 +229,14 @@ class EventAddOns extends ConfigFormBase {
     foreach ($vals['addons'] ?? [] as $addOnId => $addOnVals) {
       $config->set('add-ons.' . $addOnId . '.addon.active', $addOnVals['addon']['active']);
       $config->set('add-ons.' . $addOnId . '.addon.global', $addOnVals['addon']['global']);
+      $config->set('add-ons.' . $addOnId . '.addon.free', $addOnVals['addon']['free']);
       $config->set('add-ons.' . $addOnId . '.addon.label', $addOnVals['addon']['label']);
       $config->set('add-ons.' . $addOnId . '.addon.description', $addOnVals['addon']['description']);
       $config->set('add-ons.' . $addOnId . '.addon.options', $addOnVals['addon']['options']);
       $config->set('add-ons.' . $addOnId . '.addon.weight', $addOnVals['addon']['weight']);
       $config->set('add-ons.' . $addOnId . '.info.label', $addOnVals['info']['label']);
       $config->set('add-ons.' . $addOnId . '.info.description', $addOnVals['info']['description']);
-      $config->set('add-ons.' . $addOnId . '.free.label', $addOnVals['free']['label']);
-      $config->set('add-ons.' . $addOnId . '.free.description', $addOnVals['free']['description']);
+      $config->clear('add-ons.' . $addOnId . '.free');
     }
     $config->save();
 

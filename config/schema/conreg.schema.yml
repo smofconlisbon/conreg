@@ -102,6 +102,9 @@ conreg.settings.*:
                 type: integer
               global:
                 type: integer
+              free:
+                type: boolean
+                label: 'Allow a free input amount'
               label:
                 type: label
                 label: 'Add-on label'
@@ -123,16 +126,6 @@ conreg.settings.*:
               description:
                 type: text
                 label: 'Add-on information description'
-          free:
-            type: mapping
-            label: 'Add-on free input amount'
-            mapping:
-              label:
-                type: label
-                label: 'Add-on free amount label'
-              description:
-                type: text
-                label: 'Add-on free amount description'
     member:
       type: mapping
       label: 'Member settings'

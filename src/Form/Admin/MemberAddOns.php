@@ -49,7 +49,7 @@ class MemberAddOns extends FormBase {
     if ($addons) {
       foreach ($addons as $key => $val) {
         if ($val['addon']['active'] ?? FALSE) {
-          $options[$key] = ($val['free']['label'] ?? '') ?: Addons::getAddOnLabel($key, $val);
+          $options[$key] = Addons::getAddOnLabel($key, $val);
         }
       }
     }

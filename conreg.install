@@ -928,3 +928,34 @@ function conreg_update_9004() {
   $schema->addIndex('conreg_payment_sessions', 'idx_conreg_payment_sessions_payid', ['payid'], $conreg_payment_sessions);
   $schema->addIndex('conreg_payment_sessions', 'idx_conreg_payment_sessions_session_id', ['session_id'], $conreg_payment_sessions);
 }
+
+/**
+ * Combine add-on labels and descriptions and add the free amount flag.
+ */
+function conreg_update_9005() {
+  $config_factory = \Drupal::configFactory();
+  foreach ($config_factory->listAll('conreg.settings.') as $config_name) {
+    $config = $config_factory->getEditable($config_name);
+    $add_ons = $config->get('add-ons');
+    if (!is_array($add_ons)) {
+      continue;
+    }
+
+    foreach ($add_ons as &$add_on) {
+      $add_on['addon'] ??= [];
+      $free = $add_on['free'] ?? [];
+      $free_label = trim((string) ($free['label'] ?? ''));
+      $add_on['addon']['free'] = $free_label !== '';
+
+      if ($add_on['addon']['free']) {
+        $add_on['addon']['label'] = $free_label;
+        $add_on['addon']['description'] = $free['description'] ?? '';
+      }
+
+      unset($add_on['free']);
+    }
+    unset($add_on);
+
+    $config->set('add-ons', $add_ons)->save();
+  }
+}

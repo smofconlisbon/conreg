@@ -91,8 +91,12 @@ class Addons {
       // Check add-on is enabled.
       if (($addon['active'] ?? 0) == 1) {
         $addOnLabel = self::getAddOnLabel($addOnId, $addOnVals);
-        // Get add options (we only want first element of first array)...
-        [$addOnOptions] = self::memberAddons($addon['options']);
+        $isFree = !empty($addon['free']);
+        $addOnOptions = [];
+        if (!$isFree) {
+          // Get add options (we only want first element of first array)...
+          [$addOnOptions] = self::memberAddons($addon['options'] ?? '');
+        }
         // If global is set, only display if there's a member number.
         if ((!empty($memberPos) && !$addon['global']) || (empty($memberPos) && $addon['global']) || $memberPos == -1) {
           // Single member on edit form, or global add-ons.
@@ -175,13 +179,11 @@ class Addons {
             }
           }
 
-          $free = ($addOnVals['free'] ?? []);
-
-          if (isset($free['label']) && strlen($free['label'])) {
+          if ($isFree) {
             $addons[$addOnId]['free_amount'] = [
               '#type' => 'number',
-              '#title' => $free['label'],
-              '#description' => $free['description'],
+              '#title' => $addOnLabel,
+              '#description' => $addon['description'] ?? '',
               '#default_value' => '0.00',
               '#step' => '0.01',
               '#min' => 0,
@@ -193,7 +195,7 @@ class Addons {
             if (isset($saved[$addOnId])) {
               if (isset($saved[$addOnId]) && $saved[$addOnId]['is_paid']) {
                 $addons[$addOnId]['free_amount'] = [
-                  '#markup' => '<strong>' . $free['label'] . '</strong><br />' . $saved[$addOnId]['addon_amount'],
+                  '#markup' => '<strong>' . $addOnLabel . '</strong><br />' . $saved[$addOnId]['addon_amount'],
                   '#prefix' => '<div>',
                   '#suffix' => '</div>',
                 ];
@@ -251,22 +253,26 @@ class Addons {
       $addon = ($addOnVals['addon'] ?? []);
       // Check add-on is enabled.
       if (($addon['active'] ?? 0) == 1) {
-        // Get add options...
-        [, $addOnPrices] = self::memberAddons($addon['options']);
+        $isFree = !empty($addon['free']);
+        $addOnPrices = [];
+        if (!$isFree) {
+          // Get add options...
+          [, $addOnPrices] = self::memberAddons($addon['options'] ?? '');
+        }
         // If global is set, only display if there's a member number.
-        if ($addon['global']) {
-          // $id = "global_addon_'.$addOnId.'_info";
-          $option = ($form_values['payment']['global_add_on'][$addOnId]['option'] ?? '');
-          if (!empty($option)) {
-            $addOnGlobal += $addOnPrices[$option];
-            $addOnTotal += $addOnPrices[$option];
-            $addOnGlobalMinusFree += $addOnPrices[$option];
-          }
-          $free_amount = ($form_values['payment']['global_add_on'][$addOnId]['free_amount'] ?? '');
-          if (!empty($free_amount)) {
+        if (!empty($addon['global'])) {
+          if ($isFree) {
+            $free_amount = ($form_values['payment']['global_add_on'][$addOnId]['free_amount'] ?? 0);
             $addOnGlobal += $free_amount;
             $addOnTotal += $free_amount;
-            // Don't add to $addOnGlobalMinusFree.
+          }
+          else {
+            $option = ($form_values['payment']['global_add_on'][$addOnId]['option'] ?? '');
+            if (!empty($option)) {
+              $addOnGlobal += $addOnPrices[$option];
+              $addOnTotal += $addOnPrices[$option];
+              $addOnGlobalMinusFree += $addOnPrices[$option];
+            }
           }
         }
         else {
@@ -278,19 +284,21 @@ class Addons {
               if (!array_key_exists($member, $addOnMembers)) {
                 // Add member total if not present.
                 $addOnMembers[$member] = 0;
+                $addOnMembersMinusFree[$member] = 0;
               }
-              $option = ($memberVals['add_on'][$addOnId]['option'] ?? '');
-              if (!empty($option)) {
-                $addOnPrice = floatval($addOnPrices[$option]);
-                $addOnMembers[$member] += $addOnPrice;
-                $addOnTotal += $addOnPrice;
-                $addOnMembersMinusFree[$member] += $addOnPrice;
-              }
-              $free_amount = ($memberVals['add_on'][$addOnId]['free_amount'] ?? 0);
-              if (!empty($free_amount)) {
+              if ($isFree) {
+                $free_amount = ($memberVals['add_on'][$addOnId]['free_amount'] ?? 0);
                 $addOnMembers[$member] += $free_amount;
                 $addOnTotal += $free_amount;
-                // Don't add to $addOnMembersMinusFree.
+              }
+              else {
+                $option = ($memberVals['add_on'][$addOnId]['option'] ?? '');
+                if (!empty($option)) {
+                  $addOnPrice = floatval($addOnPrices[$option]);
+                  $addOnMembers[$member] += $addOnPrice;
+                  $addOnTotal += $addOnPrice;
+                  $addOnMembersMinusFree[$member] += $addOnPrice;
+                }
               }
             }
           }
@@ -319,9 +327,13 @@ class Addons {
       // If add-on set, get values.
       $addon = ($addOnVals['addon'] ?? []);
       // Check add-on is enabled.
-      if ($addon['active'] == 1) {
-        // Get add options...
-        [, $addOnPrices] = self::memberAddons($addon['options']);
+      if (($addon['active'] ?? 0) == 1) {
+        $isFree = !empty($addon['free']);
+        $addOnPrices = [];
+        if (!$isFree) {
+          // Get add options...
+          [, $addOnPrices] = self::memberAddons($addon['options'] ?? '');
+        }
 
         $saved = $storage->load([
           'mid' => $mid,
@@ -343,7 +355,7 @@ class Addons {
             'is_paid' => 0,
           ];
         }
-        if (!empty($form_values['member']['add_on'][$addOnName]['option'])) {
+        if (!$isFree && !empty($form_values['member']['add_on'][$addOnName]['option'])) {
           $option = $form_values['member']['add_on'][$addOnName]['option'];
           $insert['addon_option'] = $option;
           $price += $addOnPrices[$option];
@@ -351,7 +363,7 @@ class Addons {
             $insert['addon_info'] = $form_values['member']['add_on'][$addOnName]['extra']['info'];
           }
         }
-        if (!empty($form_values['member']['add_on'][$addOnName]['free_amount']) && $form_values['member']['add_on'][$addOnName]['free_amount'] > 0) {
+        if ($isFree && !empty($form_values['member']['add_on'][$addOnName]['free_amount']) && $form_values['member']['add_on'][$addOnName]['free_amount'] > 0) {
           $price += $form_values['member']['add_on'][$addOnName]['free_amount'];
         }
         if ($price > 0) {
@@ -401,10 +413,14 @@ class Addons {
       // Check add-on is enabled.
       if (($addon['active'] ?? 0) == 1) {
         $addOnLabel = self::getAddOnLabel($addOnName, $addOnVals);
-        // Get add options (only care about second element of return array)...
-        [, $addOnPrices] = self::memberAddons($addon['options']);
+        $isFree = !empty($addon['free']);
+        $addOnPrices = [];
+        if (!$isFree) {
+          // Get add options (only care about second element of return array)...
+          [, $addOnPrices] = self::memberAddons($addon['options'] ?? '');
+        }
         // If global is set, only display if there's a member number.
-        if ($addon['global']) {
+        if (!empty($addon['global'])) {
           // Global options get saved to first member.
           $mid = $memberIDs[1];
           $price = 0;
@@ -415,7 +431,7 @@ class Addons {
             'payid' => $payId,
             'is_paid' => 0,
           ];
-          if (!empty($form_values['payment']['global_add_on'][$addOnName]['option'])) {
+          if (!$isFree && !empty($form_values['payment']['global_add_on'][$addOnName]['option'])) {
             $option = $form_values['payment']['global_add_on'][$addOnName]['option'];
             $insert['addon_option'] = $option;
             $price += $addOnPrices[$option];
@@ -423,7 +439,7 @@ class Addons {
               $insert['addon_info'] = $form_values['payment']['global_add_on'][$addOnName]['extra']['info'];
             }
           }
-          if (!empty($form_values['payment']['global_add_on'][$addOnName]['free_amount']) && $form_values['payment']['global_add_on'][$addOnName]['free_amount'] > 0) {
+          if ($isFree && !empty($form_values['payment']['global_add_on'][$addOnName]['free_amount']) && $form_values['payment']['global_add_on'][$addOnName]['free_amount'] > 0) {
             $price += $form_values['payment']['global_add_on'][$addOnName]['free_amount'];
           }
           // Only insert if add-on has a price.
@@ -456,7 +472,7 @@ class Addons {
               'payid' => $payId,
               'is_paid' => 0,
             ];
-            if (!empty($memberVals['add_on'][$addOnName]['option'])) {
+            if (!$isFree && !empty($memberVals['add_on'][$addOnName]['option'])) {
               $option = $memberVals['add_on'][$addOnName]['option'];
               $insert['addon_option'] = $option;
               $price += $addOnPrices[$option];
@@ -464,7 +480,7 @@ class Addons {
                 $insert['addon_info'] = $memberVals['add_on'][$addOnName]['extra']['info'];
               }
             }
-            if (!empty($memberVals['add_on'][$addOnName]['free_amount']) && $memberVals['add_on'][$addOnName]['free_amount'] > 0) {
+            if ($isFree && !empty($memberVals['add_on'][$addOnName]['free_amount']) && $memberVals['add_on'][$addOnName]['free_amount'] > 0) {
               $price += $memberVals['add_on'][$addOnName]['free_amount'];
             }
             if ($price > 0) {
@@ -537,7 +553,7 @@ class Addons {
         'option' => $addOpts['addon_option'] ?? '',
         'info_label' => $addOnVals['info']['label'] ?? '',
         'info' => $addOpts['addon_info'] ?? '',
-        'free_label' => $addOnVals['free']['label'] ?? '',
+        'free_label' => !empty($addOnVals['addon']['free']) ? self::getAddOnLabel($name, $addOnVals) : '',
         'amount' => $symbol . $addOpts['addon_amount'],
         'value' => $addOpts['addon_amount'],
       ];

@@ -5,7 +5,9 @@ namespace Drupal\Tests\conreg\Kernel;
 use Drupal\conreg\Addons;
 use Drupal\conreg\Form\Admin\EventAddOns;
 use Drupal\conreg\Form\Admin\EventConfig;
+use Drupal\conreg\Payment;
 use Drupal\conreg\Plugin\Derivative\EventsMenuDeriver;
+use Drupal\conreg\Service\PaymentStorage;
 use Drupal\Core\Database\Database;
 use Drupal\Core\Form\FormState;
 use Drupal\Core\Render\Element;
@@ -63,6 +65,8 @@ class FormBuildTest extends KernelTestBase {
       'conreg_members',
       'conreg_member_addons',
       'conreg_member_options',
+      'conreg_payments',
+      'conreg_payment_lines',
     ]);
     $this->installConfig(['conreg']);
     Database::getConnection()->insert('conreg_events')
@@ -513,6 +517,20 @@ class FormBuildTest extends KernelTestBase {
    * Test building Event Add Ons form.
    */
   public function testAdminEventAddOnsFormBuild() {
+    $this->container
+      ->get('config.factory')
+      ->getEditable('conreg.settings.1')
+      ->set('add-ons.donation.addon', [
+        'active' => 1,
+        'global' => 0,
+        'free' => 1,
+        'label' => 'Donation',
+        'description' => 'Choose an amount',
+        'options' => '',
+        'weight' => 0,
+      ])
+      ->save();
+
     $route = $this->container
       ->get('router.route_provider')
       ->getRouteByName('conreg_config_addons');
@@ -530,6 +548,13 @@ class FormBuildTest extends KernelTestBase {
     $this->assertIsArray($form);
     $this->assertArrayHasKey('#form_id', $form);
     $this->assertEquals('conreg_event_addons', $form['#form_id']);
+    $this->assertTrue((bool) $form['addons']['donation']['addon']['free']['#default_value']);
+    $this->assertSame([
+      'visible' => [
+        ':input[name="addons[donation][addon][free]"]' => ['checked' => FALSE],
+      ],
+    ], $form['addons']['donation']['addon']['options']['#states']);
+    $this->assertArrayNotHasKey('free', $form['addons']['donation']);
   }
 
   /**
@@ -802,6 +827,16 @@ class FormBuildTest extends KernelTestBase {
    * Test building Member Add-ons form.
    */
   public function testAdminMemberAddOnsFormBuild(): void {
+    $this->container
+      ->get('config.factory')
+      ->getEditable('conreg.settings.1')
+      ->set('add-ons.donation.addon', [
+        'active' => 1,
+        'free' => 1,
+        'label' => 'Donation',
+      ])
+      ->save();
+
     $route = $this->container
       ->get('router.route_provider')
       ->getRouteByName('conreg_admin_member_addons');
@@ -820,6 +855,7 @@ class FormBuildTest extends KernelTestBase {
     $this->assertIsArray($form);
     $this->assertArrayHasKey('#form_id', $form);
     $this->assertEquals('conreg_admin_member_options', $form['#form_id']);
+    $this->assertSame('Donation', $form['selAddOn']['#options']['donation']);
   }
 
   /**
@@ -879,9 +915,57 @@ class FormBuildTest extends KernelTestBase {
   }
 
   /**
-   * Test validating active add-ons with only a free amount label.
+   * Tests that free amount add-ons use the common label and description.
    */
-  public function testActiveFreeAmountAddOnDoesNotRequireGeneralLabel(): void {
+  public function testFreeAmountAddOnUsesCommonLabel(): void {
+    $this->container
+      ->get('config.factory')
+      ->getEditable('conreg.settings.1')
+      ->set('add-ons.donation.addon', [
+        'active' => 1,
+        'global' => 0,
+        'free' => 1,
+        'label' => 'Donation',
+        'description' => 'Choose an amount',
+        'options' => "fixed|Fixed amount|10",
+      ])
+      ->save();
+
+    $config = $this->container
+      ->get('config.factory')
+      ->get('conreg.settings.1');
+    $form = Addons::getAddon(
+      $config,
+      [],
+      [],
+      1,
+      [self::class, 'addOnAjaxCallback'],
+      new FormState()
+    );
+
+    $this->assertArrayNotHasKey('option', $form['donation']);
+    $this->assertSame('Donation', $form['donation']['free_amount']['#title']);
+    $this->assertSame('Choose an amount', $form['donation']['free_amount']['#description']);
+
+    [$total, , , $members, $members_minus_free] = Addons::getAllAddonPrices($config, [
+      'global' => ['member_quantity' => 1],
+      'members' => [
+        'member1' => [
+          'add_on' => [
+            'donation' => ['free_amount' => 12.5],
+          ],
+        ],
+      ],
+    ]);
+    $this->assertSame(12.5, $total);
+    $this->assertSame(12.5, $members[1]);
+    $this->assertSame(0, $members_minus_free[1]);
+  }
+
+  /**
+   * Tests that active add-ons require the common label.
+   */
+  public function testActiveAddOnRequiresLabel(): void {
     $form = [];
     $form_state = (new FormState())->setValues([
       'new_addon' => [
@@ -891,10 +975,8 @@ class FormBuildTest extends KernelTestBase {
         'donation' => [
           'addon' => [
             'active' => 1,
+            'free' => 1,
             'label' => '',
-          ],
-          'free' => [
-            'label' => 'Donation amount',
           ],
         ],
       ],
@@ -905,7 +987,284 @@ class FormBuildTest extends KernelTestBase {
       ->getInstanceFromDefinition(EventAddOns::class)
       ->validateForm($form, $form_state);
 
-    $this->assertSame([], $form_state->getErrors());
+    $this->assertNotEmpty($form_state->getErrors());
+  }
+
+  /**
+   * Tests migrating free amount labels into the common add-on fields.
+   */
+  public function testFreeAmountConfigUpdate(): void {
+    $storage = $this->container->get('config.storage');
+    $data = $storage->read('conreg.settings.1');
+    $data['add-ons']['donation'] = [
+      'addon' => [
+        'active' => 1,
+        'label' => 'Old label',
+        'description' => 'Old description',
+        'options' => '',
+      ],
+      'free' => [
+        'label' => 'Donation',
+        'description' => 'Choose an amount',
+      ],
+    ];
+    $storage->write('conreg.settings.1', $data);
+    $this->container->get('config.factory')->reset('conreg.settings.1');
+
+    $this->container->get('module_handler')->loadInclude('conreg', 'install');
+    conreg_update_9005();
+    $this->container->get('config.factory')->reset('conreg.settings.1');
+    $add_on = $this->container
+      ->get('config.factory')
+      ->get('conreg.settings.1')
+      ->get('add-ons.donation');
+
+    $this->assertTrue($add_on['addon']['free']);
+    $this->assertSame('Donation', $add_on['addon']['label']);
+    $this->assertSame('Choose an amount', $add_on['addon']['description']);
+    $this->assertArrayNotHasKey('free', $add_on);
+  }
+
+  /**
+   * Tests that saveMemberAddons() persists an option-based add-on.
+   */
+  public function testSaveMemberAddonsPersistsOptionBasedAddon(): void {
+    $this->container
+      ->get('config.factory')
+      ->getEditable('conreg.settings.1')
+      ->set('add-ons.tshirt.addon', [
+        'active' => 1,
+        'global' => 0,
+        'free' => 0,
+        'label' => 'T-Shirt',
+        'description' => '',
+        'options' => "tshirt|T-Shirt|10",
+        'weight' => 0,
+      ])
+      ->save();
+
+    $mid = $this->createTestMember();
+    $config = $this->container->get('config.factory')->get('conreg.settings.1');
+
+    (new Addons())->saveMemberAddons($config, [
+      'member' => [
+        'add_on' => [
+          'tshirt' => ['option' => 'tshirt'],
+        ],
+      ],
+    ], $mid);
+
+    $saved = $this->container
+      ->get('conreg.addon_storage')
+      ->load(['mid' => $mid, 'addon_name' => 'tshirt']);
+
+    $this->assertSame('tshirt', $saved['addon_option']);
+    $this->assertEquals(10, $saved['addon_amount']);
+  }
+
+  /**
+   * Tests that saveMemberAddons() persists a free-amount add-on.
+   */
+  public function testSaveMemberAddonsPersistsFreeAmountAddon(): void {
+    $this->container
+      ->get('config.factory')
+      ->getEditable('conreg.settings.1')
+      ->set('add-ons.donation.addon', [
+        'active' => 1,
+        'global' => 0,
+        'free' => 1,
+        'label' => 'Donation',
+        'description' => 'Choose an amount',
+        'options' => '',
+        'weight' => 0,
+      ])
+      ->save();
+
+    $mid = $this->createTestMember();
+    $config = $this->container->get('config.factory')->get('conreg.settings.1');
+
+    (new Addons())->saveMemberAddons($config, [
+      'member' => [
+        'add_on' => [
+          'donation' => ['free_amount' => 15.5],
+        ],
+      ],
+    ], $mid);
+
+    $saved = $this->container
+      ->get('conreg.addon_storage')
+      ->load(['mid' => $mid, 'addon_name' => 'donation']);
+
+    $this->assertEmpty($saved['addon_option']);
+    $this->assertEquals(15.5, $saved['addon_amount']);
+  }
+
+  /**
+   * Tests that saveAddons() persists an option-based per-member add-on.
+   */
+  public function testSaveAddonsPersistsOptionBasedMemberAddon(): void {
+    $this->container
+      ->get('config.factory')
+      ->getEditable('conreg.settings.1')
+      ->set('add-ons.tshirt.addon', [
+        'active' => 1,
+        'global' => 0,
+        'free' => 0,
+        'label' => 'T-Shirt',
+        'description' => '',
+        'options' => "tshirt|T-Shirt|10",
+        'weight' => 0,
+      ])
+      ->save();
+
+    $mid = $this->createTestMember();
+    $config = $this->container->get('config.factory')->get('conreg.settings.1');
+    $payment = new Payment($this->container->get(PaymentStorage::class));
+
+    Addons::saveAddons($config, [
+      'members' => [
+        'member1' => [
+          'first_name' => 'Test',
+          'last_name' => 'User',
+          'add_on' => [
+            'tshirt' => ['option' => 'tshirt'],
+          ],
+        ],
+      ],
+    ], [1 => $mid], $payment);
+
+    $saved = $this->container
+      ->get('conreg.addon_storage')
+      ->load(['mid' => $mid, 'addon_name' => 'tshirt']);
+
+    $this->assertSame('tshirt', $saved['addon_option']);
+    $this->assertEquals(10, $saved['addon_amount']);
+    $this->assertCount(1, $payment->paymentLines);
+    $this->assertEquals(10, $payment->paymentLines[0]->amount);
+  }
+
+  /**
+   * Tests that saveAddons() persists a free-amount per-member add-on.
+   */
+  public function testSaveAddonsPersistsFreeAmountMemberAddon(): void {
+    $this->container
+      ->get('config.factory')
+      ->getEditable('conreg.settings.1')
+      ->set('add-ons.donation.addon', [
+        'active' => 1,
+        'global' => 0,
+        'free' => 1,
+        'label' => 'Donation',
+        'description' => 'Choose an amount',
+        'options' => '',
+        'weight' => 0,
+      ])
+      ->save();
+
+    $mid = $this->createTestMember();
+    $config = $this->container->get('config.factory')->get('conreg.settings.1');
+    $payment = new Payment($this->container->get(PaymentStorage::class));
+
+    Addons::saveAddons($config, [
+      'members' => [
+        'member1' => [
+          'first_name' => 'Test',
+          'last_name' => 'User',
+          'add_on' => [
+            'donation' => ['free_amount' => 20],
+          ],
+        ],
+      ],
+    ], [1 => $mid], $payment);
+
+    $saved = $this->container
+      ->get('conreg.addon_storage')
+      ->load(['mid' => $mid, 'addon_name' => 'donation']);
+
+    $this->assertEmpty($saved['addon_option']);
+    $this->assertEquals(20, $saved['addon_amount']);
+    $this->assertCount(1, $payment->paymentLines);
+    $this->assertEquals(20, $payment->paymentLines[0]->amount);
+  }
+
+  /**
+   * Tests that saveAddons() persists an option-based global add-on.
+   */
+  public function testSaveAddonsPersistsOptionBasedGlobalAddon(): void {
+    $this->container
+      ->get('config.factory')
+      ->getEditable('conreg.settings.1')
+      ->set('add-ons.parking.addon', [
+        'active' => 1,
+        'global' => 1,
+        'free' => 0,
+        'label' => 'Parking',
+        'description' => '',
+        'options' => "pass|Parking Pass|25",
+        'weight' => 0,
+      ])
+      ->save();
+
+    $mid = $this->createTestMember();
+    $config = $this->container->get('config.factory')->get('conreg.settings.1');
+    $payment = new Payment($this->container->get(PaymentStorage::class));
+
+    Addons::saveAddons($config, [
+      'payment' => [
+        'global_add_on' => [
+          'parking' => ['option' => 'pass'],
+        ],
+      ],
+    ], [1 => $mid], $payment);
+
+    $saved = $this->container
+      ->get('conreg.addon_storage')
+      ->load(['mid' => $mid, 'addon_name' => 'parking']);
+
+    $this->assertSame('pass', $saved['addon_option']);
+    $this->assertEquals(25, $saved['addon_amount']);
+    $this->assertCount(1, $payment->paymentLines);
+    $this->assertEquals(25, $payment->paymentLines[0]->amount);
+  }
+
+  /**
+   * Tests that saveAddons() persists a free-amount global add-on.
+   */
+  public function testSaveAddonsPersistsFreeAmountGlobalAddon(): void {
+    $this->container
+      ->get('config.factory')
+      ->getEditable('conreg.settings.1')
+      ->set('add-ons.donation.addon', [
+        'active' => 1,
+        'global' => 1,
+        'free' => 1,
+        'label' => 'Donation',
+        'description' => 'Choose an amount',
+        'options' => '',
+        'weight' => 0,
+      ])
+      ->save();
+
+    $mid = $this->createTestMember();
+    $config = $this->container->get('config.factory')->get('conreg.settings.1');
+    $payment = new Payment($this->container->get(PaymentStorage::class));
+
+    Addons::saveAddons($config, [
+      'payment' => [
+        'global_add_on' => [
+          'donation' => ['free_amount' => 30],
+        ],
+      ],
+    ], [1 => $mid], $payment);
+
+    $saved = $this->container
+      ->get('conreg.addon_storage')
+      ->load(['mid' => $mid, 'addon_name' => 'donation']);
+
+    $this->assertEmpty($saved['addon_option']);
+    $this->assertEquals(30, $saved['addon_amount']);
+    $this->assertCount(1, $payment->paymentLines);
+    $this->assertEquals(30, $payment->paymentLines[0]->amount);
   }
 
   /**
