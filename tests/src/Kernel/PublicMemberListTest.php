@@ -29,6 +29,7 @@ class PublicMemberListTest extends KernelTestBase {
    */
   protected static $modules = [
     'system',
+    'key',
     'conreg',
   ];
 

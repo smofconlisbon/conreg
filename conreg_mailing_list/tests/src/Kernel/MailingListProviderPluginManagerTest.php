@@ -28,6 +28,7 @@ class MailingListProviderPluginManagerTest extends KernelTestBase {
   protected static $modules = [
     'system',
     'user',
+    'key',
     'conreg',
     'conreg_mailing_list',
   ];

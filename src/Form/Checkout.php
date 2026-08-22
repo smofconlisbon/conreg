@@ -199,7 +199,7 @@ class Checkout extends FormBase {
         'drupalSettings' => [
           'conreg' => [
             'checkout' => [
-              'public_key' => $config->get('payments.public_key'),
+              'public_key' => $this->stripeService->resolveKey($config->get('payments.public_key')),
               'session_id' => $session->id,
             ],
           ],

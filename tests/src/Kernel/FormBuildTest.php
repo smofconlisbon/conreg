@@ -46,6 +46,7 @@ class FormBuildTest extends KernelTestBase {
     'system',
     'user',
     'datetime',
+    'key',
     'conreg',
   ];
 

@@ -6,6 +6,7 @@ use Drupal\Component\Utility\EmailValidatorInterface;
 use Drupal\conreg\ConregTokens;
 use Drupal\conreg\ConregOptions;
 use Drupal\conreg\Service\EventStorage;
+use Drupal\conreg\Service\StripeServiceInterface;
 use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Cache\CacheTagsInvalidatorInterface;
 use Drupal\Core\DependencyInjection\AutowireTrait;
@@ -38,6 +39,8 @@ class EventConfig extends ConfigFormBase {
    *   The event storage service.
    * @param \Drupal\Component\Utility\EmailValidatorInterface $emailValidator
    *   The email validator.
+   * @param \Drupal\conreg\Service\StripeServiceInterface $stripeService
+   *   The Stripe service, used to verify configured payment keys.
    * @param \Drupal\Core\Messenger\MessengerInterface $messenger
    *   The messenger.
    */
@@ -49,6 +52,7 @@ class EventConfig extends ConfigFormBase {
     protected EntityTypeManagerInterface $entityTypeManager,
     protected EventStorage $eventStorage,
     protected EmailValidatorInterface $emailValidator,
+    protected StripeServiceInterface $stripeService,
     MessengerInterface $messenger,
   ) {
     // MessengerTrait (via FormBase) already declares an untyped $messenger
@@ -166,16 +170,33 @@ class EventConfig extends ConfigFormBase {
     ];
 
     $form['conreg_payments']['public_key'] = [
-      '#type' => 'textfield',
+      '#type' => 'key_select',
       '#title' => $this->t('Payment System Public (Publishable) Key'),
-      '#default_value' => $config->get('payments.public_key'),
+      '#description' => $this->t('The Key containing your Stripe publishable key.'),
+      '#key_filters' => ['type_group' => 'authentication'],
+      '#default_value' => $config->get('payments.public_key') ?: '',
     ];
 
     $form['conreg_payments']['private_key'] = [
-      '#type' => 'textfield',
+      '#type' => 'key_select',
       '#title' => $this->t('Payment System Private (Secret) Key'),
-      '#default_value' => $config->get('payments.private_key'),
+      '#description' => $this->t('The Key containing your Stripe secret key.'),
+      '#key_filters' => ['type_group' => 'authentication'],
+      '#default_value' => $config->get('payments.private_key') ?: '',
     ];
+
+    if ($config->get('payments.public_key') && $config->get('payments.private_key')) {
+      $result = $this->stripeService->verifyKeys(
+        $config->get('payments.public_key'),
+        $config->get('payments.private_key'),
+        $config->get('payments.mode'),
+      );
+      $form['conreg_payments']['key_status'] = [
+        '#type' => 'item',
+        '#title' => $this->t('Key status'),
+        '#markup' => $result['message'],
+      ];
+    }
 
     $form['conreg_payments']['currency'] = [
       '#type' => 'textfield',

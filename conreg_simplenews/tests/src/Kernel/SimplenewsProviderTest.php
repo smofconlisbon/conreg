@@ -31,6 +31,7 @@ class SimplenewsProviderTest extends KernelTestBase {
     'options',
     'views',
     'simplenews',
+    'key',
     'conreg',
     'conreg_mailing_list',
     'conreg_simplenews',

@@ -25,6 +25,7 @@ class MemberClassesFormTest extends KernelTestBase {
     'system',
     'user',
     'datetime',
+    'key',
     'conreg',
   ];
 

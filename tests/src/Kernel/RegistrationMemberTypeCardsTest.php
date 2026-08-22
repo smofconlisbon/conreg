@@ -31,6 +31,7 @@ class RegistrationMemberTypeCardsTest extends KernelTestBase {
     'system',
     'user',
     'datetime',
+    'key',
     'conreg',
   ];
 

@@ -28,6 +28,7 @@ class LoginControllerKernelTest extends KernelTestBase {
   protected static $modules = [
     'system',
     'user',
+    'key',
     'conreg',
   ];
 

@@ -4,7 +4,7 @@
 
 | Extension | Purpose | Declared dependencies |
 |---|---|---|
-| `conreg` | Core convention registration workflows | none |
+| `conreg` | Core convention registration workflows | `key` |
 | `conreg_airtable` | Sync member data to Airtable | `conreg` |
 | `conreg_badges` | Badge list/export/print flows | `conreg` |
 | `conreg_clickup` | Create ClickUp tasks from options | `conreg` |

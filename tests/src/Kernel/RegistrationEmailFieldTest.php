@@ -34,6 +34,7 @@ class RegistrationEmailFieldTest extends KernelTestBase {
     'system',
     'user',
     'datetime',
+    'key',
     'conreg',
   ];
 

@@ -28,6 +28,7 @@ class MailingListSyncServiceTest extends KernelTestBase {
     'system',
     'user',
     'datetime',
+    'key',
     'conreg',
     'conreg_mailing_list',
   ];

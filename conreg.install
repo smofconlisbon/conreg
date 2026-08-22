@@ -959,3 +959,24 @@ function conreg_update_9005() {
     $config->set('add-ons', $add_ons)->save();
   }
 }
+
+/**
+ * Remove plaintext Stripe keys from config now that Key module is used.
+ */
+function conreg_update_9006() {
+  $config_factory = \Drupal::configFactory();
+  foreach ($config_factory->listAll('conreg.settings.') as $config_name) {
+    $config = $config_factory->getEditable($config_name);
+    if (empty($config->get('payments.public_key')) && empty($config->get('payments.private_key'))) {
+      continue;
+    }
+
+    // Blank out the plaintext keys rather than leaving them in config,
+    // where they could be exported and leaked. Site admins must create Key
+    // entities for their existing Stripe keys and reselect them on the
+    // event's Payment System tab.
+    $config->set('payments.public_key', '')
+      ->set('payments.private_key', '')
+      ->save();
+  }
+}

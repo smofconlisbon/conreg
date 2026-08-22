@@ -19,6 +19,7 @@ class BadgeRegisteredByTest extends KernelTestBase {
     'system',
     'user',
     'datetime',
+    'key',
     'conreg',
     'conreg_badges',
   ];

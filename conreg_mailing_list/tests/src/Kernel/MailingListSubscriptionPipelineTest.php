@@ -31,6 +31,7 @@ class MailingListSubscriptionPipelineTest extends KernelTestBase {
    */
   protected static $modules = [
     'system',
+    'key',
     'conreg',
     'conreg_mailing_list',
     'conreg_mailing_list_test',

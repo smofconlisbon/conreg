@@ -12,8 +12,10 @@ conreg.settings.*:
           type: string
         public_key:
           type: string
+          label: 'Payment system public (publishable) key (Key ID)'
         private_key:
           type: string
+          label: 'Payment system private (secret) key (Key ID)'
         currency:
           type: string
         symbol:
