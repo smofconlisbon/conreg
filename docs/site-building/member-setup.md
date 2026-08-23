@@ -34,3 +34,14 @@ On the Registration form, member types render as selectable cards (the
   Saturday`), styled to match the card's own price/description.
 - See `docs/development/theming.md` for how to customize a specific type's
   card appearance, or a specific day's option.
+
+## Preselecting a member type via URL
+
+The registration form (`conreg_register` and its fan-table/portal variants) accepts an optional
+`type` query parameter, e.g. `members/register/1?type=A`. When present and set to a valid member
+type code (the key under `member.types` for the event, e.g. `A`), that type's card is preselected
+on page load for the first member only, overriding the configured `member_type_default` for that
+member. An unrecognized or invalid code is silently ignored: the first member falls back to
+`member_type_default` if one is configured, or otherwise loads with no type preselected. Any
+additional members on the form are unaffected by the query parameter - they always use
+`member_type_default` (if configured), never the URL value.

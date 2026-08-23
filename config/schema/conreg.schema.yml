@@ -128,6 +128,9 @@ conreg.settings.*:
               description:
                 type: text
                 label: 'Add-on information description'
+    member_type_default:
+      type: string
+      label: 'Default member type code'
     member:
       type: mapping
       label: 'Member settings'

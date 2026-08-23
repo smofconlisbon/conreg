@@ -210,6 +210,83 @@ class RegistrationMemberTypeCardsTest extends KernelTestBase {
   }
 
   /**
+   * A valid 'type' query parameter preselects that member type.
+   */
+  public function testMemberRegisterFormPreselectsTypeFromValidQueryParameter(): void {
+    $this->createMemberTypesConfig();
+    $this->container->get('request_stack')->getCurrentRequest()->query->set('type', 'C');
+
+    $form = $this->createRegistrationForm()->buildForm([], new FormState(), 1);
+
+    $this->assertSame('C', $form['members']['member1']['type']['#default_value']);
+  }
+
+  /**
+   * An invalid 'type' query parameter is ignored when there's no config default.
+   */
+  public function testMemberRegisterFormIgnoresInvalidQueryParameterWithNoConfigDefault(): void {
+    $this->createMemberTypesConfig();
+    $this->container->get('request_stack')->getCurrentRequest()->query->set('type', 'not-a-real-code');
+
+    $form = $this->createRegistrationForm()->buildForm([], new FormState(), 1);
+
+    $this->assertArrayNotHasKey('#default_value', $form['members']['member1']['type']);
+  }
+
+  /**
+   * An invalid 'type' query parameter falls back to the configured default.
+   */
+  public function testMemberRegisterFormFallsBackToConfigDefaultForInvalidQueryParameter(): void {
+    $this->createMemberTypesConfig();
+    $this->container->get('config.factory')
+      ->getEditable('conreg.settings.1')
+      ->set('member_type_default', 'A')
+      ->save();
+    $this->container->get('request_stack')->getCurrentRequest()->query->set('type', 'not-a-real-code');
+
+    $form = $this->createRegistrationForm()->buildForm([], new FormState(), 1);
+
+    $this->assertSame('A', $form['members']['member1']['type']['#default_value']);
+  }
+
+  /**
+   * A valid 'type' query parameter only preselects the first member.
+   *
+   * Later members are unaffected by the query parameter, and with no config
+   * default, get no type preselected at all.
+   */
+  public function testMemberRegisterFormDoesNotApplyQueryParameterToOtherMembers(): void {
+    $this->createMemberTypesConfig();
+    $this->container->get('request_stack')->getCurrentRequest()->query->set('type', 'C');
+
+    $formState = new FormState();
+    $formState->setValues(['global' => ['member_quantity' => 2]]);
+    $form = $this->createRegistrationForm()->buildForm([], $formState, 1);
+
+    $this->assertSame('C', $form['members']['member1']['type']['#default_value']);
+    $this->assertArrayNotHasKey('#default_value', $form['members']['member2']['type']);
+  }
+
+  /**
+   * Later members use the configured default type, not the query parameter.
+   */
+  public function testMemberRegisterFormOtherMembersUseConfigDefaultNotQueryParameter(): void {
+    $this->createMemberTypesConfig();
+    $this->container->get('config.factory')
+      ->getEditable('conreg.settings.1')
+      ->set('member_type_default', 'A')
+      ->save();
+    $this->container->get('request_stack')->getCurrentRequest()->query->set('type', 'C');
+
+    $formState = new FormState();
+    $formState->setValues(['global' => ['member_quantity' => 2]]);
+    $form = $this->createRegistrationForm()->buildForm([], $formState, 1);
+
+    $this->assertSame('C', $form['members']['member1']['type']['#default_value']);
+    $this->assertSame('A', $form['members']['member2']['type']['#default_value']);
+  }
+
+  /**
    * A type with no days configured uses defaultDays and the full price.
    */
   public function testGetMemberPriceNoDaysUsesDefaultDaysAndFullPrice(): void {

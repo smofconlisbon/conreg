@@ -114,6 +114,12 @@ class Registration extends FormBase {
 
     $defaultType = $config->get('member_type_default');
     $types = ConregOptions::memberTypes($eid, $config);
+    // A valid 'type' query parameter overrides the configured default type,
+    // but only for the first member - later members keep the config default.
+    $requestedType = $this->getRequest()->query->get('type');
+    if (empty($requestedType) || !isset($types->types[$requestedType])) {
+      $requestedType = NULL;
+    }
     $memberClasses = ConregOptions::memberClasses($eid, $config);
     $symbol = $config->get('payments.symbol');
     $countryOptions = ConregOptions::memberCountries($eid, $config);
@@ -423,8 +429,9 @@ class Registration extends FormBase {
           'max-age' => Cache::PERMANENT,
         ],
       ];
-      if (!empty($defaultType)) {
-        $form['members']['member' . $cnt]['type']['#default_value'] = $defaultType;
+      $memberDefaultType = ($cnt == 1 && $requestedType !== NULL) ? $requestedType : $defaultType;
+      if (!empty($memberDefaultType)) {
+        $form['members']['member' . $cnt]['type']['#default_value'] = $memberDefaultType;
       }
 
       // Get the current member type.
