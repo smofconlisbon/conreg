@@ -980,3 +980,10 @@ function conreg_update_9006() {
       ->save();
   }
 }
+
+/**
+ * Install the Token module, now a dependency for the token browser links.
+ */
+function conreg_update_9007() {
+  \Drupal::service('module_installer')->install(['token']);
+}

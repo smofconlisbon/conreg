@@ -10,6 +10,7 @@ use Drupal\conreg\Service\EventStorage;
 use Drupal\conreg\Member;
 use Drupal\conreg\Payment;
 use Drupal\conreg\PaymentLine;
+use Drupal\conreg\Service\MemberPresenter;
 use Drupal\conreg\Service\MemberStorage;
 use Drupal\conreg\Service\PaymentStorage;
 use Drupal\conreg\Service\StripeServiceInterface;
@@ -22,7 +23,9 @@ use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Language\LanguageManagerInterface;
 use Drupal\Core\Mail\MailManagerInterface;
+use Drupal\Core\Render\BubbleableMetadata;
 use Drupal\Core\Url;
+use Drupal\Core\Utility\Token;
 
 /**
  * Simple form to add an entry, with all the interesting fields.
@@ -66,6 +69,10 @@ class Checkout extends FormBase {
    *   The time service.
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager
    *   The entity type manager.
+   * @param \Drupal\conreg\Service\MemberPresenter $memberPresenter
+   *   The member presenter service.
+   * @param \Drupal\Core\Utility\Token $token
+   *   The token service.
    */
   public function __construct(
     protected MemberStorage $memberStorage,
@@ -77,6 +84,8 @@ class Checkout extends FormBase {
     protected PaymentStorage $paymentStorage,
     protected TimeInterface $time,
     protected EntityTypeManagerInterface $entityTypeManager,
+    protected MemberPresenter $memberPresenter,
+    protected Token $token,
   ) {}
 
   /**
@@ -229,12 +238,26 @@ class Checkout extends FormBase {
    */
   public function showThankYouPage(array $form, int $eid, ImmutableConfig $config, Payment $payment) {
     $event = $this->eventStorage->load(['eid' => $eid]);
-    $find = ['[reference]', '[event_name]'];
-    $replace = [$payment->paymentRef, $event['event_name']];
+    $drupalTokenData = [
+      'event' => [
+        'eid' => $eid,
+        'name' => $event['event_name'],
+        'email' => $config->get('confirmation.from_email'),
+      ],
+    ];
 
-    $message = str_replace($find,
-      $replace,
-      $config->get('thanks.thank_you_message'));
+    // If the payment is tied to a member, resolve their fields too (same
+    // presenter ConregEmailer uses), so e.g. [conreg:member:payment-id]
+    // works here exactly as it does in the confirmation email.
+    $mid = $payment->paymentLines[0]->mid ?? NULL;
+    if (!empty($mid)) {
+      $members = $this->memberPresenter->loadGroup($eid, (int) $mid);
+      $this->memberPresenter->present($eid, $members);
+      $drupalTokenData['members'] = array_map(fn (array $member) => Member::newMember($member), $members);
+    }
+
+    $bubbleable_metadata = new BubbleableMetadata();
+    $message = $this->token->replace($config->get('thanks.thank_you_message'), $drupalTokenData, [], $bubbleable_metadata);
     $format = $config->get('thanks.thank_you_format');
 
     $form['#title'] = $config->get('thanks.title');
@@ -243,6 +266,7 @@ class Checkout extends FormBase {
       '#text' => $message,
       '#format' => $format,
     ];
+    $bubbleable_metadata->applyTo($form);
 
     return $form;
   }

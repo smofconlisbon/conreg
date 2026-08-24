@@ -3,8 +3,8 @@
 namespace Drupal\conreg\Form\Admin;
 
 use Drupal\conreg\ConregEmailer;
-use Drupal\conreg\ConregTokens;
 use Drupal\conreg\Service\MemberStorage;
+use Drupal\conreg\Trait\TokenTreeLinkTrait;
 use Drupal\Core\DependencyInjection\AutowireTrait;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
@@ -18,6 +18,7 @@ use Drupal\Core\TempStore\PrivateTempStoreFactory;
 class MemberEmail extends FormBase {
 
   use AutowireTrait;
+  use TokenTreeLinkTrait;
 
   /**
    * Construct the form.
@@ -293,7 +294,7 @@ class MemberEmail extends FormBase {
       // '#type' => 'textarea',
       '#type' => 'text_format',
       '#title' => $this->t('Message body'),
-      '#description' => $this->t('Text for the email body. you may use the following tokens: @tokens.', ['@tokens' => ConregTokens::tokenHelp()]),
+      '#description' => $this->t('Text for the email body. Supports tokens — use the browser below to see what is available.'),
       '#default_value' => $params['body'],
       // '#value' => $params['body'],
       '#format' => $params['format'] ?? '',
@@ -303,6 +304,8 @@ class MemberEmail extends FormBase {
         'event' => 'change',
       ],
     ];
+
+    $form['email']['message']['body_token_tree'] = $this->tokenTreeLink();
 
     // Fields for writing email message.
     $form['email']['preview'] = [

@@ -4,3 +4,4 @@ description: 'Create Discord invitations from ConReg.'
 core_version_requirement: ^10.1 || ^11.0
 dependencies:
   - conreg:conreg
+  - token:token

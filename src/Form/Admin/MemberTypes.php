@@ -7,7 +7,7 @@ use Drupal\filter\FilterFormatRepositoryInterface;
 use Drupal\Component\Utility\Html;
 use Drupal\conreg\Service\EventStorage;
 use Drupal\conreg\ConregOptions;
-use Drupal\conreg\ConregTokens;
+use Drupal\conreg\Trait\TokenTreeLinkTrait;
 use Drupal\Core\Cache\CacheTagsInvalidator;
 use Drupal\Core\DependencyInjection\AutowireTrait;
 use Drupal\Core\Form\ConfigFormBase;
@@ -20,6 +20,7 @@ use Symfony\Component\DependencyInjection\Attribute\Autowire;
 class MemberTypes extends ConfigFormBase {
 
   use AutowireTrait;
+  use TokenTreeLinkTrait;
 
   /**
    * Constructor for member lookup form.
@@ -210,11 +211,12 @@ class MemberTypes extends ConfigFormBase {
       $form[$typeRef]['confirmation']['template_body'] = [
         '#type' => 'text_format',
         '#title' => $this->t('Confirmation email body'),
-        '#description' => $this->t('Text for the email body. you may use the following tokens: @tokens.', ['@tokens' => ConregTokens::tokenHelp()]),
+        '#description' => $this->t('Text for the email body. Supports tokens — use the browser below to see what is available.'),
         '#default_value' => $type->confirmation->template_body,
         '#format' => $type->confirmation->template_format ?: $defaultTextFormat,
         '#states' => $overrideStates,
       ];
+      $form[$typeRef]['confirmation']['template_body_token_tree'] = $this->tokenTreeLink();
 
       $form[$typeRef]['clone'] = [
         '#type' => 'submit',

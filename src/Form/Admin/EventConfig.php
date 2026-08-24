@@ -3,8 +3,8 @@
 namespace Drupal\conreg\Form\Admin;
 
 use Drupal\Component\Utility\EmailValidatorInterface;
-use Drupal\conreg\ConregTokens;
 use Drupal\conreg\ConregOptions;
+use Drupal\conreg\Trait\TokenTreeLinkTrait;
 use Drupal\conreg\Service\EventStorage;
 use Drupal\conreg\Service\StripeServiceInterface;
 use Drupal\Core\Cache\CacheBackendInterface;
@@ -23,6 +23,7 @@ use Symfony\Component\DependencyInjection\Attribute\Autowire;
 class EventConfig extends ConfigFormBase {
 
   use AutowireTrait;
+  use TokenTreeLinkTrait;
 
   /**
    * Constructor for member lookup form.
@@ -514,10 +515,12 @@ class EventConfig extends ConfigFormBase {
     $form['conreg_thanks']['thank_you_message'] = [
       '#type' => 'text_format',
       '#title' => $this->t('Thank You Message'),
-      '#description' => $this->t('Text to appear on the thank you page displayed after payment completed. [reference] will be replaced with payment reference.'),
+      '#description' => $this->t('Text to appear on the thank you page displayed after payment completed. Supports tokens — use the browser below to see what is available.'),
       '#default_value' => $config->get('thanks.thank_you_message'),
       '#format' => $config->get('thanks.thank_you_format'),
     ];
+
+    $form['conreg_thanks']['thank_you_message_token_tree'] = $this->tokenTreeLink();
 
     /*
      * Fields for multiple member discounts.
@@ -620,20 +623,24 @@ class EventConfig extends ConfigFormBase {
     $form['conreg_confirmation']['template_subject'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Confirmation email subject'),
+      '#description' => $this->t('Supports the same tokens as the email body, below.'),
       '#default_value' => $config->get('confirmation.template_subject'),
     ];
 
     $form['conreg_confirmation']['template_body'] = [
       '#type' => 'text_format',
       '#title' => $this->t('Confirmation email body'),
-      '#description' => $this->t('Text for the email body. you may use the following tokens: @tokens.', ['@tokens' => ConregTokens::tokenHelp()]),
+      '#description' => $this->t('Text for the email body. Supports tokens — use the browser below to see what is available.'),
       '#default_value' => $config->get('confirmation.template_body'),
       '#format' => $config->get('confirmation.template_format'),
     ];
 
+    $form['conreg_confirmation']['template_body_token_tree'] = $this->tokenTreeLink();
+
     $form['conreg_confirmation']['notification_subject'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Admin notification subject'),
+      '#description' => $this->t('Supports the same tokens as the confirmation email body, above.'),
       '#default_value' => $config->get('confirmation.notification_subject'),
     ];
 
@@ -662,24 +669,29 @@ class EventConfig extends ConfigFormBase {
     $form['conreg_member_check']['confirm_subject'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Member check email subject'),
+      '#description' => $this->t('Supports the same tokens as the email body, below.'),
       '#default_value' => $config->get('member_check.confirm_subject'),
     ];
 
     $form['conreg_member_check']['confirm_body'] = [
       '#type' => 'text_format',
       '#title' => $this->t('Member check confirmation email body'),
-      '#description' => $this->t('Text for the email body. you may use the following tokens: @tokens.', ['@tokens' => ConregTokens::tokenHelp()]),
+      '#description' => $this->t('Text for the email body. Supports tokens — use the browser below to see what is available.'),
       '#default_value' => $config->get('member_check.confirm_body'),
       '#format' => $config->get('member_check.confirm_format'),
     ];
 
+    $form['conreg_member_check']['confirm_body_token_tree'] = $this->tokenTreeLink();
+
     $form['conreg_member_check']['unknown_body'] = [
       '#type' => 'text_format',
-      '#title' => $this->t('Member check confirmation email body'),
-      '#description' => $this->t('Text for the unknown body, to be sent if no member found for email address.'),
+      '#title' => $this->t('Member check unknown email body'),
+      '#description' => $this->t('Text for the email body, to be sent if no member found for email address. Only event tokens are available, since no matching member exists.'),
       '#default_value' => $config->get('member_check.unknown_body'),
       '#format' => $config->get('member_check.unknown_format'),
     ];
+
+    $form['conreg_member_check']['unknown_body_token_tree'] = $this->tokenTreeLink();
 
     /* Member Self Service Edit Settings. */
 

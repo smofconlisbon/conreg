@@ -8,7 +8,7 @@ use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\conreg\FieldOptions;
 use Drupal\conreg\Service\EventStorage;
-use Drupal\conreg\ConregTokens;
+use Drupal\conreg\Trait\TokenTreeLinkTrait;
 use Drupal\Core\DependencyInjection\AutowireTrait;
 
 // cspell:ignore badgeid permroleid permrolename
@@ -19,6 +19,7 @@ use Drupal\Core\DependencyInjection\AutowireTrait;
 class ConfigPlanZForm extends ConfigFormBase {
 
   use AutowireTrait;
+  use TokenTreeLinkTrait;
 
   /**
    * PlanZ configuration helper/service.
@@ -293,16 +294,12 @@ class ConfigPlanZForm extends ConfigFormBase {
     $form['email']['template_body'] = [
       '#type' => 'text_format',
       '#title' => $this->t('InviteBulk email body'),
-      '#description' => $this->t('Text for the email body. you may use the following tokens: @tokens.', [
-        '@tokens' => ConregTokens::tokenHelp([
-          'planz_user',
-          'planz_password',
-          'planz_url',
-        ]),
-      ]),
+      '#description' => $this->t('Text for the email body. Supports tokens — use the browser below to see what is available.'),
       '#default_value' => $this->planz->emailTemplateBody,
       '#format' => $this->planz->emailTemplateFormat,
     ];
+
+    $form['email']['template_body_token_tree'] = $this->tokenTreeLink(['conreg', 'conreg-planz']);
 
     return parent::buildForm($form, $form_state);
   }

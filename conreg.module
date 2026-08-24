@@ -6,12 +6,14 @@
  */
 
 use Drupal\Core\Hook\Attribute\LegacyHook;
-use Drupal\conreg\Hook\ConregHooks;
-use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\conreg\ConregConfig;
+use Drupal\conreg\Hook\ConregHooks;
 use Drupal\conreg\Hook\ConregThemeHooks;
+use Drupal\conreg\Hook\ConregTokenHooks;
 use Drupal\conreg\Member;
 use Drupal\conreg\Service\EventStorage;
+use Drupal\Core\Render\BubbleableMetadata;
+use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\user\UserInterface;
 
 /**
@@ -93,4 +95,20 @@ function conreg_preprocess_member_type_cards(array &$variables): void {
 #[LegacyHook]
 function conreg_preprocess_member_day_options(array &$variables): void {
   \Drupal::service(ConregThemeHooks::class)->preprocessMemberDayOptions($variables);
+}
+
+/**
+ * Implements hook_token_info().
+ */
+#[LegacyHook]
+function conreg_token_info() {
+  return \Drupal::service(ConregTokenHooks::class)->tokenInfo();
+}
+
+/**
+ * Implements hook_tokens().
+ */
+#[LegacyHook]
+function conreg_tokens($type, $tokens, array $data, array $options, BubbleableMetadata $bubbleable_metadata) {
+  return \Drupal::service(ConregTokenHooks::class)->tokens($type, $tokens, $data, $options, $bubbleable_metadata);
 }

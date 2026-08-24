@@ -3,10 +3,10 @@
 namespace Drupal\conreg_discord\Form;
 
 use Drupal\conreg\ConregConfig;
-use Drupal\conreg\ConregTokens;
 use Drupal\conreg\ConregOptions;
 use Drupal\conreg\Member;
 use Drupal\conreg\Service\EventStorage;
+use Drupal\conreg\Trait\TokenTreeLinkTrait;
 use Drupal\conreg_discord\Discord;
 use Drupal\Core\Config\ImmutableConfig;
 use Drupal\Core\Database\Connection;
@@ -22,6 +22,7 @@ use Drupal\Core\Mail\MailManagerInterface;
 class ConfigDiscordForm extends ConfigFormBase {
 
   use AutowireTrait;
+  use TokenTreeLinkTrait;
 
   /**
    * ConReg configuration object for the current event.
@@ -217,10 +218,12 @@ class ConfigDiscordForm extends ConfigFormBase {
     $form['invite_template']['template_body'] = [
       '#type' => 'text_format',
       '#title' => $this->t('InviteBulk email body'),
-      '#description' => $this->t('Text for the email body. you may use the following tokens: @tokens.', ['@tokens' => ConregTokens::tokenHelp(['[invite_url]'])]),
+      '#description' => $this->t('Text for the email body. Supports tokens — use the browser below to see what is available.'),
       '#default_value' => $this->config->get('discord.template_body'),
       '#format' => $this->config->get('discord.template_format'),
     ];
+
+    $form['invite_template']['template_body_token_tree'] = $this->tokenTreeLink(['conreg', 'conreg-discord']);
 
     //
     // Manual member invites.
@@ -543,12 +546,12 @@ class ConfigDiscordForm extends ConfigFormBase {
    * Send the member an email with login details.
    */
   public function sendInviteEmail(Member $member, $inviteUrl) {
-    // Get ConReg tokens, so we can add PlanZ/Zambia tokens.
-    $tokens = new ConregTokens($member->eid, $member->mid);
-    $tokens->addExtraTokens(['[invite_url]' => $inviteUrl]);
-
     // Set up parameters for receipt email.
-    $params = ['eid' => $member->eid, 'mid' => $member->mid, 'tokens' => $tokens];
+    $params = [
+      'eid' => $member->eid,
+      'mid' => $member->mid,
+      'token_data' => ['discord' => ['invite_url' => $inviteUrl]],
+    ];
     $params['subject'] = $this->config->get('discord.template_subject');
     $params['body'] = $this->config->get('discord.template_body');
     $params['body_format'] = $this->config->get('discord.template_format');

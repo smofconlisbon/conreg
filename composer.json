@@ -5,11 +5,13 @@
   "license": "GPL-2.0+",
   "require": {
     "drupal/key": "^1.22",
+    "drupal/token": "^1.15",
     "stripe/stripe-php": "~19.0"
   },
   "require-dev": {
     "drush/drush": ">=12",
     "drupal/simplenews": "^4.1",
+    "symfony/dependency-injection": "^6.4 || ^7.0",
     "drupal/navigation_extra_tools": "^1.3"
   },
   "minimum-stability": "dev"

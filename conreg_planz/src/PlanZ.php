@@ -9,7 +9,6 @@ use Drupal\Core\Database\Connection;
 use Drupal\Core\Database\ConnectionNotDefinedException;
 use Drupal\Core\Database\Database;
 use Drupal\conreg\Member;
-use Drupal\conreg\ConregTokens;
 
 // cspell:ignore permroleid permrolename
 
@@ -225,19 +224,20 @@ class PlanZ {
     // Look up member to get email.
     $member = Member::loadMember($user->mid);
 
-    // Get ConReg tokens, so we can add PlanZ tokens.
-    $tokens = new ConregTokens($member->eid, $user->mid);
-    $extraTokens = [
-      '[planz_user]' => $user->badgeId,
-      '[planz_url]' => $this->planZUrl,
+    $planzTokenData = [
+      'user' => $user->badgeId,
+      'url' => $this->planZUrl,
     ];
     if (isset($user->password)) {
-      $extraTokens['[planz_password]'] = $user->password;
+      $planzTokenData['password'] = $user->password;
     }
-    $tokens->addExtraTokens($extraTokens);
 
     // Set up parameters for receipt email.
-    $params = ['eid' => $member->eid, 'mid' => $user->mid, 'tokens' => $tokens];
+    $params = [
+      'eid' => $member->eid,
+      'mid' => $user->mid,
+      'token_data' => ['planz' => $planzTokenData],
+    ];
     $params['subject'] = $this->emailTemplateSubject;
     $params['body'] = $this->emailTemplateBody;
     $params['body_format'] = $this->emailTemplateFormat;

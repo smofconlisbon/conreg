@@ -1,0 +1,26 @@
+<?php
+
+/**
+ * @file
+ * Module file for conreg_discord.
+ */
+
+use Drupal\Core\Hook\Attribute\LegacyHook;
+use Drupal\conreg_discord\Hook\ConregDiscordTokenHooks;
+use Drupal\Core\Render\BubbleableMetadata;
+
+/**
+ * Implements hook_token_info().
+ */
+#[LegacyHook]
+function conreg_discord_token_info() {
+  return \Drupal::service(ConregDiscordTokenHooks::class)->tokenInfo();
+}
+
+/**
+ * Implements hook_tokens().
+ */
+#[LegacyHook]
+function conreg_discord_tokens($type, $tokens, array $data, array $options, BubbleableMetadata $bubbleable_metadata) {
+  return \Drupal::service(ConregDiscordTokenHooks::class)->tokens($type, $tokens, $data, $options, $bubbleable_metadata);
+}

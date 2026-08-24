@@ -222,7 +222,7 @@ class RegistrationMemberTypeCardsTest extends KernelTestBase {
   }
 
   /**
-   * An invalid 'type' query parameter is ignored when there's no config default.
+   * An invalid 'type' query parameter is ignored when no config default.
    */
   public function testMemberRegisterFormIgnoresInvalidQueryParameterWithNoConfigDefault(): void {
     $this->createMemberTypesConfig();

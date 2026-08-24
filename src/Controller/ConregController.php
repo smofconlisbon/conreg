@@ -10,6 +10,8 @@ use Drupal\conreg\Trait\ShowBadgeNumberTrait;
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Datetime\DateHelper;
+use Drupal\Core\Render\BubbleableMetadata;
+use Drupal\Core\Utility\Token;
 use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
@@ -28,11 +30,14 @@ class ConregController extends ControllerBase {
    *   The HTTP request stack.
    * @param \Drupal\conreg\Service\EventStorage $eventStorage
    *   The event storage service.
+   * @param \Drupal\Core\Utility\Token $token
+   *   The token service.
    */
   public function __construct(
     protected MemberStorage $memberStorage,
     protected RequestStack $requestStack,
     protected EventStorage $eventStorage,
+    protected Token $token,
   ) {}
 
   /**
@@ -40,14 +45,26 @@ class ConregController extends ControllerBase {
    */
   public function registrationThanks($eid = 1) {
     $config = $this->config('conreg.settings.' . $eid);
+    $event = $this->eventStorage->load(['eid' => $eid]);
+    $drupalTokenData = [
+      'event' => [
+        'eid' => $eid,
+        'name' => $event['event_name'],
+        'email' => $config->get('confirmation.from_email'),
+      ],
+    ];
 
     $content = [
       '#title' => $config->get('thanks.title'),
     ];
 
+    $bubbleable_metadata = new BubbleableMetadata();
     $content['message'] = [
-      '#markup' => $config->get('thanks.thank_you_message'),
+      '#type' => 'processed_text',
+      '#text' => $this->token->replace($config->get('thanks.thank_you_message'), $drupalTokenData, [], $bubbleable_metadata),
+      '#format' => $config->get('thanks.thank_you_format'),
     ];
+    $bubbleable_metadata->applyTo($content);
 
     return $content;
   }

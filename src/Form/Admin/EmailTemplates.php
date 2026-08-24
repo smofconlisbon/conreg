@@ -2,7 +2,7 @@
 
 namespace Drupal\conreg\Form\Admin;
 
-use Drupal\conreg\ConregTokens;
+use Drupal\conreg\Trait\TokenTreeLinkTrait;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 
@@ -10,6 +10,8 @@ use Drupal\Core\Form\FormStateInterface;
  * Configure conreg settings for this site.
  */
 class EmailTemplates extends ConfigFormBase {
+
+  use TokenTreeLinkTrait;
 
   /**
    * {@inheritdoc}
@@ -67,10 +69,12 @@ class EmailTemplates extends ConfigFormBase {
       $form['templates']['template' . $template]['body'] = [
         '#type' => 'text_format',
         '#title' => $this->t('Body'),
-        '#description' => $this->t('Text for the email body. you may use the following tokens: @tokens.', ['@tokens' => ConregTokens::tokenHelp()]),
+        '#description' => $this->t('Text for the email body. Supports tokens — use the browser below to see what is available.'),
         '#default_value' => $config->get('template' . $template . 'body'),
         '#format' => $config->get('template' . $template . 'format'),
       ];
+
+      $form['templates']['template' . $template]['body_token_tree'] = $this->tokenTreeLink();
     }
 
     // Make sure last template is blank.

@@ -2,10 +2,10 @@
 
 namespace Drupal\conreg\Form\Admin;
 
-use Drupal\conreg\ConregTokens;
 use Drupal\conreg\ConregOptions;
 use Drupal\conreg\FieldOptions;
 use Drupal\conreg\Service\MemberStorage;
+use Drupal\conreg\Trait\TokenTreeLinkTrait;
 use Drupal\Core\DependencyInjection\AutowireTrait;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
@@ -16,6 +16,7 @@ use Drupal\Core\Form\FormStateInterface;
 class BulkEmail extends FormBase {
 
   use AutowireTrait;
+  use TokenTreeLinkTrait;
 
   /**
    * Construct the form.
@@ -83,10 +84,12 @@ class BulkEmail extends FormBase {
     $form['bulk_email']['template_body'] = [
       '#type' => 'text_format',
       '#title' => $this->t('Bulk email body'),
-      '#description' => $this->t('Text for the email body. you may use the following tokens: @tokens.', ['@tokens' => ConregTokens::tokenHelp()]),
+      '#description' => $this->t('Text for the email body. Supports tokens — use the browser below to see what is available.'),
       '#default_value' => $config->get('bulk_email.template_body'),
       '#format' => $config->get('bulk_email.template_format'),
     ];
+
+    $form['bulk_email']['template_body_token_tree'] = $this->tokenTreeLink();
 
     $form['submit'] = [
       '#type' => 'submit',

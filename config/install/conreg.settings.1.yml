@@ -47,10 +47,10 @@ confirmation:
   from_email: 'default@example.com'
   copy_email_to: ''
   format_html: 1
-  template_subject: 'Thank you for joining [event_name]'
-  template_body: "<p>Hi [first_name],</p>\r\n\r\n<p>This is to confirm you have joined [event_name].</p>\r\n\r\n<p>Your member details are:</p>\r\n\r\n<p>[member_details]</p>\r\n\r\n<p>Your payment reference is [payment_id].</p>\r\n\r\n<p>If you would like to upgrade your membership type, please visit our member portal by clicking on this link:&nbsp;[login_url]</p>\r\n\r\n<p>Best wishes,</p>\r\n\r\n<p>The [event_name] team.</p>\r\n"
+  template_subject: 'Thank you for joining [conreg:event-name]'
+  template_body: "<p>Hi [conreg:member:first-name],</p>\r\n\r\n<p>This is to confirm you have joined [conreg:event-name].</p>\r\n\r\n<p>Your member details are:</p>\r\n\r\n<p>[conreg:member-details]</p>\r\n\r\n<p>Your payment reference is [conreg:member:payment-id].</p>\r\n\r\n<p>If you would like to upgrade your membership type, please visit our member portal by clicking on this link:&nbsp;[conreg:member:login-url]</p>\r\n\r\n<p>Best wishes,</p>\r\n\r\n<p>The [conreg:event-name] team.</p>\r\n"
   template_format: basic_html
-  notification_subject: '[full_name] has joined [event_name] '
+  notification_subject: '[conreg:member:full-name] has joined [conreg:event-name] '
 member_editable:
   first_name: 1
   last_name: 1
@@ -71,14 +71,14 @@ checkin:
   communication_method: E
 thanks:
   title: 'Thank You'
-  thank_you_message: "<p>Thank you for registering for [event_name]!</p>\r\n\r\n<p>You will also receive an email confirmation. If you don't see it, please check your Spam folder.</p>\r\n\r\n<p>Your payment reference is <strong>[reference]</strong>.</p>\r\n\r\n<p>If you have chosen to appear on the public membership list, you will be added once your membership has been processed by the registration team.</p>\r\n"
+  thank_you_message: "<p>Thank you for registering for [conreg:event-name]!</p>\r\n\r\n<p>You will also receive an email confirmation. If you don't see it, please check your Spam folder.</p>\r\n\r\n<p>Your payment reference is <strong>[conreg:member:payment-id]</strong>.</p>\r\n\r\n<p>If you have chosen to appear on the public membership list, you will be added once your membership has been processed by the registration team.</p>\r\n"
   thank_you_format: basic_html
 member_check:
   intro: "To check your membership details, please enter your email address below. For privacy reasons, we can only confirm your membership by email. If you don't receive an email within a few minutes, please check your spam folder."
-  confirm_subject: 'Your [event_name] Membership Status'
-  confirm_body: "<p>Hi [first_name],</p>\r\n\r\n<p>This is to confirm your membership status for [event_name].</p>\r\n\r\n<p>Your member details are:</p>\r\n\r\n<p>[member_details]</p>\r\n\r\n<p>If you need to change anything, please log in by clicking here: [login_url]</p>\r\n\r\n<p>Best wishes,</p>\r\n\r\n<p>The [event_name] team.</p>\r\n"
+  confirm_subject: 'Your [conreg:event-name] Membership Status'
+  confirm_body: "<p>Hi [conreg:member:first-name],</p>\r\n\r\n<p>This is to confirm your membership status for [conreg:event-name].</p>\r\n\r\n<p>Your member details are:</p>\r\n\r\n<p>[conreg:member-details]</p>\r\n\r\n<p>If you need to change anything, please log in by clicking here: [conreg:member:login-url]</p>\r\n\r\n<p>Best wishes,</p>\r\n\r\n<p>The [conreg:event-name] team.</p>\r\n"
   confirm_format: basic_html
-  unknown_body: "<p>Hi,</p>\r\n\r\n<p>Thank you for checking your membership status for [event_name].</p>\r\n\r\n<p>Unfortunately, we can find no entry for this email address. If you think this is incorrect, please contact us.</p>\r\n\r\n<p>Best wishes,</p>\r\n\r\n<p>The [event_name] team.</p>\r\n"
+  unknown_body: "<p>Hi,</p>\r\n\r\n<p>Thank you for checking your membership status for [conreg:event-name].</p>\r\n\r\n<p>Unfortunately, we can find no entry for this email address. If you think this is incorrect, please contact us.</p>\r\n\r\n<p>Best wishes,</p>\r\n\r\n<p>The [conreg:event-name] team.</p>\r\n"
   unknown_format: basic_html
   title: 'Check Membership and Volunteer'
 member_edit:

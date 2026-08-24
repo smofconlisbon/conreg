@@ -40,3 +40,12 @@ services:
 
   Drupal\conreg\Hook\ConregThemeHooks:
     class: Drupal\conreg\Hook\ConregThemeHooks
+
+  Drupal\conreg\Hook\ConregTokenHooks:
+    class: Drupal\conreg\Hook\ConregTokenHooks
+
+  Drupal\conreg\Service\MemberDetailsFormatter:
+    class: Drupal\conreg\Service\MemberDetailsFormatter
+
+  Drupal\conreg\Service\MemberPresenter:
+    class: Drupal\conreg\Service\MemberPresenter

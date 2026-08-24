@@ -11,6 +11,7 @@ use Drupal\conreg\Member;
 use Drupal\conreg_planz\PlanZ;
 use Drupal\conreg_planz\PlanZUser;
 use Drupal\conreg_planz\BadgeIdSource;
+use Drupal\Core\Render\BubbleableMetadata;
 
 /**
  * Implements hook_convention_member_inserted().
@@ -26,6 +27,22 @@ function conreg_planz_convention_member_inserted(Member $member): void {
 #[LegacyHook]
 function conreg_planz_convention_member_updated(Member $member): void {
   \Drupal::service(ConregPlanzHooks::class)->conventionMemberUpdated($member);
+}
+
+/**
+ * Implements hook_token_info().
+ */
+#[LegacyHook]
+function conreg_planz_token_info() {
+  return \Drupal::service(ConregPlanzHooks::class)->tokenInfo();
+}
+
+/**
+ * Implements hook_tokens().
+ */
+#[LegacyHook]
+function conreg_planz_tokens($type, $tokens, array $data, array $options, BubbleableMetadata $bubbleable_metadata) {
+  return \Drupal::service(ConregPlanzHooks::class)->tokens($type, $tokens, $data, $options, $bubbleable_metadata);
 }
 
 /**

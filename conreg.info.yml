@@ -4,5 +4,6 @@ description: 'A simple module to provide a convention registration form.'
 core_version_requirement: ^10.1 || ^11.0
 dependencies:
   - key:key
+  - token:token
 libraries:
   - conreg/conreg_form
