@@ -8,8 +8,9 @@ use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\conreg\FieldOptions;
 use Drupal\conreg\Service\EventStorage;
-use Drupal\conreg\Trait\TokenTreeLinkTrait;
+use Drupal\conreg\Trait\EasyEmailTypeOptionsTrait;
 use Drupal\Core\DependencyInjection\AutowireTrait;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 
 // cspell:ignore badgeid permroleid permrolename
 
@@ -19,7 +20,7 @@ use Drupal\Core\DependencyInjection\AutowireTrait;
 class ConfigPlanZForm extends ConfigFormBase {
 
   use AutowireTrait;
-  use TokenTreeLinkTrait;
+  use EasyEmailTypeOptionsTrait;
 
   /**
    * PlanZ configuration helper/service.
@@ -33,9 +34,12 @@ class ConfigPlanZForm extends ConfigFormBase {
    *
    * @param \Drupal\conreg\Service\EventStorage $eventStorage
    *   The event storage service.
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager
+   *   The entity type manager.
    */
   public function __construct(
     protected EventStorage $eventStorage,
+    protected EntityTypeManagerInterface $entityTypeManager,
   ) {}
 
   /**
@@ -285,21 +289,14 @@ class ConfigPlanZForm extends ConfigFormBase {
       '#tree' => TRUE,
     ];
 
-    $form['email']['template_subject'] = [
-      '#type' => 'textfield',
-      '#title' => $this->t('Invite email subject'),
-      '#default_value' => $this->planz->emailTemplateSubject,
+    $form['email']['easy_email_type'] = [
+      '#type' => 'select',
+      '#title' => $this->t('Invite email template'),
+      '#description' => $this->easyEmailTypeManageLink(),
+      '#options' => $this->easyEmailTypeOptions(),
+      '#empty_option' => $this->t('- Select -'),
+      '#default_value' => $this->planz->emailEasyEmailType,
     ];
-
-    $form['email']['template_body'] = [
-      '#type' => 'text_format',
-      '#title' => $this->t('InviteBulk email body'),
-      '#description' => $this->t('Text for the email body. Supports tokens — use the browser below to see what is available.'),
-      '#default_value' => $this->planz->emailTemplateBody,
-      '#format' => $this->planz->emailTemplateFormat,
-    ];
-
-    $form['email']['template_body_token_tree'] = $this->tokenTreeLink(['conreg', 'conreg-planz']);
 
     return parent::buildForm($form, $form_state);
   }
@@ -327,9 +324,7 @@ class ConfigPlanZForm extends ConfigFormBase {
     }
     $config->set('auto.enabled', $vals['auto']['enabled']);
     $config->set('auto.when_confirmed', $vals['auto']['when_confirmed']);
-    $config->set('email.template_subject', $vals['email']['template_subject']);
-    $config->set('email.template_body', $vals['email']['template_body']['value']);
-    $config->set('email.template_format', $vals['email']['template_body']['format']);
+    $config->set('email.easy_email_type', $vals['email']['easy_email_type']);
     $config->save();
 
     parent::submitForm($form, $form_state);

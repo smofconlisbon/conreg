@@ -5,3 +5,4 @@ core_version_requirement: ^10.1 || ^11.0
 dependencies:
   - conreg:conreg
   - token:token
+  - easy_email:easy_email

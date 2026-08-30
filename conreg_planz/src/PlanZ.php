@@ -9,6 +9,7 @@ use Drupal\Core\Database\Connection;
 use Drupal\Core\Database\ConnectionNotDefinedException;
 use Drupal\Core\Database\Database;
 use Drupal\conreg\Member;
+use Drupal\conreg\Service\ConregEmailSender;
 
 // cspell:ignore permroleid permrolename
 
@@ -95,25 +96,11 @@ class PlanZ {
   public readonly bool $autoWhenConfirmed;
 
   /**
-   * Subject template for emails.
+   * The Easy Email template used for the invite email.
    *
    * @var string
    */
-  public readonly string $emailTemplateSubject;
-
-  /**
-   * Body template for emails.
-   *
-   * @var string
-   */
-  public readonly string $emailTemplateBody;
-
-  /**
-   * Email format template (text/html).
-   *
-   * @var string
-   */
-  public readonly string $emailTemplateFormat;
+  public readonly string $emailEasyEmailType;
 
   /**
    * Constructs a new Member object.
@@ -133,9 +120,7 @@ class PlanZ {
     $this->optionFields = $config->get('option_fields') ?? [];
     $this->autoEnabled = $config->get('auto.enabled') ?: FALSE;
     $this->autoWhenConfirmed = $config->get('auto.when_confirmed') ?: FALSE;
-    $this->emailTemplateSubject = $config->get('email.template_subject') ?: '';
-    $this->emailTemplateBody = $config->get('email.template_body') ?: '';
-    $this->emailTemplateFormat = $config->get('email.template_format') ?: '';
+    $this->emailEasyEmailType = $config->get('email.easy_email_type') ?: '';
   }
 
   /**
@@ -224,6 +209,10 @@ class PlanZ {
     // Look up member to get email.
     $member = Member::loadMember($user->mid);
 
+    if (empty($member->email)) {
+      return FALSE;
+    }
+
     $planzTokenData = [
       'user' => $user->badgeId,
       'url' => $this->planZUrl,
@@ -232,25 +221,14 @@ class PlanZ {
       $planzTokenData['password'] = $user->password;
     }
 
-    // Set up parameters for receipt email.
-    $params = [
-      'eid' => $member->eid,
-      'mid' => $user->mid,
-      'token_data' => ['planz' => $planzTokenData],
-    ];
-    $params['subject'] = $this->emailTemplateSubject;
-    $params['body'] = $this->emailTemplateBody;
-    $params['body_format'] = $this->emailTemplateFormat;
-    $module = "conreg";
-    $key = "template";
-    $to = $member->email;
-    $language_code = \Drupal::languageManager()->getDefaultLanguage()->getId();
-    // Send confirmation email to member.
-    if (!empty($member->email)) {
-      return \Drupal::service('plugin.manager.mail')->mail($module, $key, $to, $language_code, $params);
-    }
-
-    return FALSE;
+    return \Drupal::service(ConregEmailSender::class)->send(
+      $this->emailEasyEmailType,
+      $member->email,
+      $member->eid,
+      [$user->mid],
+      $member->language ?? NULL,
+      ['planz' => $planzTokenData],
+    );
   }
 
 }

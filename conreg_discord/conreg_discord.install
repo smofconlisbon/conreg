@@ -53,3 +53,54 @@ function conreg_discord_schema() {
 
   return $schema;
 }
+
+/**
+ * Migrate the Discord invite email template into an Easy Email template.
+ *
+ * Conreg.settings.<eid>.discord.template_subject/body/format was never
+ * actually enforced through Drupal's text filter system (sendInviteEmail()
+ * went through ConregEmailer, which rendered via Markup::create(),
+ * bypassing filters entirely), so the migrated format is not preserved -
+ * full_html is used instead, matching conreg's own core templates (see
+ * conreg_update_9012's docblock for the full explanation).
+ */
+function conreg_discord_update_9001() {
+  \Drupal::service('module_installer')->install(['easy_email']);
+
+  $config_factory = \Drupal::configFactory();
+  $email_type_storage = \Drupal::entityTypeManager()->getStorage('easy_email_type');
+  $ids = [];
+
+  foreach ($config_factory->listAll('conreg.settings.') as $config_name) {
+    $eid = substr($config_name, strlen('conreg.settings.'));
+    $config = $config_factory->getEditable($config_name);
+
+    $subject = (string) $config->get('discord.template_subject');
+    $body = (string) $config->get('discord.template_body');
+    if ($subject === '' && $body === '') {
+      // Discord integration not configured for this event.
+      continue;
+    }
+
+    $hash = md5($subject . '|' . $body);
+    if (!isset($ids[$hash])) {
+      $id = 'conreg_discord_invite_' . $eid;
+      $email_type_storage->create([
+        'id' => $id,
+        'label' => 'ConReg: Discord invite (event ' . $eid . ')',
+        'subject' => $subject,
+        'bodyHtml' => ['value' => $body, 'format' => 'full_html'],
+        'generateBodyPlain' => FALSE,
+      ])->save();
+      $ids[$hash] = $id;
+    }
+
+    $config->set('discord.easy_email_type', $ids[$hash]);
+    $config->clear('discord.template_subject');
+    $config->clear('discord.template_body');
+    $config->clear('discord.template_format');
+    $config->save();
+  }
+
+  return t('Migrated the Discord invite email template to Easy Email templates. Review it under /admin/structure/email-templates and re-enter any translations that were previously set via Config Translation on the old fields - translations do not migrate automatically.');
+}

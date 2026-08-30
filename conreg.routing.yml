@@ -232,14 +232,6 @@ conreg_config_addons:
     _permission: 'configure convention add-ons'
     eid: ^[0-9]+$
 
-conreg_config_email_templates:
-  path: 'admin/config/conreg/email/templates'
-  defaults:
-    _title: 'ConReg Email Templates'
-    _form: '\Drupal\conreg\Form\Admin\EmailTemplates'
-  requirements:
-    _permission: 'configure convention email templates'
-
 conreg_admin_member_list:
   path: 'admin/members/member-list/{eid}'
   defaults:

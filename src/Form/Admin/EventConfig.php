@@ -4,6 +4,7 @@ namespace Drupal\conreg\Form\Admin;
 
 use Drupal\Component\Utility\EmailValidatorInterface;
 use Drupal\conreg\ConregOptions;
+use Drupal\conreg\Trait\EasyEmailTypeOptionsTrait;
 use Drupal\conreg\Trait\TokenTreeLinkTrait;
 use Drupal\conreg\Service\EventStorage;
 use Drupal\conreg\Service\StripeServiceInterface;
@@ -23,6 +24,7 @@ use Symfony\Component\DependencyInjection\Attribute\Autowire;
 class EventConfig extends ConfigFormBase {
 
   use AutowireTrait;
+  use EasyEmailTypeOptionsTrait;
   use TokenTreeLinkTrait;
 
   /**
@@ -582,17 +584,6 @@ class EventConfig extends ConfigFormBase {
       '#group' => 'admin',
     ];
 
-    // Template selection drop-down.
-    $form['conreg_confirmation']['format_html'] = [
-      '#type' => 'select',
-      '#title' => $this->t('Format for emails'),
-      '#options' => [
-        0 => $this->t('Plain text'),
-        1 => $this->t('HTML'),
-      ],
-      '#default_value' => $config->get('confirmation.format_html'),
-    ];
-
     $form['conreg_confirmation']['copy_us'] = [
       '#type' => 'checkbox',
       '#title' => $this->t('Send a copy of the confirmation email to the below address.'),
@@ -620,22 +611,14 @@ class EventConfig extends ConfigFormBase {
       '#default_value' => $config->get('confirmation.copy_email_to'),
     ];
 
-    $form['conreg_confirmation']['template_subject'] = [
-      '#type' => 'textfield',
-      '#title' => $this->t('Confirmation email subject'),
-      '#description' => $this->t('Supports the same tokens as the email body, below.'),
-      '#default_value' => $config->get('confirmation.template_subject'),
+    $form['conreg_confirmation']['easy_email_type'] = [
+      '#type' => 'select',
+      '#title' => $this->t('Confirmation email template'),
+      '#description' => $this->t('The Easy Email template sent to a member on registration, reused for admin resends and bulk email. @link', ['@link' => $this->easyEmailTypeManageLink()]),
+      '#options' => $this->easyEmailTypeOptions(),
+      '#empty_option' => $this->t('- Select -'),
+      '#default_value' => $config->get('confirmation.easy_email_type'),
     ];
-
-    $form['conreg_confirmation']['template_body'] = [
-      '#type' => 'text_format',
-      '#title' => $this->t('Confirmation email body'),
-      '#description' => $this->t('Text for the email body. Supports tokens — use the browser below to see what is available.'),
-      '#default_value' => $config->get('confirmation.template_body'),
-      '#format' => $config->get('confirmation.template_format'),
-    ];
-
-    $form['conreg_confirmation']['template_body_token_tree'] = $this->tokenTreeLink();
 
     $form['conreg_confirmation']['notification_subject'] = [
       '#type' => 'textfield',
@@ -666,32 +649,23 @@ class EventConfig extends ConfigFormBase {
       '#default_value' => $config->get('member_check.intro'),
     ];
 
-    $form['conreg_member_check']['confirm_subject'] = [
-      '#type' => 'textfield',
-      '#title' => $this->t('Member check email subject'),
-      '#description' => $this->t('Supports the same tokens as the email body, below.'),
-      '#default_value' => $config->get('member_check.confirm_subject'),
+    $form['conreg_member_check']['confirm_easy_email_type'] = [
+      '#type' => 'select',
+      '#title' => $this->t('Email template: member found'),
+      '#description' => $this->t('The Easy Email template to send when a paid member is found for the submitted email address. @link', ['@link' => $this->easyEmailTypeManageLink()]),
+      '#options' => $this->easyEmailTypeOptions(),
+      '#empty_option' => $this->t('- Select -'),
+      '#default_value' => $config->get('member_check.confirm_easy_email_type'),
     ];
 
-    $form['conreg_member_check']['confirm_body'] = [
-      '#type' => 'text_format',
-      '#title' => $this->t('Member check confirmation email body'),
-      '#description' => $this->t('Text for the email body. Supports tokens — use the browser below to see what is available.'),
-      '#default_value' => $config->get('member_check.confirm_body'),
-      '#format' => $config->get('member_check.confirm_format'),
+    $form['conreg_member_check']['unknown_easy_email_type'] = [
+      '#type' => 'select',
+      '#title' => $this->t('Email template: no member found'),
+      '#description' => $this->t('The Easy Email template to send when no paid member is found for the submitted email address. Only event tokens are available, since no matching member exists. @link', ['@link' => $this->easyEmailTypeManageLink()]),
+      '#options' => $this->easyEmailTypeOptions(),
+      '#empty_option' => $this->t('- Select -'),
+      '#default_value' => $config->get('member_check.unknown_easy_email_type'),
     ];
-
-    $form['conreg_member_check']['confirm_body_token_tree'] = $this->tokenTreeLink();
-
-    $form['conreg_member_check']['unknown_body'] = [
-      '#type' => 'text_format',
-      '#title' => $this->t('Member check unknown email body'),
-      '#description' => $this->t('Text for the email body, to be sent if no member found for email address. Only event tokens are available, since no matching member exists.'),
-      '#default_value' => $config->get('member_check.unknown_body'),
-      '#format' => $config->get('member_check.unknown_format'),
-    ];
-
-    $form['conreg_member_check']['unknown_body_token_tree'] = $this->tokenTreeLink();
 
     /* Member Self Service Edit Settings. */
 
@@ -1076,22 +1050,16 @@ class EventConfig extends ConfigFormBase {
     $config->set('discount.free_every', intval($vals['conreg_discount']['free_every']) ?: NULL);
     $config->set('checkin.display', $vals['conreg_checkin']['display']);
     $config->set('checkin.communication_method', $vals['conreg_checkin']['communication_method']);
-    $config->set('confirmation.format_html', $vals['conreg_confirmation']['format_html']);
     $config->set('confirmation.copy_us', $vals['conreg_confirmation']['copy_us']);
     $config->set('confirmation.from_name', $vals['conreg_confirmation']['from_name']);
     $config->set('confirmation.from_email', $vals['conreg_confirmation']['from_email']);
     $config->set('confirmation.copy_email_to', $vals['conreg_confirmation']['copy_email_to']);
-    $config->set('confirmation.template_subject', $vals['conreg_confirmation']['template_subject']);
-    $config->set('confirmation.template_body', $vals['conreg_confirmation']['template_body']['value']);
-    $config->set('confirmation.template_format', $vals['conreg_confirmation']['template_body']['format']);
+    $config->set('confirmation.easy_email_type', $vals['conreg_confirmation']['easy_email_type']);
     $config->set('confirmation.notification_subject', $vals['conreg_confirmation']['notification_subject']);
     $config->set('member_check.title', $vals['conreg_member_check']['member_check_title']);
     $config->set('member_check.intro', $vals['conreg_member_check']['member_check_intro']);
-    $config->set('member_check.confirm_subject', $vals['conreg_member_check']['confirm_subject']);
-    $config->set('member_check.confirm_body', $vals['conreg_member_check']['confirm_body']['value']);
-    $config->set('member_check.confirm_format', $vals['conreg_member_check']['confirm_body']['format']);
-    $config->set('member_check.unknown_body', $vals['conreg_member_check']['unknown_body']['value']);
-    $config->set('member_check.unknown_format', $vals['conreg_member_check']['unknown_body']['format']);
+    $config->set('member_check.confirm_easy_email_type', $vals['conreg_member_check']['confirm_easy_email_type']);
+    $config->set('member_check.unknown_easy_email_type', $vals['conreg_member_check']['unknown_easy_email_type']);
     $config->set('member_portal.add_role', $vals['conreg_member_edit']['add_role']);
     $config->set('member_edit.intro_text', $vals['conreg_member_edit']['member_edit_intro']['value']);
     $config->set('member_edit.intro_format', $vals['conreg_member_edit']['member_edit_intro']['format']);

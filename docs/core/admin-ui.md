@@ -6,7 +6,10 @@
 
 - `conreg.overview` (`admin/config/conreg/overview`)
 - `conreg.events` (`admin/config/conreg/events`) under `conreg.overview`
-- `conreg.config_email` (`admin/config/conreg/email/templates`)
+
+Email templates are managed on Easy Email's own admin page, not a ConReg
+route - see `entity.easy_email_type.collection`
+(`/admin/structure/email-templates`) in `reference/routes.md`.
 
 ## Dynamic event menu tree
 

@@ -245,10 +245,7 @@ class ConregOptions {
         }
         elseif ($key == 'confirmation') {
           $type->confirmation = (object) [
-            'override' => $val['override'] ?: FALSE,
-            'template_subject' => $val['template_subject'] ?: '',
-            'template_body' => $val['template_body'] ?: '',
-            'template_format' => $val['template_format'] ?: '',
+            'easy_email_type' => $val['easy_email_type'] ?? '',
           ];
         }
         elseif (!empty($key)) {
@@ -257,10 +254,7 @@ class ConregOptions {
       }
       if (!isset($type->confirmation)) {
         $type->confirmation = (object) [
-          'override' => FALSE,
-          'template_subject' => '',
-          'template_body' => '',
-          'template_format' => '',
+          'easy_email_type' => '',
         ];
       }
       // Display number of remaining memberships if required.
@@ -404,10 +398,7 @@ class ConregOptions {
           // Do nothing - day options are generated.
         }
         elseif ($key == 'confirmation') {
-          $config->set("member.types.$typeRef.confirmation.override", $val->override);
-          $config->set("member.types.$typeRef.confirmation.template_subject", $val->template_subject);
-          $config->set("member.types.$typeRef.confirmation.template_body", $val->template_body);
-          $config->set("member.types.$typeRef.confirmation.template_format", $val->template_format);
+          $config->set("member.types.$typeRef.confirmation.easy_email_type", $val->easy_email_type);
         }
         elseif ($key == '') {
           // Don't save empty key.

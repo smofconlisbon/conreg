@@ -13,7 +13,11 @@
 
 - Stores invite codes keyed by member ID.
 - Generates invite links through Discord API helper class.
-- Sends invite emails using ConReg email/token patterns.
+- Sends the invite email via `ConregEmailSender`, using the `EasyEmailType`
+  configured at `discord.easy_email_type` (`ConfigDiscordForm`). The
+  Discord-specific `[conreg-discord:invite-url]` token (implemented in
+  `ConregDiscordTokenHooks`) is passed as extra token data alongside the
+  usual `[conreg:*]` tokens - see `architecture/email.md`.
 
 ## Operational behavior
 

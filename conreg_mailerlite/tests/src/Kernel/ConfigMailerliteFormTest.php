@@ -34,6 +34,11 @@ class ConfigMailerliteFormTest extends KernelTestBase {
     'conreg',
     'conreg_mailing_list',
     'conreg_mailerlite',
+    'file',
+    'text',
+    'filter',
+    'jquery_ui_resizable',
+    'easy_email',
   ];
 
   /**

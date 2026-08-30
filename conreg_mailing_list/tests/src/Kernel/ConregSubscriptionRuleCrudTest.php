@@ -30,6 +30,11 @@ class ConregSubscriptionRuleCrudTest extends KernelTestBase {
     'key',
     'conreg',
     'conreg_mailing_list',
+    'file',
+    'text',
+    'filter',
+    'jquery_ui_resizable',
+    'easy_email',
   ];
 
   /**

@@ -13,7 +13,12 @@
 
 - Connects to an external database target (`Database::getConnection(..., 'planz')`).
 - Generates badge IDs and syncs users through `PlanZ` and `PlanZUser`.
-- Sends invite email via ConReg mail token flow.
+- Sends the invite email via `ConregEmailSender`, using the `EasyEmailType`
+  configured at `conreg.settings.<eid>.planz:email.easy_email_type`
+  (`ConfigPlanZForm`). PlanZ-specific tokens (`[conreg-planz:user]`,
+  `[conreg-planz:password]`, `[conreg-planz:url]`, implemented in
+  `ConregPlanzHooks`) are passed as extra token data alongside the usual
+  `[conreg:*]` tokens - see `architecture/email.md`.
 
 ## Implementation note
 

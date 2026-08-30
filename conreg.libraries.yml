@@ -17,6 +17,16 @@ conreg_field_options:
   dependencies:
     - core/jquery
 
+conreg_member_email_preview:
+  version: 1.x
+  js:
+    js/conreg_member_email_preview.js: {}
+  dependencies:
+    - core/jquery
+    - core/drupal
+    - core/once
+    - core/drupal.debounce
+
 conreg_checkout:
   version: 1.x
   js:

@@ -24,7 +24,20 @@ class ConregDiscordTokenTest extends KernelTestBase {
    *
    * @var array
    */
-  protected static $modules = ['system', 'user', 'datetime', 'key', 'token', 'conreg', 'conreg_discord'];
+  protected static $modules = [
+    'system',
+    'user',
+    'datetime',
+    'key',
+    'token',
+    'conreg',
+    'conreg_discord',
+    'file',
+    'text',
+    'filter',
+    'jquery_ui_resizable',
+    'easy_email',
+  ];
 
   /**
    * The conreg-discord:invite-url token round-trips through \Drupal::token().

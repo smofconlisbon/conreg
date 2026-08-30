@@ -25,15 +25,6 @@ function conreg_help($route_name, RouteMatchInterface $route_match) {
 }
 
 /**
- * Implements hook_mail().
- */
-#[LegacyHook]
-function conreg_mail($key, &$message, $params) {
-
-  \Drupal::service(ConregHooks::class)->mail($key, $message, $params);
-}
-
-/**
  * Implements hook_page_attachments().
  */
 #[LegacyHook]

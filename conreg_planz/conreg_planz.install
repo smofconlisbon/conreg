@@ -5,7 +5,7 @@
  * Install, update and uninstall functions for the conreg_planz module.
  */
 
-// cspell:ignore badgeid
+// cspell:ignore badgeid eids misparse
 
 /**
  * Implements hook_requirements().
@@ -53,4 +53,71 @@ function conreg_planz_schema() {
   ];
 
   return $schema;
+}
+
+/**
+ * Migrate the PlanZ invite email template into an Easy Email template.
+ *
+ * Unlike every other per-event settings key (nested under the single
+ * 'conreg.settings.<eid>' config object), PlanZ's admin form reads/writes
+ * a genuinely separate config object literally named
+ * 'conreg.settings.<eid>.planz' - a pre-existing inconsistency in how
+ * this module stores its config, not a nested key. Because that name
+ * itself starts with the string 'conreg.settings.', naively iterating
+ * listAll('conreg.settings.') and treating everything after that prefix
+ * as an eid would misparse this object's own name (eid = "1.planz");
+ * this only ever touches genuine 'conreg.settings.<eid>.planz' objects,
+ * looked up per real event ID from the conreg_events table instead.
+ *
+ * The template_subject/body/format fields were never actually enforced
+ * through Drupal's text filter system (PlanZ::sendInviteEmail() went
+ * through ConregEmailer, which rendered via Markup::create(), bypassing
+ * filters entirely), so the migrated format is not preserved - full_html
+ * is used instead, matching conreg's own core templates (see
+ * conreg_update_9012's docblock for the full explanation).
+ */
+function conreg_planz_update_9001() {
+  \Drupal::service('module_installer')->install(['easy_email']);
+
+  $config_factory = \Drupal::configFactory();
+  $email_type_storage = \Drupal::entityTypeManager()->getStorage('easy_email_type');
+  $eids = \Drupal::database()->select('conreg_events', 'e')->fields('e', ['eid'])->execute()->fetchCol();
+  $ids = [];
+
+  foreach ($eids as $eid) {
+    $configName = 'conreg.settings.' . $eid . '.planz';
+    if (!in_array($configName, $config_factory->listAll('conreg.settings.' . $eid . '.planz'), TRUE)) {
+      // PlanZ integration was never configured (and so never saved) for
+      // this event.
+      continue;
+    }
+    $config = $config_factory->getEditable($configName);
+
+    $subject = (string) $config->get('email.template_subject');
+    $body = (string) $config->get('email.template_body');
+    if ($subject === '' && $body === '') {
+      continue;
+    }
+
+    $hash = md5($subject . '|' . $body);
+    if (!isset($ids[$hash])) {
+      $id = 'conreg_planz_invite_' . $eid;
+      $email_type_storage->create([
+        'id' => $id,
+        'label' => 'ConReg: PlanZ invite (event ' . $eid . ')',
+        'subject' => $subject,
+        'bodyHtml' => ['value' => $body, 'format' => 'full_html'],
+        'generateBodyPlain' => FALSE,
+      ])->save();
+      $ids[$hash] = $id;
+    }
+
+    $config->set('email.easy_email_type', $ids[$hash]);
+    $config->clear('email.template_subject');
+    $config->clear('email.template_body');
+    $config->clear('email.template_format');
+    $config->save();
+  }
+
+  return t('Migrated the PlanZ invite email template to Easy Email templates. Review it under /admin/structure/email-templates and re-enter any translations that were previously set via Config Translation on the old fields - translations do not migrate automatically.');
 }

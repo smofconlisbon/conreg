@@ -24,7 +24,16 @@ class MemberTypeCardsRenderTest extends KernelTestBase {
   /**
    * {@inheritdoc}
    */
-  protected static $modules = ['system', 'filter', 'key', 'conreg'];
+  protected static $modules = [
+    'system',
+    'filter',
+    'key',
+    'conreg',
+    'file',
+    'text',
+    'jquery_ui_resizable',
+    'easy_email',
+  ];
 
   /**
    * {@inheritdoc}

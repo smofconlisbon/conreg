@@ -14,9 +14,10 @@ Most runtime behavior is keyed by event-specific config objects:
 | `payments` | Stripe mode/keys, currency, auto-approve |
 | `member.classes` | Field labels, mandatory flags, max lengths |
 | `member.types` | Type code, price, default days, class mapping |
-| `thanks`, `member_check`, `member_edit` | User-facing content and labels |
+| `thanks`, `member_check`, `member_edit` | User-facing content and labels (`member_check` also references its confirm/unknown `EasyEmailType`s) |
 | `conreg_options` | Option groups and options |
-| `bulk_email`, `confirmation` | Email templates and sender data |
+| `bulk_email`, `confirmation` | `EasyEmailType` reference and sender data - see `site-building/email-templates.md` |
+| `discord` | Discord integration settings, including its invite `EasyEmailType` reference |
 
 ## Runtime integration groups
 
@@ -25,8 +26,12 @@ These runtime keys are not fully described in `conreg.schema.yml`:
 
 - `airtable.*`
 - `clickup_option_groups`
-- `discord.*`
-- `planz.*`
+
+`planz.*` looks like it belongs here too, but it isn't nested under
+`conreg.settings.{eid}` at all - `conreg_planz` reads/writes a genuinely
+separate config object named `conreg.settings.<eid>.planz` (its own schema
+entry, `conreg.settings.*.planz`), which includes its own
+`email.easy_email_type` invite-template reference.
 
 ## Mailing-list config: two different patterns
 

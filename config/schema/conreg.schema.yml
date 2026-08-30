@@ -292,18 +292,9 @@ conreg.settings.*:
                 type: mapping
                 label: 'Confirmation email'
                 mapping:
-                  override:
-                    type: boolean
-                    label: 'If true, override the confirmation email'
-                  template_subject:
-                    type: label
-                    label: 'The subject of the overridden confirmation email'
-                  template_body:
-                    type: text
-                    label: 'The body of the overridden confirmation email'
-                  template_format:
+                  easy_email_type:
                     type: string
-                    label: 'The text format of the overridden template'
+                    label: 'Easy Email template overriding the event default for this member type'
     submit:
       type: mapping
       label: 'Labels for submit buttons'
@@ -327,16 +318,9 @@ conreg.settings.*:
           type: string
         copy_email_to:
           type: string
-        format_html:
-          type: integer
-        template_subject:
-          type: label
-          label: 'The subject of the confirmation email'
-        template_body:
-          type: text
-          label: 'The body of the confirmation email'
-        template_format:
+        easy_email_type:
           type: string
+          label: 'Easy Email template for the confirmation email, reused for admin resends and bulk email'
         notification_subject:
           type: label
           label: 'The subject of the notification sent to admin'
@@ -402,19 +386,12 @@ conreg.settings.*:
         intro:
           type: text
           label: 'Intro text for check membership page'
-        confirm_subject:
-          type: label
-          label: 'The subject of the member check email'
-        confirm_body:
-          type: text
-          label: 'The body of the check member email'
-        confirm_format:
+        confirm_easy_email_type:
           type: string
-        unknown_body:
-          type: text
-          label: 'The body of the email send if not a member'
-        unknown_format:
+          label: 'Easy Email template to send when the member is found'
+        unknown_easy_email_type:
           type: string
+          label: 'Easy Email template to send when the member is not found'
     member_edit:
       type: mapping
       label: 'Settings for self service member editing'
@@ -461,28 +438,89 @@ conreg.settings.*:
         from_email:
           type: text
           label: 'The email address of the sender'
-        template_subject:
-          type: text
-          label: 'The subject of the bulk email'
-        template_body:
-          type: text
-          label: 'The body text of the bulk email'
-        template_format:
-          type: text
-          label: 'The text format of the bulk email body'
+        easy_email_type:
+          type: string
+          label: 'Easy Email template selected for the current bulk send'
+    discord:
+      type: mapping
+      label: 'Discord integration settings'
+      mapping:
+        token:
+          type: string
+          label: 'Discord bot token'
+        channel_id:
+          type: string
+          label: 'Discord channel ID'
+        types:
+          type: sequence
+          label: 'Member types enabled for Discord invitations'
+          sequence:
+            type: boolean
+        max_invites:
+          type: integer
+          label: 'Maximum number of invites sent per run'
+        easy_email_type:
+          type: string
+          label: 'Easy Email template for the Discord invite email'
 
-conreg.email_templates:
+# Unlike every other per-event settings key above (which nest under the
+# single 'conreg.settings.<eid>' config object), PlanZ's own admin form
+# reads/writes a genuinely separate config object literally named
+# 'conreg.settings.<eid>.planz' - a pre-existing inconsistency in how this
+# module stores its config, not a nested key. This schema entry has to
+# match that reality, not the nesting pattern used everywhere else.
+conreg.settings.*.planz:
   type: config_object
-  label: 'ConReg settings'
+  label: 'PlanZ/Zambia integration settings for one event'
   mapping:
-    template1subject:
+    target:
       type: string
-    template1body:
+      label: 'Database "target" connection key'
+    badge_id_source:
       type: string
-    template1format:
+      label: 'Source of the PlanZ badge ID (member ID or member number)'
+    prefix:
       type: string
-    count:
+      label: 'PlanZ badge ID prefix'
+    digits:
       type: integer
+      label: 'Number of digits to pad the PlanZ badge ID to'
+    generate_password:
+      type: boolean
+      label: 'Whether to generate a PlanZ password automatically'
+    roles:
+      type: sequence
+      label: 'Roles to assign to the PlanZ user'
+      sequence:
+        type: string
+    interested_default:
+      type: boolean
+      label: 'Default value for the interested field'
+    url:
+      type: string
+      label: 'Base URL for the PlanZ site'
+    option_fields:
+      type: sequence
+      label: 'Option fields to copy over to PlanZ'
+      sequence:
+        type: string
+    auto:
+      type: mapping
+      label: 'Automatic member adding settings'
+      mapping:
+        enabled:
+          type: boolean
+          label: 'Whether PlanZ integration is auto-enabled'
+        when_confirmed:
+          type: boolean
+          label: 'Whether auto-enable occurs when the member is confirmed'
+    email:
+      type: mapping
+      label: 'PlanZ invite email settings'
+      mapping:
+        easy_email_type:
+          type: string
+          label: 'Easy Email template for the PlanZ invite email'
 
 block.settings.conreg_price_availability:
   type: block_settings

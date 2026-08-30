@@ -2,6 +2,8 @@
 
 namespace Drupal\Tests\conreg\Kernel;
 
+use Drupal\user\RoleInterface;
+use Drupal\filter\Entity\FilterFormat;
 use Drupal\conreg\Addons;
 use Drupal\conreg\Form\Admin\EventAddOns;
 use Drupal\conreg\Form\Admin\EventConfig;
@@ -9,6 +11,7 @@ use Drupal\conreg\Payment;
 use Drupal\conreg\Plugin\Derivative\EventsMenuDeriver;
 use Drupal\conreg\Service\PaymentStorage;
 use Drupal\Core\Database\Database;
+use Drupal\easy_email\Entity\EasyEmailType;
 use Drupal\Core\Form\FormState;
 use Drupal\Core\Render\Element;
 use Drupal\Core\Session\UserSession;
@@ -48,6 +51,11 @@ class FormBuildTest extends KernelTestBase {
     'datetime',
     'key',
     'conreg',
+    'file',
+    'text',
+    'filter',
+    'jquery_ui_resizable',
+    'easy_email',
   ];
 
   /**
@@ -70,6 +78,23 @@ class FormBuildTest extends KernelTestBase {
       'conreg_payment_lines',
     ]);
     $this->installConfig(['conreg']);
+
+    // Required for MemberTypes.php's default text format lookup, now that
+    // 'filter' is enabled (a dependency of easy_email/text). A real site
+    // has a 'basic_html' format (normally provided by the 'standard'
+    // install profile, which this minimal Kernel test doesn't use). Must
+    // come after the conreg schema/config above - saving user role config
+    // rebuilds the permission list, which includes conreg's per-event
+    // dynamic permissions (FieldOptionPermissions) and so queries
+    // conreg_events.
+    $this->installConfig(['filter', 'user']);
+    FilterFormat::create([
+      'format' => 'basic_html',
+      'name' => 'Basic HTML',
+      'weight' => 0,
+      'filters' => [],
+    ])->save();
+    user_role_grant_permissions(RoleInterface::ANONYMOUS_ID, ['use text format basic_html']);
     Database::getConnection()->insert('conreg_events')
       ->fields([
         'event_name' => 'Test event',
@@ -102,15 +127,23 @@ class FormBuildTest extends KernelTestBase {
   }
 
   /**
-   * Set up email template. Temporary, until can be moved into saved config.
+   * Creates an EasyEmailType so MemberEmail's template select isn't empty.
+   *
+   * Without at least one easy_email_type entity, MemberEmail::buildForm()
+   * takes its "No email templates found" early return instead of building
+   * the real form - see testAdminMemberEmailFormBuild().
    */
   protected function createEmailTemplate() {
-    $config = $this->container->get('config.factory')->getEditable('conreg.email_templates');
-    $config->set('template1subject', 'Thank you for joining [event_name]');
-    $config->set('template1body', '<p>Hi [first_name],</p><p>This is to confirm you have joined [event_name].</p><p>Your member details are: [member_details]</p>');
-    $config->set('template1format', 'basic_html');
-    $config->set('count', '1');
-    $config->save();
+    EasyEmailType::create([
+      'id' => 'conreg_registration_test',
+      'label' => 'ConReg registration (test)',
+      'subject' => 'Thank you for joining [conreg:event-name]',
+      'bodyHtml' => [
+        'value' => '<p>Hi [conreg:member:first-name],</p><p>This is to confirm you have joined [conreg:event-name].</p><p>Your member details are: [conreg:member-details]</p>',
+        'format' => 'full_html',
+      ],
+      'generateBodyPlain' => FALSE,
+    ])->save();
   }
 
   /**
@@ -503,15 +536,8 @@ class FormBuildTest extends KernelTestBase {
     $this->assertIsArray($form);
     $this->assertArrayHasKey('#form_id', $form);
     $this->assertEquals('conreg_config_member_types', $form['#form_id']);
-    $this->assertEquals('basic_html', $form['A']['confirmation']['template_body']['#format']);
-
-    $overrideStates = [
-      'visible' => [
-        ':input[name="A[confirmation][override]"]' => ['checked' => TRUE],
-      ],
-    ];
-    $this->assertEquals($overrideStates, $form['A']['confirmation']['template_subject']['#states']);
-    $this->assertEquals($overrideStates, $form['A']['confirmation']['template_body']['#states']);
+    $this->assertArrayHasKey('easy_email_type', $form['A']['confirmation']);
+    $this->assertEquals('select', $form['A']['confirmation']['easy_email_type']['#type']);
   }
 
   /**
@@ -752,6 +778,15 @@ class FormBuildTest extends KernelTestBase {
     $this->assertIsArray($form);
     $this->assertArrayHasKey('#form_id', $form);
     $this->assertEquals('conreg_admin_member_email', $form['#form_id']);
+
+    // #form_id is stamped by the form builder regardless of which branch
+    // buildForm() takes, so assert on content only the real (non-early-
+    // return) form contains, proving the created EasyEmailType was found.
+    $this->assertArrayHasKey('conreg_registration_test', $form['template']['template_select']['#options']);
+    $this->assertSame(
+      'Thank you for joining [conreg:event-name]',
+      $form['email']['message']['subject']['#default_value']
+    );
   }
 
   /**
@@ -764,9 +799,7 @@ class FormBuildTest extends KernelTestBase {
 
     $config->set('bulk_email.from_name', 'Admin');
     $config->set('bulk_email.from_email', 'admin@example.com');
-    $config->set('bulk_email.template_subject', 'Bulk email subject');
-    $config->set('bulk_email.template_body', 'Body');
-    $config->set('bulk_email.template_format', 'basic_html');
+    $config->set('bulk_email.easy_email_type', 'conreg_registration_default');
     $config->save();
   }
 

@@ -23,7 +23,17 @@ class MemberDayOptionsRenderTest extends KernelTestBase {
   /**
    * {@inheritdoc}
    */
-  protected static $modules = ['system', 'key', 'conreg'];
+  protected static $modules = [
+    'system',
+    'key',
+    'conreg',
+    'user',
+    'file',
+    'text',
+    'filter',
+    'jquery_ui_resizable',
+    'easy_email',
+  ];
 
   /**
    * Builds and processes a member_day_options element, ready to theme.

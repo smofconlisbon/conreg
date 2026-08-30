@@ -31,7 +31,18 @@ class CheckoutThankYouPageTest extends KernelTestBase {
    *
    * @var array
    */
-  protected static $modules = ['system', 'user', 'datetime', 'key', 'conreg'];
+  protected static $modules = [
+    'system',
+    'user',
+    'datetime',
+    'key',
+    'conreg',
+    'file',
+    'text',
+    'filter',
+    'jquery_ui_resizable',
+    'easy_email',
+  ];
 
   /**
    * Set up database tables and config for the checkout form.

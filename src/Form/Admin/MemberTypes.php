@@ -2,14 +2,14 @@
 
 namespace Drupal\conreg\Form\Admin;
 
-use Drupal\Component\Utility\DeprecationHelper;
-use Drupal\filter\FilterFormatRepositoryInterface;
 use Drupal\Component\Utility\Html;
 use Drupal\conreg\Service\EventStorage;
 use Drupal\conreg\ConregOptions;
+use Drupal\conreg\Trait\EasyEmailTypeOptionsTrait;
 use Drupal\conreg\Trait\TokenTreeLinkTrait;
 use Drupal\Core\Cache\CacheTagsInvalidator;
 use Drupal\Core\DependencyInjection\AutowireTrait;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
@@ -20,6 +20,7 @@ use Symfony\Component\DependencyInjection\Attribute\Autowire;
 class MemberTypes extends ConfigFormBase {
 
   use AutowireTrait;
+  use EasyEmailTypeOptionsTrait;
   use TokenTreeLinkTrait;
 
   /**
@@ -29,11 +30,14 @@ class MemberTypes extends ConfigFormBase {
    *   The cache invalidator.
    * @param \Drupal\conreg\Service\EventStorage $eventStorage
    *   The event storage service.
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager
+   *   The entity type manager.
    */
   public function __construct(
     #[Autowire('cache_tags.invalidator')]
     protected CacheTagsInvalidator $cacheInvalidator,
     protected EventStorage $eventStorage,
+    protected EntityTypeManagerInterface $entityTypeManager,
   ) {}
 
   /**
@@ -90,7 +94,6 @@ class MemberTypes extends ConfigFormBase {
     $badgeTypes = ConregOptions::badgeTypes($eid);
     $memberClasses = ConregOptions::memberClasses($eid);
     $days = ConregOptions::days($eid);
-    $defaultTextFormat = $this->getDefaultTextFormat($eid);
 
     $form = [
       '#title' => $this->t('@event_name Member Types', ['@event_name' => $event['event_name']]),
@@ -192,31 +195,14 @@ class MemberTypes extends ConfigFormBase {
         '#type' => 'fieldset',
         '#title' => $this->t('Member Type Details'),
       ];
-      $form[$typeRef]['confirmation']['override'] = [
-        '#type' => 'checkbox',
-        '#title' => $this->t('Override confirmation email.'),
-        '#default_value' => $type->confirmation->override,
+      $form[$typeRef]['confirmation']['easy_email_type'] = [
+        '#type' => 'select',
+        '#title' => $this->t('Confirmation email template override'),
+        '#description' => $this->t('Leave blank to use the event default confirmation template. @link', ['@link' => $this->easyEmailTypeManageLink()]),
+        '#options' => $this->easyEmailTypeOptions(),
+        '#empty_option' => $this->t('- Use event default -'),
+        '#default_value' => $type->confirmation->easy_email_type,
       ];
-      $overrideStates = [
-        'visible' => [
-          ':input[name="' . $typeRef . '[confirmation][override]"]' => ['checked' => TRUE],
-        ],
-      ];
-      $form[$typeRef]['confirmation']['template_subject'] = [
-        '#type' => 'textfield',
-        '#title' => $this->t('Confirmation email subject'),
-        '#default_value' => $type->confirmation->template_subject,
-        '#states' => $overrideStates,
-      ];
-      $form[$typeRef]['confirmation']['template_body'] = [
-        '#type' => 'text_format',
-        '#title' => $this->t('Confirmation email body'),
-        '#description' => $this->t('Text for the email body. Supports tokens — use the browser below to see what is available.'),
-        '#default_value' => $type->confirmation->template_body,
-        '#format' => $type->confirmation->template_format ?: $defaultTextFormat,
-        '#states' => $overrideStates,
-      ];
-      $form[$typeRef]['confirmation']['template_body_token_tree'] = $this->tokenTreeLink();
 
       $form[$typeRef]['clone'] = [
         '#type' => 'submit',
@@ -391,17 +377,6 @@ class MemberTypes extends ConfigFormBase {
     $this->cacheInvalidator->invalidateTags(['event:' . $eid . ':type']);
 
     parent::submitForm($form, $form_state);
-  }
-
-  /**
-   * Gets the default text format for member type confirmation overrides.
-   */
-  private function getDefaultTextFormat(int $eid): string {
-    if (function_exists('filter_default_format')) {
-      return DeprecationHelper::backwardsCompatibleCall(\Drupal::VERSION, '11.4.0', fn() => \Drupal::service(FilterFormatRepositoryInterface::class)->getDefaultFormat($this->currentUser())->id(), fn() => filter_default_format($this->currentUser()));
-    }
-
-    return $this->config('conreg.settings.' . $eid)->get('confirmation.template_format') ?: 'plain_text';
   }
 
   /**
@@ -592,10 +567,7 @@ class MemberTypes extends ConfigFormBase {
         }
       }
       $memberTypes->types[$typeCode]->confirmation = (object) [
-        'override' => $vals[$typeCode]['confirmation']['override'],
-        'template_subject' => $vals[$typeCode]['confirmation']['template_subject'],
-        'template_body' => $vals[$typeCode]['confirmation']['template_body']['value'],
-        'template_format' => $vals[$typeCode]['confirmation']['template_body']['format'],
+        'easy_email_type' => $vals[$typeCode]['confirmation']['easy_email_type'],
       ];
     }
     $this->cacheInvalidator->invalidateTags(['event:' . $eid . ':registration']);

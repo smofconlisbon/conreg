@@ -3,13 +3,12 @@
 namespace Drupal\conreg\Form;
 
 use Drupal\conreg\ConregConfig;
+use Drupal\conreg\Service\ConregEmailSender;
 use Drupal\conreg\Service\EventStorage;
 use Drupal\conreg\Service\MemberStorage;
 use Drupal\Core\DependencyInjection\AutowireTrait;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Language\LanguageManagerInterface;
-use Drupal\Core\Mail\MailManagerInterface;
 
 /**
  * Simple form to add an entry, with all the interesting fields.
@@ -23,17 +22,14 @@ class CheckMember extends FormBase {
    *
    * @param \Drupal\conreg\Service\MemberStorage $memberStorage
    *   The member storage service.
-   * @param \Drupal\Core\Mail\MailManagerInterface $mailManager
-   *   The mail manager service.
-   * @param \Drupal\Core\Language\LanguageManagerInterface $languageManager
-   *   The language manager service.
+   * @param \Drupal\conreg\Service\ConregEmailSender $emailSender
+   *   Builds and sends conreg emails via Easy Email.
    * @param \Drupal\conreg\Service\EventStorage $eventStorage
    *   The event storage service.
    */
   public function __construct(
     protected MemberStorage $memberStorage,
-    protected MailManagerInterface $mailManager,
-    protected LanguageManagerInterface $languageManager,
+    protected ConregEmailSender $emailSender,
     protected EventStorage $eventStorage,
   ) {}
 
@@ -119,11 +115,6 @@ class CheckMember extends FormBase {
     $config = ConregConfig::getConfig($eid);
     $form_values = $form_state->getValues();
 
-    // Set up parameters for receipt email.
-    $params = ['eid' => $eid];
-    $params['to'] = $form_values['email'];
-    $params['subject'] = $config->get('member_check.confirm_subject');
-
     // Get all members registered by email address.
     $members = $this->memberStorage->loadAll([
       'eid' => $eid,
@@ -133,29 +124,19 @@ class CheckMember extends FormBase {
     ]);
 
     if (count($members)) {
-      $mids = [];
-      foreach ($members as $member) {
-        $mids[] = $member['mid'];
-      }
-      $params['mid'] = $mids;
-      $params['body'] = $config->get('member_check.confirm_body');
-      $params['body_format'] = $config->get('member_check.confirm_format');
-
+      $mids = array_map(fn (array $member) => (int) $member['mid'], $members);
+      $bundle = $config->get('member_check.confirm_easy_email_type');
+      $langcode = $members[0]['language'] ?? NULL;
       $info = 'Member details found and sent to @email.';
     }
     else {
-      $params['body'] = $config->get('member_check.unknown_body');
-      $params['body_format'] = $config->get('member_check.unknown_format');
-
+      $mids = [];
+      $bundle = $config->get('member_check.unknown_easy_email_type');
+      $langcode = NULL;
       $info = 'Member details not found for @email.';
     }
 
-    $module = "conreg";
-    $key = "template";
-    $to = $form_values['email'];
-    $language_code = $this->languageManager->getDefaultLanguage()->getId();
-    // Send confirmation email to member.
-    $this->mailManager->mail($module, $key, $to, $language_code, $params);
+    $this->emailSender->send($bundle, $form_values['email'], (int) $eid, $mids, $langcode);
 
     // Log an event to show a member check occurred.
     $this->logger('conreg')->info($info, ['@email' => $form_values['email']]);

@@ -7,6 +7,7 @@ namespace Drupal\Tests\conreg\Unit;
 use Drupal\Component\Render\MarkupInterface;
 use Drupal\conreg\Hook\ConregTokenHooks;
 use Drupal\conreg\Member;
+use Drupal\conreg\Service\EmailTokenContext;
 use Drupal\conreg\Service\MemberDetailsFormatter;
 use Drupal\Core\Cache\Context\CacheContextsManager;
 use Drupal\Core\Render\BubbleableMetadata;
@@ -266,7 +267,10 @@ class TokenTest extends UnitTestCase {
    * test instead.
    */
   protected function createHooks(?MemberDetailsFormatter $formatter = NULL): ConregTokenHooks {
-    $hooks = new ConregTokenHooks($formatter ?? $this->createMock(MemberDetailsFormatter::class));
+    $hooks = new ConregTokenHooks(
+      $formatter ?? $this->createMock(MemberDetailsFormatter::class),
+      $this->createMock(EmailTokenContext::class),
+    );
     $hooks->setStringTranslation($this->getStringTranslationStub());
     return $hooks;
   }

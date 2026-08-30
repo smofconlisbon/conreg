@@ -1,0 +1,13 @@
+langcode: en
+status: true
+dependencies:
+  enforced:
+    module:
+      - conreg
+id: conreg_mcheck_confirm_default
+label: 'ConReg: member found (default)'
+subject: 'Your [conreg:event-name] Membership Status'
+bodyHtml:
+  value: "<p>Hi [conreg:member:first-name],</p>\r\n\r\n<p>This is to confirm your membership status for [conreg:event-name].</p>\r\n\r\n<p>Your member details are:</p>\r\n\r\n<p>[conreg:member-details]</p>\r\n\r\n<p>If you need to change anything, please log in by clicking here: [conreg:member:login-url]</p>\r\n\r\n<p>Best wishes,</p>\r\n\r\n<p>The [conreg:event-name] team.</p>\r\n"
+  format: full_html
+generateBodyPlain: false

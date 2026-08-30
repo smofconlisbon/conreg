@@ -3,9 +3,9 @@
 namespace Drupal\conreg\Controller;
 
 use Drupal\conreg\ConregConfig;
+use Drupal\conreg\Service\ConregEmailSender;
 use Drupal\conreg\Service\MemberStorage;
 use Drupal\Core\Controller\ControllerBase;
-use Drupal\Core\Mail\MailManagerInterface;
 
 /**
  * Returns responses for ConReg routes.
@@ -17,12 +17,12 @@ class BulkMailController extends ControllerBase {
    *
    * @param \Drupal\conreg\Service\MemberStorage $memberStorage
    *   The member storage service.
-   * @param \Drupal\Core\Mail\MailManagerInterface $mailManager
-   *   Mail manager service.
+   * @param \Drupal\conreg\Service\ConregEmailSender $emailSender
+   *   Builds and sends conreg emails via Easy Email.
    */
   public function __construct(
     protected MemberStorage $memberStorage,
-    protected MailManagerInterface $mailManager,
+    protected ConregEmailSender $emailSender,
   ) {}
 
   /**
@@ -42,20 +42,11 @@ class BulkMailController extends ControllerBase {
     ]);
 
     $config = ConregConfig::getConfig($member['eid']);
-
-    // Set up parameters for receipt email.
-    $params = ['eid' => $member['eid'], 'mid' => $member['mid']];
-    $params['subject'] = $config->get('bulk_email.template_subject');
-    $params['body'] = $config->get('bulk_email.template_body');
-    $params['body_format'] = $config->get('bulk_email.template_format');
-    $module = "conreg";
-    $key = "template";
-    $to = $member["email"];
-    $language_code = $this->languageManager()->getDefaultLanguage()->getId();
+    $bundle = $config->get('bulk_email.easy_email_type');
 
     // Send confirmation email to member.
     if (!empty($member["email"])) {
-      $this->mailManager->mail($module, $key, $to, $language_code, $params);
+      $this->emailSender->send($bundle, $member['email'], (int) $member['eid'], [(int) $member['mid']], $member['language'] ?? NULL);
     }
 
     $content['markup'] = [

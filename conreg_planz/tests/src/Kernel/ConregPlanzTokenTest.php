@@ -24,7 +24,20 @@ class ConregPlanzTokenTest extends KernelTestBase {
    *
    * @var array
    */
-  protected static $modules = ['system', 'user', 'datetime', 'key', 'token', 'conreg', 'conreg_planz'];
+  protected static $modules = [
+    'system',
+    'user',
+    'datetime',
+    'key',
+    'token',
+    'conreg',
+    'conreg_planz',
+    'file',
+    'text',
+    'filter',
+    'jquery_ui_resizable',
+    'easy_email',
+  ];
 
   /**
    * The conreg-planz:user/password/url tokens round-trip via the token service.

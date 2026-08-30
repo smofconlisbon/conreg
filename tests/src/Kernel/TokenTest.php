@@ -25,7 +25,18 @@ class TokenTest extends KernelTestBase {
    *
    * @var array
    */
-  protected static $modules = ['system', 'user', 'datetime', 'key', 'conreg'];
+  protected static $modules = [
+    'system',
+    'user',
+    'datetime',
+    'key',
+    'conreg',
+    'file',
+    'text',
+    'filter',
+    'jquery_ui_resizable',
+    'easy_email',
+  ];
 
   /**
    * The conreg:event-name token round-trips through \Drupal::token().

@@ -5,5 +5,6 @@ core_version_requirement: ^10.1 || ^11.0
 dependencies:
   - key:key
   - token:token
+  - easy_email:easy_email
 libraries:
   - conreg/conreg_form

@@ -5,8 +5,9 @@ namespace Drupal\conreg\Form\Admin;
 use Drupal\conreg\ConregOptions;
 use Drupal\conreg\FieldOptions;
 use Drupal\conreg\Service\MemberStorage;
-use Drupal\conreg\Trait\TokenTreeLinkTrait;
+use Drupal\conreg\Trait\EasyEmailTypeOptionsTrait;
 use Drupal\Core\DependencyInjection\AutowireTrait;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 
@@ -16,16 +17,19 @@ use Drupal\Core\Form\FormStateInterface;
 class BulkEmail extends FormBase {
 
   use AutowireTrait;
-  use TokenTreeLinkTrait;
+  use EasyEmailTypeOptionsTrait;
 
   /**
    * Construct the form.
    *
    * @param \Drupal\conreg\Service\MemberStorage $memberStorage
    *   The member storage service.
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager
+   *   The entity type manager.
    */
   public function __construct(
     protected MemberStorage $memberStorage,
+    protected EntityTypeManagerInterface $entityTypeManager,
   ) {}
 
   /**
@@ -75,21 +79,14 @@ class BulkEmail extends FormBase {
       '#default_value' => $config->get('bulk_email.from_email'),
     ];
 
-    $form['bulk_email']['template_subject'] = [
-      '#type' => 'textfield',
-      '#title' => $this->t('Bulk email subject'),
-      '#default_value' => $config->get('bulk_email.template_subject'),
+    $form['bulk_email']['easy_email_type'] = [
+      '#type' => 'select',
+      '#title' => $this->t('Bulk email template'),
+      '#description' => $this->easyEmailTypeManageLink(),
+      '#options' => $this->easyEmailTypeOptions(),
+      '#empty_option' => $this->t('- Select -'),
+      '#default_value' => $config->get('bulk_email.easy_email_type'),
     ];
-
-    $form['bulk_email']['template_body'] = [
-      '#type' => 'text_format',
-      '#title' => $this->t('Bulk email body'),
-      '#description' => $this->t('Text for the email body. Supports tokens — use the browser below to see what is available.'),
-      '#default_value' => $config->get('bulk_email.template_body'),
-      '#format' => $config->get('bulk_email.template_format'),
-    ];
-
-    $form['bulk_email']['template_body_token_tree'] = $this->tokenTreeLink();
 
     $form['submit'] = [
       '#type' => 'submit',
@@ -175,9 +172,7 @@ class BulkEmail extends FormBase {
     $config = $this->configFactory()->getEditable('conreg.settings.' . $eid);
     $config->set('bulk_email.from_name', $vals['bulk_email']['from_name']);
     $config->set('bulk_email.from_email', $vals['bulk_email']['from_email']);
-    $config->set('bulk_email.template_subject', $vals['bulk_email']['template_subject']);
-    $config->set('bulk_email.template_body', $vals['bulk_email']['template_body']['value']);
-    $config->set('bulk_email.template_format', $vals['bulk_email']['template_body']['format']);
+    $config->set('bulk_email.easy_email_type', $vals['bulk_email']['easy_email_type']);
     $config->save();
   }
 

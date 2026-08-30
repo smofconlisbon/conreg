@@ -28,7 +28,17 @@ class RegistrationThanksPageTest extends KernelTestBase {
    *
    * @var array
    */
-  protected static $modules = ['system', 'key', 'conreg'];
+  protected static $modules = [
+    'system',
+    'key',
+    'conreg',
+    'user',
+    'file',
+    'text',
+    'filter',
+    'jquery_ui_resizable',
+    'easy_email',
+  ];
 
   /**
    * Set up database tables and config for the controller.

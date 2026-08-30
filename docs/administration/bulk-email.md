@@ -9,8 +9,11 @@
 
 ## Config and templates
 
-- Defaults are stored under `bulk_email.*` in event config.
-- Email rendering still uses ConReg template/token pipeline.
+- The template used is an `EasyEmailType` referenced by
+  `bulk_email.easy_email_type` in event config (see
+  `site-building/email-templates.md`).
+- Sending goes through the shared `ConregEmailSender`/token-bridging
+  pipeline described in `architecture/email.md`.
 
 ## Permission
 

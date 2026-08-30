@@ -31,6 +31,11 @@ class PublicMemberListTest extends KernelTestBase {
     'system',
     'key',
     'conreg',
+    'file',
+    'text',
+    'filter',
+    'jquery_ui_resizable',
+    'easy_email',
   ];
 
   /**

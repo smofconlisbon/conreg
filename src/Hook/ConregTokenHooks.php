@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace Drupal\conreg\Hook;
 
 use Drupal\Component\Render\MarkupInterface;
+use Drupal\conreg\Service\EmailTokenContext;
 use Drupal\conreg\Service\MemberDetailsFormatter;
 use Drupal\Core\Hook\Attribute\Hook;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\Core\Render\BubbleableMetadata;
 use Drupal\Core\Render\Markup;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
+use Drupal\easy_email\Entity\EasyEmailInterface;
 
 /**
  * Hook implementations for conreg.
@@ -18,8 +20,12 @@ use Drupal\Core\StringTranslation\StringTranslationTrait;
 class ConregTokenHooks {
   use StringTranslationTrait;
 
+  /**
+   * Constructor for token hooks.
+   */
   public function __construct(
     protected MemberDetailsFormatter $memberDetailsFormatter,
+    protected EmailTokenContext $emailTokenContext,
   ) {}
 
   /**
@@ -134,6 +140,10 @@ class ConregTokenHooks {
     $replacements = [];
     if ($type != 'conreg') {
       return $replacements;
+    }
+
+    if (!isset($data['event'], $data['members']) && ($data['easy_email'] ?? NULL) instanceof EasyEmailInterface) {
+      $data += $this->emailTokenContext->buildFromEmail($data['easy_email']);
     }
 
     foreach ($tokens as $name => $original) {

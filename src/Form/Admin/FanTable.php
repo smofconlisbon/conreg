@@ -13,14 +13,13 @@ use Drupal\conreg\PaymentLine;
 use Drupal\conreg\Service\EventStorage;
 use Drupal\conreg\Service\MemberStorage;
 use Drupal\conreg\Service\PaymentStorage;
+use Drupal\conreg\Service\RegistrationConfirmationMailer;
 use Drupal\conreg\Service\UpgradeStorage;
 use Drupal\conreg\Upgrade;
 use Drupal\conreg\UpgradeManager;
 use Drupal\Core\DependencyInjection\AutowireTrait;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Language\LanguageManagerInterface;
-use Drupal\Core\Mail\MailManagerInterface;
 
 /**
  * Simple form to add an entry, with all the interesting fields.
@@ -34,10 +33,8 @@ class FanTable extends FormBase {
    *
    * @param \Drupal\conreg\Service\MemberStorage $memberStorage
    *   The member storage service.
-   * @param \Drupal\Core\Mail\MailManagerInterface $mailManager
-   *   The mail manager.
-   * @param \Drupal\Core\Language\LanguageManagerInterface $languageManager
-   *   The language manager.
+   * @param \Drupal\conreg\Service\RegistrationConfirmationMailer $confirmationMailer
+   *   Sends the registration confirmation email and admin copies.
    * @param \Drupal\conreg\Service\EventStorage $eventStorage
    *   The event storage service.
    * @param \Drupal\conreg\Service\PaymentStorage $paymentStorage
@@ -49,8 +46,7 @@ class FanTable extends FormBase {
    */
   public function __construct(
     protected MemberStorage $memberStorage,
-    protected MailManagerInterface $mailManager,
-    protected LanguageManagerInterface $languageManager,
+    protected RegistrationConfirmationMailer $confirmationMailer,
     protected EventStorage $eventStorage,
     protected PaymentStorage $paymentStorage,
     protected UpgradeStorage $upgradeStorage,
@@ -670,46 +666,7 @@ class FanTable extends FormBase {
    * Send confirmation email on payment completion.
    */
   private function sendConfirmationEmail($member) {
-    $config = $this->config('conreg.settings.' . $member['eid']);
-    $types = ConregOptions::memberTypes($member['eid'], $config);
-
-    // Set up parameters for receipt email.
-    $params = ['eid' => $member['eid'], 'mid' => $member['mid']];
-    if ($types->types[$member['member_type']]->confirmation->override ?: FALSE) {
-      $params['subject'] = $types->types[$member['member_type']]->confirmation->template_subject;
-      $params['body'] = $types->types[$member['member_type']]->confirmation->template_body;
-      $params['body_format'] = $types->types[$member['member_type']]->confirmation->template_format;
-    }
-    else {
-      $params['subject'] = $config->get('confirmation.template_subject');
-      $params['body'] = $config->get('confirmation.template_body');
-      $params['body_format'] = $config->get('confirmation.template_format');
-    }
-    $params['include_private'] = TRUE;
-    $module = "conreg";
-    $key = "template";
-    $to = $member["email"];
-    $language_code = $this->languageManager->getDefaultLanguage()->getId();
-    // Send confirmation email to member.
-    if (!empty($member["email"])) {
-      $this->mailManager->mail($module, $key, $to, $language_code, $params);
-    }
-
-    // If copy_us checkbox checked, send a copy to us.
-    if ($config->get('confirmation.copy_us')) {
-      $params['subject'] = $config->get('confirmation.notification_subject');
-      $params['include_private'] = FALSE;
-      $to = $config->get('confirmation.from_email');
-      $this->mailManager->mail($module, $key, $to, $language_code, $params);
-    }
-
-    // If copy email to field provided, send an extra copy to us.
-    if (!empty($config->get('confirmation.copy_email_to'))) {
-      $params['subject'] = $config->get('confirmation.notification_subject');
-      $params['include_private'] = FALSE;
-      $to = $config->get('confirmation.copy_email_to');
-      $this->mailManager->mail($module, $key, $to, $language_code, $params);
-    }
+    $this->confirmationMailer->send($member);
   }
 
 }

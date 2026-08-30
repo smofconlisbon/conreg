@@ -17,3 +17,8 @@
 - Assign member numbers as part of approval flow.
 - Edit profile and membership attributes.
 - Transfer members between leads when needed.
+- Email a member (`conreg_admin_members_email`, `MemberEmail` form): pick any
+  `EasyEmailType`, edit the subject/body before sending, and see a live,
+  debounced preview with `[conreg:*]` tokens resolved. The sent email is
+  logged in Easy Email's own log (`/admin/content/email`) - see
+  `architecture/email.md`.

@@ -5,9 +5,9 @@
 | Config object | Notes |
 |---|---|
 | `conreg.settings.{eid}` | Event-scoped runtime configuration |
-| `conreg.email_templates` | Shared template storage |
 | `conreg.clickup` | Global ClickUp OAuth/token settings |
 | `conreg_mailerlite.settings` | Global MailerLite API key, shared by all events (schema `conreg_mailerlite/config/schema/conreg_mailerlite.schema.yml`) |
+| `easy_email.easy_email_type.*` | Email templates (config entities, one per bundle) - not nested under `conreg.settings.{eid}`; see `site-building/email-templates.md` |
 
 ## Schema-defined groups (`config/schema/conreg.schema.yml`)
 
@@ -16,8 +16,8 @@
 | `payments` | Stripe and payment behavior |
 | `badge_types`, `badge_name_options`, `days` | Pipe-delimited code/label lists |
 | `member.classes`, `member.types` | Registration field and type models |
-| `submit`, `thanks`, `member_check`, `member_edit` | User-facing labels/messages |
-| `confirmation`, `bulk_email` | Template and sender metadata |
+| `submit`, `thanks`, `member_check`, `member_edit` | User-facing labels/messages (`member_check` also holds `confirm_easy_email_type`/`unknown_easy_email_type` references) |
+| `confirmation`, `bulk_email` | `easy_email_type` reference (which `EasyEmailType` to use) and sender metadata - see `site-building/email-templates.md` |
 | `conreg_options` | Option group definitions |
 
 For typed key definitions in these groups, see
@@ -32,8 +32,16 @@ fully represented in `config/schema/conreg.schema.yml`:
 |---|---|
 | `airtable.*` | `conreg_airtable` config form |
 | `clickup_option_groups` | `conreg_clickup` options form |
-| `discord.*` | `conreg_discord` config form |
-| `planz.*` | `conreg_planz` config form |
+
+`discord.*` (written by `conreg_discord`'s `ConfigDiscordForm`, including its
+`easy_email_type` invite-template reference) **is** fully schema-defined,
+nested under `conreg.settings.{eid}` like the groups above.
+
+`planz.*` is not nested under `conreg.settings.{eid}` at all - despite the
+similar name, `conreg_planz`'s `ConfigPlanZForm` reads/writes a genuinely
+separate config object, literally named `conreg.settings.<eid>.planz`
+(schema `conreg.settings.*.planz`), including its own
+`email.easy_email_type` invite-template reference.
 
 ## Mailing-list config entity
 

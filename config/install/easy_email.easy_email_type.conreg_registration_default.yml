@@ -1,0 +1,13 @@
+langcode: en
+status: true
+dependencies:
+  enforced:
+    module:
+      - conreg
+id: conreg_registration_default
+label: 'ConReg: registration (default)'
+subject: 'Thank you for joining [conreg:event-name]'
+bodyHtml:
+  value: "<p>Hi [conreg:member:first-name],</p>\r\n\r\n<p>This is to confirm you have joined [conreg:event-name].</p>\r\n\r\n<p>Your member details are:</p>\r\n\r\n<p>[conreg:member-details]</p>\r\n\r\n<p>Your payment reference is [conreg:member:payment-id].</p>\r\n\r\n<p>If you would like to upgrade your membership type, please visit <a href=\"[conreg:member:login-url]\">our member portal</a>.</p>\r\n\r\n<p>Best wishes,</p>\r\n\r\n<p>The [conreg:event-name] team.</p>\r\n"
+  format: full_html
+generateBodyPlain: false

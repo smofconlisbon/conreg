@@ -5,7 +5,7 @@
 | Purpose | Permissions |
 |---|---|
 | Public/member access | `convention registration`, `view public members`, `check membership`, `member portal` |
-| Event/config management | `configure convention registration`, `configure convention add-ons`, `configure convention email templates` |
+| Event/config management | `configure convention registration`, `configure convention add-ons` |
 | Member operations | `manage convention members`, `check in convention members`, `fan table registration` |
 | Reporting/export | `view membership details`, `view membership options`, `view membership add-ons`, `view child members`, `view membership summary` |
 | Comms | `bulk email sending`, `manage mailout lists` |
@@ -29,3 +29,7 @@ which creates per-option, per-event permissions named:
   `conreg_mailing_list/conreg_mailing_list.permissions.yml`; `configure mailerlite
   integration` (`restrict access: true`) is defined in
   `conreg_mailerlite/conreg_mailerlite.permissions.yml`.
+- Email template access (creating/editing `EasyEmailType`s, viewing the sent-email
+  log) is controlled by `easy_email`'s own permissions (`administer email types`,
+  `access the email types overview`, `administer email entities`, etc.), not a
+  ConReg-defined permission - see `site-building/email-templates.md`.

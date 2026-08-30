@@ -35,6 +35,11 @@ class SimplenewsProviderTest extends KernelTestBase {
     'conreg',
     'conreg_mailing_list',
     'conreg_simplenews',
+    'file',
+    'text',
+    'filter',
+    'jquery_ui_resizable',
+    'easy_email',
   ];
 
   /**

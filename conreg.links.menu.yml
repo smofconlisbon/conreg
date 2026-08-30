@@ -38,13 +38,6 @@ conreg.events:
   parent: conreg.overview
   weight: -101
 
-conreg.config_email:
-  title: Email Templates
-  route_name: conreg_config_email_templates
-  menu_name: admin
-  parent: conreg.overview
-  weight: -100
-
 conreg.event_links:
   deriver: \Drupal\conreg\Plugin\Derivative\EventsMenuDeriver
   menu_name: admin

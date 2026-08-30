@@ -2,15 +2,18 @@
 
 namespace Drupal\conreg\Form\Admin;
 
-use Drupal\conreg\ConregEmailer;
+use Drupal\conreg\Service\ConregEmailSender;
+use Drupal\conreg\Service\MemberPresenter;
 use Drupal\conreg\Service\MemberStorage;
+use Drupal\conreg\Trait\EasyEmailTypeOptionsTrait;
 use Drupal\conreg\Trait\TokenTreeLinkTrait;
+use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\DependencyInjection\AutowireTrait;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Language\LanguageManagerInterface;
-use Drupal\Core\Mail\MailManagerInterface;
 use Drupal\Core\TempStore\PrivateTempStoreFactory;
+use Drupal\easy_email\Service\EmailHandlerInterface;
 
 /**
  * Simple form to add an entry, with all the interesting fields.
@@ -18,6 +21,7 @@ use Drupal\Core\TempStore\PrivateTempStoreFactory;
 class MemberEmail extends FormBase {
 
   use AutowireTrait;
+  use EasyEmailTypeOptionsTrait;
   use TokenTreeLinkTrait;
 
   /**
@@ -25,18 +29,24 @@ class MemberEmail extends FormBase {
    *
    * @param \Drupal\conreg\Service\MemberStorage $memberStorage
    *   The member storage service.
+   * @param \Drupal\conreg\Service\MemberPresenter $memberPresenter
+   *   The member presenter service.
    * @param \Drupal\Core\TempStore\PrivateTempStoreFactory $tempStoreFactory
    *   The private temporary storage.
-   * @param \Drupal\Core\Language\LanguageManagerInterface $languageManager
-   *   The language manager.
-   * @param \Drupal\Core\Mail\MailManagerInterface $mailManager
-   *   The mail manager.
+   * @param \Drupal\easy_email\Service\EmailHandlerInterface $emailHandler
+   *   The Easy Email handler service.
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager
+   *   The entity type manager.
+   * @param \Drupal\conreg\Service\ConregEmailSender $emailSender
+   *   Used here only for its populatePlainBody() helper.
    */
   public function __construct(
     protected MemberStorage $memberStorage,
+    protected MemberPresenter $memberPresenter,
     protected PrivateTempStoreFactory $tempStoreFactory,
-    protected LanguageManagerInterface $languageManager,
-    protected MailManagerInterface $mailManager,
+    protected EmailHandlerInterface $emailHandler,
+    protected EntityTypeManagerInterface $entityTypeManager,
+    protected ConregEmailSender $emailSender,
   ) {}
 
   /**
@@ -55,27 +65,48 @@ class MemberEmail extends FormBase {
 
     // Look up email address for member.
     $members = $this->memberStorage->loadAll(['eid' => $eid, 'mid' => $mid, 'is_deleted' => 0]);
-    $email = $members[0]['email'];
+    if (empty($members)) {
+      $form['conreg_event'] = [
+        '#markup' => $this->t('Member not found. Please confirm member valid.'),
+        '#prefix' => '<h3>',
+        '#suffix' => '</h3>',
+      ];
+      return $form;
+    }
+    $emailAddress = $members[0]['email'];
 
     // Get any additional paid members registered by email address.
-    $members = $this->memberStorage->loadAll(['eid' => $eid, 'email' => $email, 'is_paid' => 1, 'is_deleted' => 0]);
+    $members = $this->memberStorage->loadAll([
+      'eid' => $eid,
+      'email' => $emailAddress,
+      'is_paid' => 1,
+      'is_deleted' => 0,
+    ]);
     $mids = [$mid];
-    if (count($members)) {
-      foreach ($members as $member) {
-        if ($member['mid'] != $mid && $member['lead_mid'] != $mid) {
-          $mids[] = $member['mid'];
-        }
+    foreach ($members as $member) {
+      if ($member['mid'] != $mid && $member['lead_mid'] != $mid) {
+        $mids[] = $member['mid'];
       }
     }
 
-    // Set up params array with eid and mid.
-    $params = ['eid' => $eid, 'mid' => $mids];
+    // Present the primary member for the summary fields below - same data
+    // ConregEmailer used to expose via $params.
+    $group = $this->memberPresenter->loadGroup($eid, (int) $mid);
+    $this->memberPresenter->present($eid, $group);
+    $primary = $group[0] ?? [];
 
-    // Get any existing form values for use in AJAX validation.
-    $form_values = $form_state->getValues();
+    // Build list of email templates.
+    $templateOptions = $this->easyEmailTypeOptions();
+    if (empty($templateOptions)) {
+      $form['conreg_event'] = [
+        '#markup' => $this->t('No email templates found. Please create one under <a href=":url">Email templates</a> first.', [':url' => '/admin/structure/email-templates']),
+        '#prefix' => '<h3>',
+        '#suffix' => '</h3>',
+      ];
+      return $form;
+    }
+
     $config = $this->config('conreg.settings.' . $eid);
-
-    // Set up array of from email address options.
     $from_email = $config->get('confirmation.from_email');
     $from_options = [$from_email => $from_email];
     $copy_to = $config->get('confirmation.copy_email_to');
@@ -84,79 +115,79 @@ class MemberEmail extends FormBase {
     }
     $user_email = $this->currentUser()->getEmail();
     $from_options[$user_email] = $user_email;
-    // Default email to the event from email,
-    // unless different address previously selected.
-    $from_default = $from_email;
 
-    // Build list of templates.
-    $template_config = $this->config('conreg.email_templates');
-    $options = [];
-    $templates = [];
-    if (empty($count = $template_config->get('count'))) {
-      $count = 0;
-    }
-    for ($template = 1; $template <= $count; $template++) {
-      $subject = $template_config->get('template' . $template . 'subject');
-      $body = $template_config->get('template' . $template . 'body');
-      $format = $template_config->get('template' . $template . 'format');
-      $options[$template] = $subject;
-      $templates[$template] = ['subject' => $subject, 'body' => $body, 'format' => $format];
-    }
-    // Store templates to form state.
-    $form_state->set('templates', $templates);
-
-    // Check if default template selected.
-    if (!isset($form_values['template']) || NULL == $default_template = $form_values['template']['template_select']) {
-      $default_template = 1;
+    $form_values = $form_state->getValues();
+    $bundle = $form_values['template']['template_select']
+      ?? $config->get('confirmation.easy_email_type')
+      ?? array_key_first($templateOptions);
+    if (!isset($templateOptions[$bundle])) {
+      $bundle = array_key_first($templateOptions);
     }
 
-    $previous_template = $form_state->get('default_template');
-    $form_state->set('default_template', $default_template);
+    // Build a transient (unsaved) email from the selected template.
+    $email = $this->emailHandler->createEmail([
+      'type' => $bundle,
+      'recipient_address' => [$emailAddress],
+      'field_conreg_eid' => $eid,
+      'field_conreg_mid' => $mids,
+    ]);
 
-    // If form submitted, use submitted values, otherwise use defaults.
-    if ($form_values && empty($params['from'] = $form_values['email']['message']['from_email'])) {
-      $params['from'] = $from_default;
+    // If the template hasn't changed since the last build, keep any
+    // subject/body the admin has typed rather than resetting to the raw
+    // template text.
+    $previousBundle = $form_state->get('bundle');
+    $form_state->set('bundle', $bundle);
+    if ($previousBundle === $bundle) {
+      if (isset($form_values['email']['message']['subject'])) {
+        $email->setSubject($form_values['email']['message']['subject']);
+      }
+      if (isset($form_values['email']['message']['body']['value'])) {
+        $email->setHtmlBody(
+          $form_values['email']['message']['body']['value'],
+          $form_values['email']['message']['body']['format'],
+        );
+      }
     }
-
-    if ($previous_template != $default_template || !isset($form_values['email']) || empty($params['subject'] = $form_values['email']['message']['subject' . $default_template])) {
-      $params['subject'] = $templates[$default_template]['subject'];
+    else {
+      // Template changed (or this is the first build): force the
+      // rebuilt subject/body fields to actually show this template's own
+      // raw text and format. Form API prefers previously-submitted user
+      // input over #default_value on an AJAX rebuild, so without this,
+      // switching templates would silently keep displaying (and, on the
+      // next edit, keep sending) the *previous* template's text/format.
+      $rawBody = $email->getHtmlBody();
+      $userInput = $form_state->getUserInput() ?? [];
+      NestedArray::setValue($userInput, ['email', 'message', 'subject'], $email->getSubject());
+      NestedArray::setValue($userInput, ['email', 'message', 'body', 'value'], $rawBody['value'] ?? '');
+      NestedArray::setValue($userInput, ['email', 'message', 'body', 'format'], $rawBody['format'] ?? NULL);
+      $form_state->setUserInput($userInput);
     }
-
-    if ($previous_template != $default_template || !isset($form_values['email']) || empty($params['body'] = $form_values['email']['message']['body' . $default_template]['value'])) {
-      $params['body'] = $templates[$default_template]['body'];
+    if (!empty($form_values['email']['message']['from_email'])) {
+      $email->setFromAddress($form_values['email']['message']['from_email']);
     }
+    $this->emailSender->populatePlainBody($email);
 
-    if ($previous_template != $default_template || !isset($form_values['email']) || empty($params['body_format'] = $form_values['email']['message']['body' . $default_template]['format'])) {
-      $params['body_format'] = $templates[$default_template]['format'];
-    }
+    // Capture the raw (unresolved) subject/body before preview() below
+    // resolves tokens in place on $email - the editable fields must show
+    // the literal [conreg:...] tokens, not their resolved values, so the
+    // admin can see and edit the actual template.
+    $rawSubject = $email->getSubject();
+    $rawHtmlBody = $email->getHtmlBody();
 
-    // If tokens stored in form state, store in params to save looking up again.
-    if (NULL != $tokens = $form_state->get('tokens')) {
-      $params['tokens'] = $tokens;
-    }
-
-    $message = [];
-    ConregEmailer::createEmail($message, $params);
-    $params = $message['params'];
-    $form_state->set('params', $params);
-
-    // Check member exists.
-    if (!isset($params['mid'])) {
-      // Event not in database. Display error.
-      $form['conreg_event'] = [
-        '#markup' => $this->t('Member not found. Please confirm member valid.'),
-        '#prefix' => '<h3>',
-        '#suffix' => '</h3>',
-      ];
-      return $form;
-    }
+    // preview() resolves tokens in place on $email via the real Easy Email
+    // send pipeline (hook_mail); the read-only preview section below uses
+    // that resolved text, but the editable fields above use the raw
+    // values captured before this call.
+    $preview = $this->emailHandler->preview($email);
+    $form_state->set('mid', $mid);
+    $form_state->set('mids', $mids);
 
     $form = [
       '#tree' => TRUE,
       '#prefix' => '<div id="transfer-form">',
       '#suffix' => '</div>',
       '#attached' => [
-        'library' => ['conreg/conreg_form'],
+        'library' => ['conreg/conreg_form', 'conreg/conreg_member_email_preview'],
       ],
     ];
 
@@ -165,71 +196,26 @@ class MemberEmail extends FormBase {
       '#title' => $this->t('Member details'),
     ];
 
-    $form['member']['is_approved'] = [
-      '#markup' => $this->t('Approved: @approved', ['@approved' => $params['is_approved']]),
-      '#prefix' => '<div class="field">',
-      '#suffix' => '</div>',
+    $memberFields = [
+      'is_approved' => $this->t('Approved: @value', ['@value' => $primary['is_approved'] ?? '']),
+      'member_no' => $this->t('Member number: @value', ['@value' => $primary['member_no'] ?? '']),
+      'email' => $this->t('Email: @value', ['@value' => $primary['email'] ?? '']),
+      'first_name' => $this->t('First Name: @value', ['@value' => $primary['first_name'] ?? '']),
+      'last_name' => $this->t('Last Name: @value', ['@value' => $primary['last_name'] ?? '']),
+      'badge_name' => $this->t('Badge Name: @value', ['@value' => $primary['badge_name'] ?? '']),
+      'is_paid' => $this->t('Paid: @value', ['@value' => $primary['is_paid'] ?? '']),
+      'payment_method' => $this->t('Payment method: @value', ['@value' => $primary['payment_method'] ?? '']),
+      'member_price' => $this->t('Price: @value', ['@value' => $primary['member_price'] ?? '']),
+      'payment_id' => $this->t('Payment reference: @value', ['@value' => $primary['payment_id'] ?? '']),
+      'comment' => $this->t('Comment: @value', ['@value' => $primary['comment'] ?? '']),
     ];
-
-    $form['member']['member_no'] = [
-      '#markup' => $this->t('Member number: @member_no', ['@member_no' => $params['member_no']]),
-      '#prefix' => '<div class="field">',
-      '#suffix' => '</div>',
-    ];
-
-    $form['member']['email'] = [
-      '#markup' => $this->t('Email: @email', ['@email' => $params['email']]),
-      '#prefix' => '<div class="field">',
-      '#suffix' => '</div>',
-    ];
-
-    $form['member']['first_name'] = [
-      '#markup' => $this->t('First Name: @first_name', ['@first_name' => $params['first_name']]),
-      '#prefix' => '<div class="field">',
-      '#suffix' => '</div>',
-    ];
-
-    $form['member']['last_name'] = [
-      '#markup' => $this->t('Last Name: @last_name', ['@last_name' => $params['last_name']]),
-      '#prefix' => '<div class="field">',
-      '#suffix' => '</div>',
-    ];
-
-    $form['member']['badge_name'] = [
-      '#markup' => $this->t('Badge Name: @badge_name', ['@badge_name' => $params['badge_name']]),
-      '#prefix' => '<div class="field">',
-      '#suffix' => '</div>',
-    ];
-
-    $form['member']['is_paid'] = [
-      '#markup' => $this->t('Paid: @is_paid', ['@is_paid' => $params['is_paid']]),
-      '#prefix' => '<div class="field">',
-      '#suffix' => '</div>',
-    ];
-
-    $form['member']['payment_method'] = [
-      '#markup' => $this->t('Payment method: @payment_method', ['@payment_method' => $params['payment_method']]),
-      '#prefix' => '<div class="field">',
-      '#suffix' => '</div>',
-    ];
-
-    $form['member']['member_price'] = [
-      '#markup' => $this->t('Price: @member_price', ['@member_price' => $params['member_price']]),
-      '#prefix' => '<div class="field">',
-      '#suffix' => '</div>',
-    ];
-
-    $form['member']['payment_id'] = [
-      '#markup' => $this->t('Payment reference: @payment_id', ['@payment_id' => $params['payment_id']]),
-      '#prefix' => '<div class="field">',
-      '#suffix' => '</div>',
-    ];
-
-    $form['member']['comment'] = [
-      '#markup' => $this->t('Comment: @comment', ['@comment' => $params['comment']]),
-      '#prefix' => '<div class="field">',
-      '#suffix' => '</div>',
-    ];
+    foreach ($memberFields as $key => $markup) {
+      $form['member'][$key] = [
+        '#markup' => $markup,
+        '#prefix' => '<div class="field">',
+        '#suffix' => '</div>',
+      ];
+    }
 
     // Fields for selecting template.
     $form['template'] = [
@@ -239,12 +225,12 @@ class MemberEmail extends FormBase {
       '#suffix' => '</div>',
     ];
 
-    // Template selection drop-down.
     $form['template']['template_select'] = [
       '#type' => 'select',
       '#title' => $this->t('Select template to use (overwrites message)'),
-      '#options' => $options,
-      '#default_value' => 1,
+      '#description' => $this->easyEmailTypeManageLink(),
+      '#options' => $templateOptions,
+      '#default_value' => $bundle,
       '#ajax' => [
         'wrapper' => 'email',
         'callback' => [$this, 'updateEmailTemplate'],
@@ -258,19 +244,19 @@ class MemberEmail extends FormBase {
       '#suffix' => '</div>',
     ];
 
-    // Fields for writing email message.
     $form['email']['message'] = [
       '#type' => 'fieldset',
       '#title' => $this->t('Email message'),
       '#prefix' => '<div id="message">',
       '#suffix' => '</div>',
+      '#attributes' => ['class' => ['conreg-member-email-message']],
     ];
 
     $form['email']['message']['from_email'] = [
       '#type' => 'select',
       '#title' => $this->t('Send from email address'),
       '#options' => $from_options,
-      '#default_value' => $from_default,
+      '#default_value' => $email->getFromAddress() ?: $from_email,
       '#ajax' => [
         'wrapper' => 'email',
         'callback' => [$this, 'updateEmailPreview'],
@@ -278,11 +264,10 @@ class MemberEmail extends FormBase {
       ],
     ];
 
-    $template = $form_values['template']['template_select'] ?? 1;
-    $form['email']['message']['subject' . $template] = [
+    $form['email']['message']['subject'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Message subject'),
-      '#default_value' => $params['subject'],
+      '#default_value' => $rawSubject,
       '#ajax' => [
         'wrapper' => 'preview',
         'callback' => [$this, 'updateEmailPreview'],
@@ -290,14 +275,12 @@ class MemberEmail extends FormBase {
       ],
     ];
 
-    $form['email']['message']['body' . $template] = [
-      // '#type' => 'textarea',
+    $form['email']['message']['body'] = [
       '#type' => 'text_format',
       '#title' => $this->t('Message body'),
       '#description' => $this->t('Text for the email body. Supports tokens — use the browser below to see what is available.'),
-      '#default_value' => $params['body'],
-      // '#value' => $params['body'],
-      '#format' => $params['format'] ?? '',
+      '#default_value' => $rawHtmlBody['value'] ?? '',
+      '#format' => $rawHtmlBody['format'] ?? NULL,
       '#ajax' => [
         'wrapper' => 'preview',
         'callback' => [$this, 'updateEmailPreview'],
@@ -307,7 +290,6 @@ class MemberEmail extends FormBase {
 
     $form['email']['message']['body_token_tree'] = $this->tokenTreeLink();
 
-    // Fields for writing email message.
     $form['email']['preview'] = [
       '#type' => 'fieldset',
       '#title' => $this->t('Preview'),
@@ -316,41 +298,41 @@ class MemberEmail extends FormBase {
     ];
 
     $form['email']['preview']['from'] = [
-      '#markup' => $this->t('From: @from_email', ['@from_email' => $params['from'] ?? '']),
+      '#markup' => $this->t('From: @from_email', ['@from_email' => $preview['from'] ?? '']),
       '#prefix' => '<div class="field">',
       '#suffix' => '</div>',
     ];
 
     $form['email']['preview']['to'] = [
-      '#markup' => $this->t('To: @to_email', ['@to_email' => $params['to']]),
+      '#markup' => $this->t('To: @to_email', ['@to_email' => $emailAddress]),
       '#prefix' => '<div class="field">',
       '#suffix' => '</div>',
     ];
 
     $form['email']['preview']['subject'] = [
-      '#markup' => $this->t('Subject: @subject', ['@subject' => $message['subject']]),
+      '#markup' => $this->t('Subject: @subject', ['@subject' => $preview['subject'] ?? '']),
       '#prefix' => '<div class="field">',
       '#suffix' => '</div><hr />',
     ];
 
+    $previewBody = $preview['body'] ?? '';
     $form['email']['preview']['body'] = [
-      '#markup' => $message['preview'],
+      '#markup' => is_array($previewBody) ? implode("\n", $previewBody) : $previewBody,
       '#prefix' => '<div class="field">',
       '#suffix' => '</div>',
     ];
 
     $form['submit'] = [
       '#type' => 'submit',
-      '#value' => t('Send email'),
+      '#value' => $this->t('Send email'),
     ];
 
     $form['cancel'] = [
       '#type' => 'submit',
-      '#value' => t('Cancel'),
+      '#value' => $this->t('Cancel'),
       '#submit' => [[$this, 'submitCancel']],
     ];
 
-    $form_state->set('mid', $mid);
     return $form;
   }
 
@@ -360,24 +342,6 @@ class MemberEmail extends FormBase {
    * Loads message fields associated with the selected template.
    */
   public function updateEmailTemplate(array $form, FormStateInterface $form_state) {
-    /*$form_values = $form_state->getValues();
-    $templates = $form_state->get('templates');
-
-    if (!empty($template = $form_values['template']['template_select'])) {
-    $params = $form_state->get('params');
-    $params['subject'] = $templates[$template]['subject'.$template];
-    $params['body'] = $templates[$template]['body'.$template];
-    $message = [];
-    ConregEmailer::createEmail($message, $params);
-    $params = $message['params'];
-    $form_state->set('params', $params);
-
-    $form['email']['preview']['subject']['#markup'] = $this->t(
-    'Subject: @subject',
-    ['@subject' => $message['subject']]
-    );
-    $form['email']['preview']['body']['#markup'] = $message['preview'];
-    }*/
     return $form['email'];
   }
 
@@ -406,25 +370,36 @@ class MemberEmail extends FormBase {
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $eid = $form_state->get('eid');
+    $mids = $form_state->get('mids');
+    $bundle = $form_state->get('bundle');
 
     $form_values = $form_state->getValues();
-    $template = $form_values['template']['template_select'];
 
-    $params = $form_state->get('params');
-    $params['subject'] = $form_values['email']['message']['subject' . $template];
-    $params['body'] = $form_values['email']['message']['body' . $template]['value'];
-    $params['body_format'] = $form_values['email']['message']['body' . $template]['format'];
-    $module = "conreg";
-    $key = "template";
-    $to = $params["to"];
-    $language_code = $this->languageManager->getDefaultLanguage()->getId();
+    $members = $this->memberStorage->loadAll(['eid' => $eid, 'mid' => $form_state->get('mid'), 'is_deleted' => 0]);
+    $to = $members[0]['email'] ?? NULL;
+
+    $email = $this->emailHandler->createEmail([
+      'type' => $bundle,
+      'recipient_address' => [$to],
+      'field_conreg_eid' => $eid,
+      'field_conreg_mid' => $mids,
+    ]);
+    $email->setSubject($form_values['email']['message']['subject']);
+    $email->setHtmlBody(
+      $form_values['email']['message']['body']['value'],
+      $form_values['email']['message']['body']['format'],
+    );
+    if (!empty($form_values['email']['message']['from_email'])) {
+      $email->setFromAddress($form_values['email']['message']['from_email']);
+    }
+    $this->emailSender->populatePlainBody($email);
+    // Save the entity so this send appears in Easy Email's log.
+    $this->emailHandler->sendEmail($email, [], FALSE, TRUE);
+
     // Get session state to return to correct page.
     $tempstore = $this->tempStoreFactory->get('conreg');
     $display = $tempstore->get('display');
     $page = $tempstore->get('page');
-    // Send confirmation email to member.
-    $this->mailManager->mail($module, $key, $to, $language_code, $params);
-
     // Redirect to member list.
     $form_state->setRedirect('conreg_admin_members', ['eid' => $eid, 'display' => $display, 'page' => $page]);
   }

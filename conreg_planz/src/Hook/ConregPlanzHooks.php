@@ -6,6 +6,7 @@ use Drupal\conreg\Member;
 use Drupal\Core\Hook\Attribute\Hook;
 use Drupal\Core\Render\BubbleableMetadata;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
+use Drupal\easy_email\Entity\EasyEmailInterface;
 
 /**
  * Hook implementations for conreg_planz.
@@ -62,6 +63,19 @@ class ConregPlanzHooks {
     $replacements = [];
     if ($type != 'conreg-planz') {
       return $replacements;
+    }
+
+    // Easy Email's token evaluator only ever supplies 'easy_email' as
+    // token data (see EmailTokenContext's docblock for the full
+    // explanation) - derive 'planz' from the entity's
+    // field_conreg_extra_token_data when the caller hasn't already
+    // supplied it directly.
+    if (!isset($data['planz']) && ($data['easy_email'] ?? NULL) instanceof EasyEmailInterface) {
+      $email = $data['easy_email'];
+      if ($email->hasField('field_conreg_extra_token_data') && !$email->get('field_conreg_extra_token_data')->isEmpty()) {
+        $extra = json_decode($email->get('field_conreg_extra_token_data')->value, TRUE) ?? [];
+        $data['planz'] = $extra['planz'] ?? [];
+      }
     }
 
     foreach ($tokens as $name => $original) {

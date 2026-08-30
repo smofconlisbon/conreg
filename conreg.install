@@ -987,3 +987,320 @@ function conreg_update_9006() {
 function conreg_update_9007() {
   \Drupal::service('module_installer')->install(['token']);
 }
+
+/**
+ * Install Easy Email, now a dependency for translatable email templates.
+ */
+function conreg_update_9008() {
+  \Drupal::service('module_installer')->install(['easy_email']);
+}
+
+/**
+ * Migrate member-check email templates into Easy Email templates.
+ *
+ * One EasyEmailType per distinct existing subject/body/format found across
+ * events, so no event-specific wording is lost - events sharing identical
+ * text end up sharing a template. member_check.confirm_subject has always
+ * doubled as the "unknown" email's subject too (there was never a separate
+ * unknown_subject key), so that behavior is preserved as each new
+ * template's own subject.
+ */
+function conreg_update_9009() {
+  $config_factory = \Drupal::configFactory();
+  $email_type_storage = \Drupal::entityTypeManager()->getStorage('easy_email_type');
+  $confirmIds = [];
+  $unknownIds = [];
+
+  foreach ($config_factory->listAll('conreg.settings.') as $config_name) {
+    $eid = substr($config_name, strlen('conreg.settings.'));
+    $config = $config_factory->getEditable($config_name);
+
+    $subject = (string) $config->get('member_check.confirm_subject');
+    $confirmBody = (string) $config->get('member_check.confirm_body');
+    $confirmFormat = (string) ($config->get('member_check.confirm_format') ?: 'basic_html');
+    $unknownBody = (string) $config->get('member_check.unknown_body');
+    $unknownFormat = (string) ($config->get('member_check.unknown_format') ?: 'basic_html');
+
+    // 'conreg_mcheck_confirm_'/'conreg_mcheck_unknown_' rather than the
+    // fuller 'conreg_member_check_*' - easy_email_type IDs are bundle IDs,
+    // capped at 32 characters (EntityTypeInterface::BUNDLE_MAX_LENGTH).
+    $confirmHash = md5($subject . '|' . $confirmBody . '|' . $confirmFormat);
+    if (!isset($confirmIds[$confirmHash])) {
+      $id = 'conreg_mcheck_confirm_' . $eid;
+      $email_type_storage->create([
+        'id' => $id,
+        'label' => 'ConReg: member found (event ' . $eid . ')',
+        'subject' => $subject,
+        // full_html, not the migrated $confirmFormat: the old format value
+        // was only ever used to pick the admin's CKEditor toolbar -
+        // ConregEmailer rendered the body via Markup::create(), bypassing
+        // Drupal's text filter system entirely, so it was never actually
+        // enforced. Easy Email does enforce it (via #type => processed_text),
+        // and 'basic_html''s allowed-tags list strips <table>/<tr>/<td>
+        // and the inline styles MemberDetailsFormatter relies on.
+        'bodyHtml' => ['value' => $confirmBody, 'format' => 'full_html'],
+        'generateBodyPlain' => FALSE,
+      ])->save();
+      $confirmIds[$confirmHash] = $id;
+    }
+
+    $unknownHash = md5($subject . '|' . $unknownBody . '|' . $unknownFormat);
+    if (!isset($unknownIds[$unknownHash])) {
+      $id = 'conreg_mcheck_unknown_' . $eid;
+      $email_type_storage->create([
+        'id' => $id,
+        'label' => 'ConReg: member not found (event ' . $eid . ')',
+        'subject' => $subject,
+        'bodyHtml' => ['value' => $unknownBody, 'format' => 'full_html'],
+        'generateBodyPlain' => FALSE,
+      ])->save();
+      $unknownIds[$unknownHash] = $id;
+    }
+
+    $config->set('member_check.confirm_easy_email_type', $confirmIds[$confirmHash]);
+    $config->set('member_check.unknown_easy_email_type', $unknownIds[$unknownHash]);
+    $config->clear('member_check.confirm_subject');
+    $config->clear('member_check.confirm_body');
+    $config->clear('member_check.confirm_format');
+    $config->clear('member_check.unknown_body');
+    $config->clear('member_check.unknown_format');
+    $config->save();
+  }
+
+  return t('Migrated member-check email templates to Easy Email templates. Review them under /admin/structure/email-templates and re-enter any translations that were previously set via Config Translation on the old fields - translations do not migrate automatically.');
+}
+
+/**
+ * Migrate confirmation/bulk-email templates into Easy Email templates.
+ *
+ * Confirmation, bulk_email, and each member type's confirmation override
+ * all draw from the same 'conreg_registration_*' bundle family (per the
+ * project owner's instruction that these three should share templates),
+ * deduped by exact text so distinct existing wording still gets its own
+ * bundle rather than being silently collapsed or discarded.
+ */
+function conreg_update_9010() {
+  $config_factory = \Drupal::configFactory();
+  $email_type_storage = \Drupal::entityTypeManager()->getStorage('easy_email_type');
+  $ids = [];
+
+  $createOrReuse = function (string $subject, string $body, string $format, string $id, string $label) use (&$ids, $email_type_storage) {
+    $hash = md5($subject . '|' . $body . '|' . $format);
+    if (!isset($ids[$hash])) {
+      // easy_email_type IDs are bundle IDs, capped at 32 characters
+      // (EntityTypeInterface::BUNDLE_MAX_LENGTH) - fall back to a
+      // hash-suffixed ID if a member-type code makes it too long.
+      if (strlen($id) > 32) {
+        $id = substr($id, 0, 24) . '_' . substr(md5($id), 0, 7);
+      }
+      $email_type_storage->create([
+        'id' => $id,
+        'label' => $label,
+        'subject' => $subject,
+        // full_html, not the migrated $format: the old format value was
+        // only ever used to pick the admin's CKEditor toolbar -
+        // ConregEmailer rendered via Markup::create(), bypassing Drupal's
+        // text filter system entirely, so it was never actually enforced.
+        // Easy Email does enforce it, and 'basic_html''s allowed-tags list
+        // strips <table>/<tr>/<td> and the inline styles
+        // MemberDetailsFormatter relies on.
+        'bodyHtml' => ['value' => $body, 'format' => 'full_html'],
+        'generateBodyPlain' => FALSE,
+      ])->save();
+      $ids[$hash] = $id;
+    }
+    return $ids[$hash];
+  };
+
+  foreach ($config_factory->listAll('conreg.settings.') as $config_name) {
+    $eid = substr($config_name, strlen('conreg.settings.'));
+    $config = $config_factory->getEditable($config_name);
+
+    $subject = (string) $config->get('confirmation.template_subject');
+    $body = (string) $config->get('confirmation.template_body');
+    $format = (string) $config->get('confirmation.template_format');
+    $bundle = $createOrReuse($subject, $body, $format, 'conreg_registration_' . $eid, 'ConReg: registration (event ' . $eid . ')');
+    $config->set('confirmation.easy_email_type', $bundle);
+    $config->clear('confirmation.template_subject');
+    $config->clear('confirmation.template_body');
+    $config->clear('confirmation.template_format');
+    $config->clear('confirmation.format_html');
+
+    // Bulk email only gets its own bundle if its text actually differs
+    // (or was set at all) - otherwise it's left to fall back to the
+    // confirmation bundle, which the admin UI defaults new selections to.
+    $bulkSubject = (string) $config->get('bulk_email.template_subject');
+    $bulkBody = (string) $config->get('bulk_email.template_body');
+    if ($bulkSubject !== '' || $bulkBody !== '') {
+      $bulkFormat = (string) $config->get('bulk_email.template_format');
+      $bulkBundle = $createOrReuse($bulkSubject, $bulkBody, $bulkFormat, 'conreg_registration_' . $eid . '_bulk', 'ConReg: bulk email (event ' . $eid . ')');
+      $config->set('bulk_email.easy_email_type', $bulkBundle);
+    }
+    $config->clear('bulk_email.template_subject');
+    $config->clear('bulk_email.template_body');
+    $config->clear('bulk_email.template_format');
+
+    foreach (array_keys($config->get('member.types') ?? []) as $typeCode) {
+      if (empty($config->get("member.types.$typeCode.confirmation.override"))) {
+        $config->clear("member.types.$typeCode.confirmation.template_subject");
+        $config->clear("member.types.$typeCode.confirmation.template_body");
+        $config->clear("member.types.$typeCode.confirmation.template_format");
+        $config->clear("member.types.$typeCode.confirmation.override");
+        continue;
+      }
+      $typeSubject = (string) $config->get("member.types.$typeCode.confirmation.template_subject");
+      $typeBody = (string) $config->get("member.types.$typeCode.confirmation.template_body");
+      $typeFormat = (string) $config->get("member.types.$typeCode.confirmation.template_format");
+      $typeBundle = $createOrReuse($typeSubject, $typeBody, $typeFormat, 'conreg_registration_' . $eid . '_' . $typeCode, 'ConReg: registration (event ' . $eid . ', type ' . $typeCode . ')');
+      $config->set("member.types.$typeCode.confirmation.easy_email_type", $typeBundle);
+      $config->clear("member.types.$typeCode.confirmation.template_subject");
+      $config->clear("member.types.$typeCode.confirmation.template_body");
+      $config->clear("member.types.$typeCode.confirmation.template_format");
+      $config->clear("member.types.$typeCode.confirmation.override");
+    }
+
+    $config->save();
+  }
+
+  return t('Migrated confirmation/bulk-email templates to Easy Email templates. Review them under /admin/structure/email-templates and re-enter any translations that were previously set via Config Translation on the old fields - translations do not migrate automatically.');
+}
+
+/**
+ * Turn off "Generate plain text body" on conreg's Easy Email templates.
+ *
+ * Easy Email's own HTML-to-text auto-conversion runs on the final
+ * rendered HTML, after tokens resolve - by then [conreg:member-details]
+ * has become an HTML <table>, which generic HTML-to-text converters don't
+ * add row/cell separators to, so the member details table renders as one
+ * run-on line. ConregEmailSender::populatePlainBody() now sets a proper
+ * plain-text body itself (using the 'plain_text' token option
+ * ConregTokenHooks already supports), but only takes effect if the
+ * template isn't set to auto-generate one - conreg_update_9009/9010
+ * created these templates before that fix existed, so flip the flag on
+ * whatever they already created.
+ */
+function conreg_update_9011() {
+  $email_type_storage = \Drupal::entityTypeManager()->getStorage('easy_email_type');
+  $prefixes = ['conreg_registration_', 'conreg_mcheck_confirm_', 'conreg_mcheck_unknown_'];
+  $updated = [];
+
+  foreach ($email_type_storage->loadMultiple() as $id => $type) {
+    foreach ($prefixes as $prefix) {
+      if (str_starts_with($id, $prefix) && $type->getGenerateBodyPlain()) {
+        $type->setGenerateBodyPlain(FALSE)->save();
+        $updated[] = $id;
+        break;
+      }
+    }
+  }
+
+  return t('Turned off "Generate plain text body" on: @ids', ['@ids' => implode(', ', $updated) ?: '(none found)']);
+}
+
+/**
+ * Switch conreg's Easy Email templates from basic_html to full_html.
+ *
+ * Easy Email renders body_html through Drupal's text filter system
+ * (#type => processed_text), unlike ConregEmailer, which rendered via
+ * Markup::create() and so never actually applied the configured format's
+ * filters. 'basic_html''s allowed-tags list doesn't include <table>/<tr>/
+ * <td>/<th> or the style attribute, so [conreg:member-details]'s table
+ * was being silently stripped down to run-on text - conreg_update_9009/
+ * 9010 created these templates with the (never-enforced) migrated format
+ * value before this was discovered, so fix up whatever they created.
+ * Templates are admin-authored, trusted content, so full_html (no tag
+ * restriction) is appropriate here.
+ */
+function conreg_update_9012() {
+  $email_type_storage = \Drupal::entityTypeManager()->getStorage('easy_email_type');
+  $prefixes = ['conreg_registration_', 'conreg_mcheck_confirm_', 'conreg_mcheck_unknown_'];
+  $updated = [];
+
+  foreach ($email_type_storage->loadMultiple() as $id => $type) {
+    foreach ($prefixes as $prefix) {
+      if (!str_starts_with($id, $prefix)) {
+        continue;
+      }
+      $body = $type->getBodyHtml();
+      if (($body['format'] ?? NULL) !== 'full_html') {
+        $body['format'] = 'full_html';
+        $type->setBodyHtml($body)->save();
+        $updated[] = $id;
+      }
+      break;
+    }
+  }
+
+  return t('Switched to the full_html format on: @ids', ['@ids' => implode(', ', $updated) ?: '(none found)']);
+}
+
+/**
+ * Installs storage for conreg's base fields on the easy_email entity type.
+ *
+ * Field_conreg_eid/field_conreg_mid/field_conreg_extra_token_data are
+ * declared by conreg (ConregEasyEmailFieldHooks::entityBaseFieldInfo()),
+ * not by easy_email itself. Installing the easy_email module within the
+ * same request as conreg_update_9008 didn't pick these up, so their
+ * storage was never actually created - saving any easy_email entity
+ * fails with a missing-table SQLSTATE error the first time something
+ * saves one (e.g. the "email a member" admin form, via
+ * EmailHandlerInterface::sendEmail(..., $save_email_entity = TRUE)).
+ */
+function conreg_update_9013() {
+  $updateManager = \Drupal::entityDefinitionUpdateManager();
+  $fieldManager = \Drupal::service('entity_field.manager');
+  $storageDefinitions = $fieldManager->getFieldStorageDefinitions('easy_email');
+
+  foreach (['field_conreg_eid', 'field_conreg_mid', 'field_conreg_extra_token_data'] as $fieldName) {
+    if ($updateManager->getFieldStorageDefinition($fieldName, 'easy_email')) {
+      // Already installed.
+      continue;
+    }
+    $updateManager->installFieldStorageDefinition($fieldName, 'easy_email', 'conreg', $storageDefinitions[$fieldName]);
+  }
+}
+
+/**
+ * Migrate the old canned "email a member" templates and remove the config.
+ *
+ * Conreg.email_templates (edited via the now-removed EmailTemplates admin
+ * form) stored an ad hoc numbered list of templates (template1subject,
+ * template1body, ... up to 'count') used only as a picklist in the
+ * "email a member" admin form, which now selects an easy_email_type
+ * directly instead. Each existing template becomes its own
+ * conreg_registration_adhoc_<n> bundle so no existing wording is lost,
+ * and the old config is deleted since nothing reads it any more.
+ */
+function conreg_update_9014() {
+  $config = \Drupal::configFactory()->getEditable('conreg.email_templates');
+  if ($config->isNew()) {
+    return t('No conreg.email_templates config found - nothing to migrate.');
+  }
+
+  $email_type_storage = \Drupal::entityTypeManager()->getStorage('easy_email_type');
+  $count = (int) ($config->get('count') ?: 0);
+  $created = [];
+
+  for ($template = 1; $template <= $count; $template++) {
+    $subject = (string) $config->get('template' . $template . 'subject');
+    $body = (string) $config->get('template' . $template . 'body');
+    if ($subject === '' && $body === '') {
+      continue;
+    }
+    $id = 'conreg_registration_adhoc_' . $template;
+    $email_type_storage->create([
+      'id' => $id,
+      'label' => 'ConReg: ad hoc template ' . $template,
+      'subject' => $subject,
+      'bodyHtml' => ['value' => $body, 'format' => 'full_html'],
+      'generateBodyPlain' => FALSE,
+    ])->save();
+    $created[] = $id;
+  }
+
+  $config->delete();
+
+  return t('Migrated the old canned email templates to Easy Email templates: @ids. Review them under /admin/structure/email-templates and re-enter any translations that were previously set via Config Translation on the old fields - translations do not migrate automatically.', [
+    '@ids' => implode(', ', $created) ?: '(none found)',
+  ]);
+}

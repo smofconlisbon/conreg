@@ -5,16 +5,16 @@ namespace Drupal\conreg_discord\Form;
 use Drupal\conreg\ConregConfig;
 use Drupal\conreg\ConregOptions;
 use Drupal\conreg\Member;
+use Drupal\conreg\Service\ConregEmailSender;
 use Drupal\conreg\Service\EventStorage;
-use Drupal\conreg\Trait\TokenTreeLinkTrait;
+use Drupal\conreg\Trait\EasyEmailTypeOptionsTrait;
 use Drupal\conreg_discord\Discord;
 use Drupal\Core\Config\ImmutableConfig;
 use Drupal\Core\Database\Connection;
 use Drupal\Core\DependencyInjection\AutowireTrait;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Language\LanguageManagerInterface;
-use Drupal\Core\Mail\MailManagerInterface;
 
 /**
  * Configure conreg settings for this site.
@@ -22,7 +22,7 @@ use Drupal\Core\Mail\MailManagerInterface;
 class ConfigDiscordForm extends ConfigFormBase {
 
   use AutowireTrait;
-  use TokenTreeLinkTrait;
+  use EasyEmailTypeOptionsTrait;
 
   /**
    * ConReg configuration object for the current event.
@@ -50,18 +50,18 @@ class ConfigDiscordForm extends ConfigFormBase {
    *
    * @param \Drupal\Core\Database\Connection $connection
    *   The database connection.
-   * @param \Drupal\Core\Mail\MailManagerInterface $mailManager
-   *   The mail manager service.
-   * @param \Drupal\Core\Language\LanguageManagerInterface $languageManager
-   *   The language manager service.
+   * @param \Drupal\conreg\Service\ConregEmailSender $emailSender
+   *   Builds and sends conreg emails via Easy Email.
    * @param \Drupal\conreg\Service\EventStorage $eventStorage
    *   The event storage service.
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager
+   *   The entity type manager.
    */
   public function __construct(
     protected Connection $connection,
-    protected MailManagerInterface $mailManager,
-    protected LanguageManagerInterface $languageManager,
+    protected ConregEmailSender $emailSender,
     protected EventStorage $eventStorage,
+    protected EntityTypeManagerInterface $entityTypeManager,
   ) {}
 
   /**
@@ -209,21 +209,14 @@ class ConfigDiscordForm extends ConfigFormBase {
       '#markup' => $this->t('Automatically add members to Discord when approved, if any of specified options selected.'),
     ];
 
-    $form['invite_template']['template_subject'] = [
-      '#type' => 'textfield',
-      '#title' => $this->t('Invite email subject'),
-      '#default_value' => $this->config->get('discord.template_subject'),
+    $form['invite_template']['easy_email_type'] = [
+      '#type' => 'select',
+      '#title' => $this->t('Invite email template'),
+      '#description' => $this->easyEmailTypeManageLink(),
+      '#options' => $this->easyEmailTypeOptions(),
+      '#empty_option' => $this->t('- Select -'),
+      '#default_value' => $this->config->get('discord.easy_email_type'),
     ];
-
-    $form['invite_template']['template_body'] = [
-      '#type' => 'text_format',
-      '#title' => $this->t('InviteBulk email body'),
-      '#description' => $this->t('Text for the email body. Supports tokens — use the browser below to see what is available.'),
-      '#default_value' => $this->config->get('discord.template_body'),
-      '#format' => $this->config->get('discord.template_format'),
-    ];
-
-    $form['invite_template']['template_body_token_tree'] = $this->tokenTreeLink(['conreg', 'conreg-discord']);
 
     //
     // Manual member invites.
@@ -324,9 +317,7 @@ class ConfigDiscordForm extends ConfigFormBase {
       $config->set('discord.types.' . $code, $val);
     }
 
-    $config->set('discord.template_subject', $vals['invite_template']['template_subject']);
-    $config->set('discord.template_body', $vals['invite_template']['template_body']['value']);
-    $config->set('discord.template_format', $vals['invite_template']['template_body']['format']);
+    $config->set('discord.easy_email_type', $vals['invite_template']['easy_email_type']);
     $config->set('discord.max_invites', $vals['discord_invites']['max_invites']);
 
     $config->save();
@@ -546,23 +537,17 @@ class ConfigDiscordForm extends ConfigFormBase {
    * Send the member an email with login details.
    */
   public function sendInviteEmail(Member $member, $inviteUrl) {
-    // Set up parameters for receipt email.
-    $params = [
-      'eid' => $member->eid,
-      'mid' => $member->mid,
-      'token_data' => ['discord' => ['invite_url' => $inviteUrl]],
-    ];
-    $params['subject'] = $this->config->get('discord.template_subject');
-    $params['body'] = $this->config->get('discord.template_body');
-    $params['body_format'] = $this->config->get('discord.template_format');
-    $module = "conreg";
-    $key = "template";
-    $to = $member->email;
-    $language_code = $this->languageManager->getDefaultLanguage()->getId();
-    // Send confirmation email to member.
-    if (!empty($member->email)) {
-      $this->mailManager->mail($module, $key, $to, $language_code, $params);
+    if (empty($member->email)) {
+      return;
     }
+    $this->emailSender->send(
+      $this->config->get('discord.easy_email_type'),
+      $member->email,
+      (int) $member->eid,
+      [(int) $member->mid],
+      $member->language ?? NULL,
+      ['discord' => ['invite_url' => $inviteUrl]],
+    );
   }
 
 }

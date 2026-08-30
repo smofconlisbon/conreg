@@ -37,6 +37,11 @@ class ConregSubscriptionRuleFormTest extends KernelTestBase {
     'conreg',
     'conreg_mailing_list',
     'conreg_mailing_list_test',
+    'file',
+    'text',
+    'filter',
+    'jquery_ui_resizable',
+    'easy_email',
   ];
 
   /**

@@ -2,7 +2,6 @@
 
 namespace Drupal\conreg\Hook;
 
-use Drupal\conreg\ConregEmailer;
 use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\Core\Hook\Attribute\Hook;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
@@ -25,19 +24,6 @@ class ConregHooks {
       case 'help.page.conreg':
         // Help text for the admin section, using the module name in the path.
         return $this->t("Configure settings for convention registration.");
-    }
-  }
-
-  /**
-   * Implements hook_mail().
-   */
-  #[Hook('mail')]
-  public static function mail($key, &$message, $params) {
-    switch ($key) {
-      // Use template handler.
-      case 'template':
-        ConregEmailer::createEmail($message, $params);
-        break;
     }
   }
 

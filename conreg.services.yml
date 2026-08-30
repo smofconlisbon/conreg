@@ -35,8 +35,34 @@ services:
     class: Drupal\conreg\Service\UpgradeStorage
   Drupal\conreg\Service\UpgradeStorage: '@conreg.upgrade.storage'
 
+  conreg.email.sender:
+    class: Drupal\conreg\Service\ConregEmailSender
+  Drupal\conreg\Service\ConregEmailSender: '@conreg.email.sender'
+
+  conreg.email.token.context:
+    class: Drupal\conreg\Service\EmailTokenContext
+  Drupal\conreg\Service\EmailTokenContext: '@conreg.email.token.context'
+
+  conreg.confirmation.mailer:
+    class: Drupal\conreg\Service\RegistrationConfirmationMailer
+  Drupal\conreg\Service\RegistrationConfirmationMailer: '@conreg.confirmation.mailer'
+
+  conreg.member.details.formatter:
+    class: Drupal\conreg\Service\MemberDetailsFormatter
+  Drupal\conreg\Service\MemberDetailsFormatter: '@conreg.member.details.formatter'
+
+  conreg.member.presenter:
+    class: Drupal\conreg\Service\MemberPresenter
+  Drupal\conreg\Service\MemberPresenter: '@conreg.member.presenter'
+
   Drupal\conreg\Hook\ConregHooks:
     class: Drupal\conreg\Hook\ConregHooks
+
+  Drupal\conreg\Hook\ConregEasyEmailFieldHooks:
+    class: Drupal\conreg\Hook\ConregEasyEmailFieldHooks
+
+  Drupal\conreg\Hook\ConregEasyEmailTemplateValidationHooks:
+    class: Drupal\conreg\Hook\ConregEasyEmailTemplateValidationHooks
 
   Drupal\conreg\Hook\ConregThemeHooks:
     class: Drupal\conreg\Hook\ConregThemeHooks
@@ -44,8 +70,7 @@ services:
   Drupal\conreg\Hook\ConregTokenHooks:
     class: Drupal\conreg\Hook\ConregTokenHooks
 
-  Drupal\conreg\Service\MemberDetailsFormatter:
-    class: Drupal\conreg\Service\MemberDetailsFormatter
-
-  Drupal\conreg\Service\MemberPresenter:
-    class: Drupal\conreg\Service\MemberPresenter
+  # Easy Email doesn't alias its handler service to its own interface, so
+  # every conreg class that type-hints EmailHandlerInterface for autowiring
+  # needs this alias declared somewhere - here, once, for all of them.
+  Drupal\easy_email\Service\EmailHandlerInterface: '@easy_email.handler'

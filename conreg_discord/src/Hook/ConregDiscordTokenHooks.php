@@ -7,6 +7,7 @@ namespace Drupal\conreg_discord\Hook;
 use Drupal\Core\Hook\Attribute\Hook;
 use Drupal\Core\Render\BubbleableMetadata;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
+use Drupal\easy_email\Entity\EasyEmailInterface;
 
 /**
  * Token hook implementations for conreg_discord.
@@ -39,6 +40,19 @@ class ConregDiscordTokenHooks {
     $replacements = [];
     if ($type != 'conreg-discord') {
       return $replacements;
+    }
+
+    // Easy Email's token evaluator only ever supplies 'easy_email' as
+    // token data (see EmailTokenContext's docblock for the full
+    // explanation) - derive 'discord' from the entity's
+    // field_conreg_extra_token_data when the caller hasn't already
+    // supplied it directly.
+    if (!isset($data['discord']) && ($data['easy_email'] ?? NULL) instanceof EasyEmailInterface) {
+      $email = $data['easy_email'];
+      if ($email->hasField('field_conreg_extra_token_data') && !$email->get('field_conreg_extra_token_data')->isEmpty()) {
+        $extra = json_decode($email->get('field_conreg_extra_token_data')->value, TRUE) ?? [];
+        $data['discord'] = $extra['discord'] ?? [];
+      }
     }
 
     foreach ($tokens as $name => $original) {
