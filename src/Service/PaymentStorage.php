@@ -38,9 +38,10 @@ class PaymentStorage {
    */
   public function insert(array $entry): int|NULL {
     try {
-      return $this->connection->insert('conreg_payments')
+      $id = $this->connection->insert('conreg_payments')
         ->fields($entry)
         ->execute();
+      return $id === NULL ? NULL : (int) $id;
     }
     catch (\Exception $e) {
       $this->messenger->addError($this->t('Payment insert failed. Message = %message', [
@@ -61,9 +62,10 @@ class PaymentStorage {
    */
   public function insertLine(array $entry): int|NULL {
     try {
-      return $this->connection->insert('conreg_payment_lines')
+      $id = $this->connection->insert('conreg_payment_lines')
         ->fields($entry)
         ->execute();
+      return $id === NULL ? NULL : (int) $id;
     }
     catch (\Exception $e) {
       $this->messenger->addError($this->t('Payment line insert failed. Message = %message', [
@@ -84,7 +86,7 @@ class PaymentStorage {
    */
   public function update(array $entry): int {
     try {
-      return $this->connection->update('conreg_payments')
+      return (int) $this->connection->update('conreg_payments')
         ->fields($entry)
         ->condition('payid', $entry['payid'])
         ->execute();
@@ -108,7 +110,7 @@ class PaymentStorage {
    */
   public function updateLine(array $entry): int {
     try {
-      return $this->connection->update('conreg_payment_lines')
+      return (int) $this->connection->update('conreg_payment_lines')
         ->fields($entry)
         ->condition('lineid', $entry['lineid'])
         ->execute();

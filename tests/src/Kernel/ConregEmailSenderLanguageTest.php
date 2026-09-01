@@ -8,6 +8,7 @@ use Drupal\conreg\Service\ConregEmailSender;
 use Drupal\Core\Database\Database;
 use Drupal\easy_email\Entity\EasyEmailType;
 use Drupal\KernelTests\KernelTestBase;
+use Drupal\language\ConfigurableLanguageManagerInterface;
 use Drupal\language\Entity\ConfigurableLanguage;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
@@ -85,7 +86,7 @@ class ConregEmailSenderLanguageTest extends KernelTestBase {
     ])->save();
 
     ConfigurableLanguage::createFromLangcode('fr')->save();
-    \Drupal::languageManager()
+    $this->getConfigurableLanguageManager()
       ->getLanguageConfigOverride('fr', 'easy_email.easy_email_type.conreg_registration_test')
       ->set('subject', 'Bonjour')
       ->set('bodyHtml', ['value' => '<p>Bonjour</p>', 'format' => 'full_html'])
@@ -144,6 +145,16 @@ class ConregEmailSenderLanguageTest extends KernelTestBase {
 
     $after = \Drupal::languageManager()->getConfigOverrideLanguage()->getId();
     $this->assertSame($before, $after);
+  }
+
+  /**
+   * Get the language manager as a configurable language manager.
+   *
+   * @return \Drupal\language\ConfigurableLanguageManagerInterface
+   *   The configurable language block.
+   */
+  protected function getConfigurableLanguageManager(): ConfigurableLanguageManagerInterface {
+    return \Drupal::languageManager();
   }
 
 }

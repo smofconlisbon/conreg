@@ -7,6 +7,7 @@ namespace Drupal\Tests\conreg\Kernel;
 use Drupal\conreg\Form\Admin\MemberEmail;
 use Drupal\Core\Database\Database;
 use Drupal\Core\Form\FormState;
+use Drupal\easy_email\Entity\EasyEmail;
 use Drupal\easy_email\Entity\EasyEmailType;
 use Drupal\KernelTests\KernelTestBase;
 use PHPUnit\Framework\Attributes\Group;
@@ -105,7 +106,8 @@ class MemberEmailFormSubmitTest extends KernelTestBase {
     $emails = \Drupal::entityTypeManager()->getStorage('easy_email')->loadMultiple();
     $this->assertCount(1, $emails, 'Exactly one email was sent, not one per registration group.');
 
-    $email = reset($emails);
+    /** @var \Drupal\easy_email\Entity\EasyEmail */
+    $email = array_first($emails);
     $this->assertSame(['shared@example.com'], $email->getRecipientAddresses());
     $mids = array_map(fn (array $item) => (int) $item['value'], $email->get('field_conreg_mid')->getValue());
     sort($mids);
@@ -219,11 +221,27 @@ class MemberEmailFormSubmitTest extends KernelTestBase {
 
   /**
    * Asserts exactly one email was sent and returns it.
+   *
+   * @return \Drupal\easy_email\Entity\EasyEmail
+   *   The first easy email.
    */
-  protected function assertSingleSentEmail() {
+  protected function assertSingleSentEmail(): EasyEmail {
     $emails = \Drupal::entityTypeManager()->getStorage('easy_email')->loadMultiple();
     $this->assertCount(1, $emails);
-    return reset($emails);
+    return $this->getFirstEasyEmail($emails);
+  }
+
+  /**
+   * Gets the first element in an array of Easy Emails.
+   *
+   * @param array $emails
+   *   Array of easy emails.
+   *
+   * @return \Drupal\easy_email\Entity\EasyEmail
+   *   The first easy email.
+   */
+  protected function getFirstEasyEmail(array $emails): EasyEmail {
+    return array_first($emails);
   }
 
   /**

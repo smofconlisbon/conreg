@@ -100,6 +100,10 @@ class EventConfig extends ConfigFormBase {
 
     // Get config for event.
     $config = $this->configFactory()->getEditable('conreg.settings.' . $eid);
+    // 'conreg.settings.<eid>' isn't in getEditableConfigNames(), so this is
+    // always immutable; ConfigFormBaseTrait::config()'s declared return type
+    // just can't express that.
+    /** @var \Drupal\Core\Config\ImmutableConfig $displayOptionsConfig */
     $displayOptionsConfig = $this->config('conreg.settings.' . $eid);
 
     $form = [
@@ -729,6 +733,10 @@ class EventConfig extends ConfigFormBase {
     ]);
 
     $eid = (int) $form_state->get('eid');
+    // 'conreg.settings.<eid>' isn't in getEditableConfigNames(), so this is
+    // always immutable; ConfigFormBaseTrait::config()'s declared return type
+    // just can't express that.
+    /** @var \Drupal\Core\Config\ImmutableConfig $config */
     $config = $this->config('conreg.settings.' . $eid);
     $memberClasses = ConregOptions::memberClasses($eid, $config);
     $memberClassIds = array_fill_keys(array_keys($memberClasses->classes), TRUE);

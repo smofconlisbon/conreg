@@ -41,9 +41,10 @@ class UpgradeStorage {
   public function insert(array $entry): int|NULL {
     $return_value = NULL;
     try {
-      $return_value = $this->connection->insert('conreg_upgrades')
+      $id = $this->connection->insert('conreg_upgrades')
         ->fields($entry)
         ->execute();
+      $return_value = $id === NULL ? NULL : (int) $id;
     }
     catch (\Exception $e) {
       $this->messenger->addMessage(t('$this->connection->insert failed. Message = %message', [
@@ -70,13 +71,14 @@ class UpgradeStorage {
         ->fields($entry)
         ->condition('upgid', $entry['upgid'])
         ->execute();
+      return $count;
     }
     catch (\Exception $e) {
       $this->messenger->addMessage(t('$this->connection->update failed. Message = %message', [
         '%message' => $e->getMessage(),
       ]), 'error');
     }
-    return $count;
+    return 0;
   }
 
   /**
@@ -96,13 +98,14 @@ class UpgradeStorage {
         ->fields($entry)
         ->condition('lead_mid', $entry['lead_mid'])
         ->execute();
+      return $count;
     }
     catch (\Exception $e) {
       $this->messenger->addMessage(t('$this->connection->update failed. Message = %message', [
         '%message' => $e->getMessage(),
       ]), 'error');
     }
-    return $count;
+    return 0;
   }
 
   /**

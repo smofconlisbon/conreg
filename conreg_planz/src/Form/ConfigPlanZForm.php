@@ -77,7 +77,12 @@ class ConfigPlanZForm extends ConfigFormBase {
     }
 
     $fieldOptions = FieldOptions::getFieldOptions($eid);
-    $this->planz = new PlanZ($this->config('conreg.settings.' . $eid . '.planz'));
+    // 'conreg.settings.<eid>.planz' isn't in getEditableConfigNames(), so
+    // this is always immutable; ConfigFormBaseTrait::config()'s declared
+    // return type just can't express that.
+    /** @var \Drupal\Core\Config\ImmutableConfig $planzConfig */
+    $planzConfig = $this->config('conreg.settings.' . $eid . '.planz');
+    $this->planz = new PlanZ($planzConfig);
 
     $form['#attached'] = [
       'library' => ['conreg/conreg_admin'],

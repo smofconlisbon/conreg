@@ -41,19 +41,20 @@ class AddonStorage {
    * @param array $entry
    *   An array containing all the fields of the database record.
    *
-   * @return int
-   *   The number of updated rows.
+   * @return int|null
+   *   The inserted record ID, or NULL if the insert failed.
    *
    * @throws \Exception
    *   When the database insert fails.
    *
    * @see $connection->insert()
    */
-  public function insert($entry) {
+  public function insert($entry): ?int {
     try {
-      return $this->connection->insert('conreg_member_addons')
+      $id = $this->connection->insert('conreg_member_addons')
         ->fields($entry)
         ->execute();
+      return $id === NULL ? NULL : (int) $id;
     }
     catch (\Exception $e) {
       $this->messenger->addError($this->t('Insert failed. Message = %message', [
@@ -72,9 +73,9 @@ class AddonStorage {
    * @return int
    *   The number of updated rows.
    */
-  public function update($entry) {
+  public function update($entry): int {
     try {
-      return $this->connection->update('conreg_member_addons')
+      return (int) $this->connection->update('conreg_member_addons')
         ->fields($entry)
         ->condition('addonid', $entry['addonid'])
         ->execute();

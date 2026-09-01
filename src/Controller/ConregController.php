@@ -73,6 +73,9 @@ class ConregController extends ControllerBase {
    * Render a list of entries in the database.
    */
   public function memberList($eid = 1) {
+    // ControllerBase::config() always returns an immutable config object;
+    // its docblock (@return Config) is just stale.
+    /** @var \Drupal\Core\Config\ImmutableConfig $config */
     $config = $this->config('conreg.settings.' . $eid);
     $countryOptions = ConregOptions::memberCountries($eid, $config);
     $types = ConregOptions::badgeTypes($eid, $config);

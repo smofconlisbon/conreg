@@ -36,10 +36,11 @@ class EventStorage {
    */
   public function insert(array $entry): ?int {
     try {
-      return $this->connection
+      $id = $this->connection
         ->insert('conreg_events')
         ->fields($entry)
         ->execute();
+      return $id === NULL ? NULL : (int) $id;
     }
     catch (\Exception $e) {
       $this->messenger->addError(t(
@@ -62,7 +63,7 @@ class EventStorage {
    */
   public function update(array $entry): int {
     try {
-      return $this->connection
+      return (int) $this->connection
         ->update('conreg_events')
         ->fields($entry)
         ->condition('eid', $entry['eid'])

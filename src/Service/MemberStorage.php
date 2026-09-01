@@ -44,9 +44,10 @@ class MemberStorage {
   public function insert(array $entry): int|NULL {
     $return_value = NULL;
     try {
-      $return_value = $this->connection->insert('conreg_members')
+      $id = $this->connection->insert('conreg_members')
         ->fields($entry)
         ->execute();
+      $return_value = $id === NULL ? NULL : (int) $id;
     }
     catch (\Exception $e) {
       $this->messenger->addMessage(t('$this->connection->insert failed. Message = %message', [
