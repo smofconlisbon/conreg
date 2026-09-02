@@ -6,6 +6,9 @@ namespace Drupal\Tests\conreg\Kernel;
 
 use Drupal\conreg\ConregOptions;
 use Drupal\conreg\Form\Registration;
+use Drupal\conreg\Pricing\MemberPriceContribution;
+use Drupal\conreg\Pricing\PricingContext;
+use Drupal\conreg\Pricing\PricingSubject;
 use Drupal\Core\Database\Database;
 use Drupal\Core\Form\FormState;
 use Drupal\KernelTests\KernelTestBase;
@@ -215,6 +218,21 @@ class RegistrationMemberTypeCardsTest extends KernelTestBase {
   }
 
   /**
+   * Prices one member via the base_type pricing plugin directly.
+   *
+   * Exercises the same type/day logic the original Registration::
+   * getMemberPrice() implemented, now split into its own plugin.
+   */
+  protected function priceMember(array $formValues, int $memberNo, array $types, string $defaultType): MemberPriceContribution {
+    $config = \Drupal::config('conreg.settings.1');
+    $context = new PricingContext(1, $config, $types, '$', FALSE, 0);
+    $subject = PricingSubject::fromFormValues($memberNo, $formValues, $defaultType);
+    $rule = $this->container->get('conreg.pricing.member_rule_manager')->createInstance('base_type');
+
+    return $rule->priceMember($subject, $context);
+  }
+
+  /**
    * A valid 'type' query parameter preselects that member type.
    */
   public function testMemberRegisterFormPreselectsTypeFromValidQueryParameter(): void {
@@ -298,9 +316,9 @@ class RegistrationMemberTypeCardsTest extends KernelTestBase {
     $this->createMemberTypesConfig();
     $types = ConregOptions::memberTypes(1)->types;
 
-    $result = $this->createRegistrationForm()->getMemberPrice([], 1, $types, 0, 0, '$', 'A');
+    $result = $this->priceMember([], 1, $types, 'A');
 
-    $this->assertEquals(30.0, $result->price);
+    $this->assertEquals(30.0, $result->lines[0]->amount);
     $this->assertSame('', $result->days);
   }
 
@@ -314,9 +332,9 @@ class RegistrationMemberTypeCardsTest extends KernelTestBase {
     $this->createMemberTypesConfig();
     $types = ConregOptions::memberTypes(1)->types;
 
-    $result = $this->createRegistrationForm()->getMemberPrice([], 1, $types, 0, 0, '$', 'C');
+    $result = $this->priceMember([], 1, $types, 'C');
 
-    $this->assertEquals(30.0, $result->price);
+    $this->assertEquals(30.0, $result->lines[0]->amount);
     $this->assertSame('W', $result->days);
   }
 
@@ -335,9 +353,9 @@ class RegistrationMemberTypeCardsTest extends KernelTestBase {
       ],
     ];
 
-    $result = $this->createRegistrationForm()->getMemberPrice($formValues, 1, $types, 0, 0, '$', 'C');
+    $result = $this->priceMember($formValues, 1, $types, 'C');
 
-    $this->assertEquals(24.0, $result->price);
+    $this->assertEquals(24.0, $result->lines[0]->amount);
     $this->assertSame('Fr|Sa', $result->days);
     $this->assertSame('Friday, Saturday', $result->daysDesc);
   }
@@ -363,9 +381,9 @@ class RegistrationMemberTypeCardsTest extends KernelTestBase {
       ],
     ];
 
-    $result = $this->createRegistrationForm()->getMemberPrice($formValues, 1, $types, 0, 0, '$', 'C');
+    $result = $this->priceMember($formValues, 1, $types, 'C');
 
-    $this->assertEquals(30.0, $result->price);
+    $this->assertEquals(30.0, $result->lines[0]->amount);
     $this->assertSame('W', $result->days);
   }
 
@@ -386,9 +404,9 @@ class RegistrationMemberTypeCardsTest extends KernelTestBase {
       ],
     ];
 
-    $result = $this->createRegistrationForm()->getMemberPrice($formValues, 1, $types, 0, 0, '$', 'C');
+    $result = $this->priceMember($formValues, 1, $types, 'C');
 
-    $this->assertEquals(30.0, $result->price);
+    $this->assertEquals(30.0, $result->lines[0]->amount);
     $this->assertSame('W', $result->days);
   }
 

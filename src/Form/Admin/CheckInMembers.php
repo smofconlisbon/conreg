@@ -7,9 +7,12 @@ use Drupal\conreg\ConregOptions;
 use Drupal\conreg\ConregConfig;
 use Drupal\conreg\Payment;
 use Drupal\conreg\PaymentLine;
+use Drupal\conreg\Pricing\PricingContext;
+use Drupal\conreg\Pricing\PricingSubject;
 use Drupal\conreg\Service\EventStorage;
 use Drupal\conreg\Service\MemberStorage;
 use Drupal\conreg\Service\PaymentStorage;
+use Drupal\conreg\Service\PricingServiceInterface;
 use Drupal\conreg\Trait\ShowBadgeNumberTrait;
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Config\ImmutableConfig;
@@ -36,12 +39,15 @@ class CheckInMembers extends FormBase {
    *   The payment storage service.
    * @param \Drupal\Core\Language\LanguageManagerInterface $languageManager
    *   The site's language manager.
+   * @param \Drupal\conreg\Service\PricingServiceInterface $pricingService
+   *   The pricing service.
    */
   public function __construct(
     protected MemberStorage $memberStorage,
     protected EventStorage $eventStorage,
     protected PaymentStorage $paymentStorage,
     protected LanguageManagerInterface $languageManager,
+    protected PricingServiceInterface $pricingService,
   ) {}
 
   /**
@@ -573,29 +579,18 @@ class CheckInMembers extends FormBase {
       $badge_name = trim($form_values['unpaid']['add']['first_name'] . ' ' . $form_values['unpaid']['add']['last_name']);
     }
     // Work out price.
-    $memberType = $form_values['unpaid']['add']['memberType'];
-    $price = $types->types[$memberType]->price;
-    $daysPrice = 0;
-    $memberDays = '';
-    $daysSelected = [];
-    foreach ($form_values['unpaid']['add']['days'] as $key => $val) {
-      if (!empty($val) && isset($types->types[$memberType]->days[$key])) {
-        $daysPrice += $types->types[$memberType]->days[$key]->price;
-        $daysSelected[] = $key;
-      }
-    }
+    $pricingContext = PricingContext::fromFormValues($eid, $config, $types->types, $form_values);
+    $subject = PricingSubject::fromCheckInFormValues($form_values);
+    $pricingResult = $this->pricingService->priceRegistration($pricingContext, [1 => $subject]);
+    $memberResult = $pricingResult->memberResults[1];
 
-    if ($daysPrice > 0 and $daysPrice < $price) {
-      $price = $daysPrice;
-      $memberDays = implode('|', $daysSelected);
-    }
     // Save the submitted entry.
     $entry = [
       'eid' => $eid,
       'lead_mid' => 0,
       'random_key' => $rand_key,
-      'member_type' => $memberType,
-      'days' => $memberDays,
+      'member_type' => $memberResult->memberType,
+      'days' => $memberResult->days,
       'first_name' => $form_values['unpaid']['add']['first_name'],
       'last_name' => $form_values['unpaid']['add']['last_name'],
       'badge_name' => $badge_name,
@@ -603,10 +598,10 @@ class CheckInMembers extends FormBase {
       'display' => $config->get('checkin.display'),
       'communication_method' => $config->get('checkin.communication_method'),
       'email' => $form_values['unpaid']['add']['email'],
-      'member_price' => $price,
-      'member_total' => $price,
-      'add_on_price' => 0,
-      'payment_amount' => $price,
+      'member_price' => $memberResult->basePrice(),
+      'member_total' => $memberResult->price(),
+      'add_on_price' => $memberResult->addOnPrice(),
+      'payment_amount' => $pricingResult->totalPrice(),
       'join_date' => time(),
       'update_date' => time(),
       'language' => $language,

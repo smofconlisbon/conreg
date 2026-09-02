@@ -12,6 +12,7 @@ use Drupal\conreg\PaymentLine;
 use Drupal\conreg\Service\MemberPresenter;
 use Drupal\conreg\Service\MemberStorage;
 use Drupal\conreg\Service\PaymentStorage;
+use Drupal\conreg\Service\PricingServiceInterface;
 use Drupal\conreg\Service\RegistrationConfirmationMailer;
 use Drupal\conreg\Service\StripeServiceInterface;
 use Drupal\conreg\Service\UpgradeStorage;
@@ -69,6 +70,8 @@ class Checkout extends FormBase {
    *   The member presenter service.
    * @param \Drupal\Core\Utility\Token $token
    *   The token service.
+   * @param \Drupal\conreg\Service\PricingServiceInterface $pricingService
+   *   The pricing service.
    */
   public function __construct(
     protected MemberStorage $memberStorage,
@@ -81,6 +84,7 @@ class Checkout extends FormBase {
     protected EntityTypeManagerInterface $entityTypeManager,
     protected MemberPresenter $memberPresenter,
     protected Token $token,
+    protected PricingServiceInterface $pricingService,
   ) {}
 
   /**
@@ -146,6 +150,11 @@ class Checkout extends FormBase {
     if ($payment->paidDate) {
       return $this->showThankYouPage($form, $this->eid, $config, $payment);
     }
+
+    // Recompute prices from current member/config data before charging,
+    // in case an admin edited a member's pricing-relevant details (e.g.
+    // their type) after registration but before payment completed.
+    $this->pricingService->recomputeForPayment($payment);
 
     // Set up payment lines on Stripe.
     $items = [];

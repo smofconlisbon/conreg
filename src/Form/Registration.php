@@ -11,18 +11,22 @@ use Drupal\conreg\FieldOptions;
 use Drupal\conreg\Member;
 use Drupal\conreg\Payment;
 use Drupal\conreg\PaymentLine;
+use Drupal\conreg\Pricing\MemberPriceResult;
+use Drupal\conreg\Pricing\PricingContext;
+use Drupal\conreg\Pricing\PricingSubject;
 use Drupal\conreg\Service\EventStorage;
 use Drupal\conreg\Service\PaymentStorage;
+use Drupal\conreg\Service\PricingServiceInterface;
 use Drupal\Core\DependencyInjection\AutowireTrait;
 use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\HtmlCommand;
 use Drupal\Core\Cache\Cache;
-use Drupal\Core\Config\ImmutableConfig;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Link;
 use Drupal\Core\Render\RendererInterface;
 use Drupal\Core\Session\AccountProxyInterface;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\Core\Url;
 
 /**
@@ -47,6 +51,8 @@ class Registration extends FormBase {
    *   The event storage service.
    * @param \Drupal\conreg\Service\PaymentStorage $paymentStorage
    *   The payment storage service.
+   * @param \Drupal\conreg\Service\PricingServiceInterface $pricingService
+   *   The pricing service.
    */
   final public function __construct(
     protected AccountProxyInterface $currentUser,
@@ -55,6 +61,7 @@ class Registration extends FormBase {
     protected CountryServiceInterface $countryService,
     protected EventStorage $eventStorage,
     protected PaymentStorage $paymentStorage,
+    protected PricingServiceInterface $pricingService,
   ) {}
 
   /**
@@ -156,31 +163,23 @@ class Registration extends FormBase {
     }
     $lead_mid = $lead_member?->mid;
 
-    [$addOnOptions, $addOnPrices] = ConregOptions::memberAddons($eid, $config);
-    // Check if discounts enabled.
-    /** @var \Drupal\Core\Config\ImmutableConfig $config */
-    $discountEnabled = $config->get('discount.enable');
-    $discountFreeEvery = $config->get('discount.free_every');
+    [$addOnOptions] = ConregOptions::memberAddons($eid, $config);
 
     // Get the number of members on the form.
     $memberQty = $form_values['global']['member_quantity'] ?? 1;
 
     // Calculate price for all members.
-    [$fullPrice,
-      $discountPrice,
-      $totalPrice,
-      $totalPriceMinusFree,
-      $memberPrices,
-    ] = $this->getAllMemberPrices(
-      $config,
-      $form_values,
-      $memberQty,
-      $types->types,
-      $addOnPrices,
-      $symbol,
-      $discountEnabled,
-      $discountFreeEvery,
-    );
+    $pricingContext = PricingContext::fromFormValues($eid, $config, $types->types, $form_values);
+    $subjects = [];
+    for ($cnt = 1; $cnt <= $memberQty; $cnt++) {
+      $subjects[$cnt] = PricingSubject::fromFormValues($cnt, $form_values, $defaultType);
+    }
+    $pricingResult = $this->pricingService->priceRegistration($pricingContext, $subjects);
+    $fullPrice = $pricingResult->fullPrice();
+    $discountPrice = $pricingResult->discountAmount();
+    $totalPrice = $pricingResult->totalPrice();
+    $totalPriceMinusFree = $pricingResult->totalPriceMinusFree();
+    $memberPrices = $pricingResult->memberResults;
 
     $form = [
       '#tree' => TRUE,
@@ -492,7 +491,7 @@ class Registration extends FormBase {
 
       $form['members']['member' . $cnt]['price_minus_free_amt'] = [
         '#type' => 'hidden',
-        '#value' => $memberPrices[$cnt]->priceMinusFree,
+        '#value' => $memberPrices[$cnt]->priceMinusFree(),
         '#attributes' => [
           'id' => "edit-member$cnt-price-minus-free-amt",
         ],
@@ -502,7 +501,7 @@ class Registration extends FormBase {
       $form['members']['member' . $cnt]['price'] = [
         '#prefix' => '<div id="memberPrice' . $cnt . '">',
         '#suffix' => '</div>',
-        '#markup' => $memberPrices[$cnt]->priceMessage,
+        '#markup' => $this->buildMemberPriceMessage($cnt, $memberPrices[$cnt], $symbol),
       ];
 
       // Add badge name max to Drupal Settings for JavaScript to use.
@@ -1099,10 +1098,7 @@ class Registration extends FormBase {
     $form_values = $form_state->getValues();
 
     $symbol = $config->get('payments.symbol');
-    $discountEnabled = $config->get('discount.enable');
-    $discountFreeEvery = $config->get('discount.free_every');
     $types = ConregOptions::memberTypes($eid, $config);
-    [, $addOnPrices] = ConregOptions::memberAddons($eid, $config);
 
     // Load the member role for the event, if any.
     $add_role = $config->get('member_portal.add_role');
@@ -1111,15 +1107,15 @@ class Registration extends FormBase {
     $memberQty = $form_values['global']['member_quantity'];
 
     // Can't rely on price sent back from form, so recalculate.
-    [,, $totalPrice,, $memberPrices] = $this->getAllMemberPrices(
-      $config,
-      $form_values,
-      $memberQty,
-      $types->types,
-      $addOnPrices,
-      $symbol,
-      $discountEnabled,
-      $discountFreeEvery);
+    $defaultType = $config->get('member_type_default');
+    $pricingContext = PricingContext::fromFormValues($eid, $config, $types->types, $form_values);
+    $subjects = [];
+    for ($cnt = 1; $cnt <= $memberQty; $cnt++) {
+      $subjects[$cnt] = PricingSubject::fromFormValues($cnt, $form_values, $defaultType);
+    }
+    $pricingResult = $this->pricingService->priceRegistration($pricingContext, $subjects);
+    $totalPrice = $pricingResult->totalPrice();
+    $memberPrices = $pricingResult->memberResults;
 
     $lead_mid = NULL;
     if (empty($return)) {
@@ -1238,9 +1234,9 @@ class Registration extends FormBase {
         'phone' => $member_values['phone'] ?? '',
         'birth_date' => $birth_date,
         'age' => $member_values['age'] ?? 0,
-        'member_price' => $memberPrices[$cnt]->basePrice,
-        'member_total' => $memberPrices[$cnt]->price,
-        'add_on_price' => $memberPrices[$cnt]->addOnPrice,
+        'member_price' => $memberPrices[$cnt]->basePrice(),
+        'member_total' => $memberPrices[$cnt]->price(),
+        'add_on_price' => $memberPrices[$cnt]->addOnPrice(),
         'payment_amount' => $totalPrice,
         'join_date' => time(),
         'update_date' => time(),
@@ -1266,7 +1262,7 @@ class Registration extends FormBase {
             '@first_name' => $entry['first_name'],
             '@last_name' => $entry['last_name'],
           ]),
-          $memberPrices[$cnt]->basePriceMinusFree,
+          $memberPrices[$cnt]->basePriceMinusFree(),
         ));
         // Add confirmation.
         $this->messenger()->addMessage($this->t(
@@ -1311,168 +1307,32 @@ class Registration extends FormBase {
   }
 
   /**
-   * Callback for sorting member prices.
+   * Builds the display message for one member's price.
+   *
+   * Kept in the form layer rather than the pricing service, since it's
+   * presentation (translated markup with embedded HTML), not calculation.
    */
-  public function memberPriceCompare($a, $b) {
-    if ($a->basePrice == $b->basePrice) {
-      if ($a->memberNo == $b->memberNo) {
-        // Should never actually happen.
-        return 0;
+  private function buildMemberPriceMessage(int $memberNo, MemberPriceResult $result, string $symbol): TranslatableMarkup {
+    if ($result->adjustmentAmount() < 0) {
+      if ($result->price() == 0) {
+        return $this->t('Free member!');
       }
-      return ($a->memberNo < $b->memberNo ? -1 : 1);
-    }
-    return ($a->basePrice > $b->basePrice ? -1 : 1);
-  }
-
-  /**
-   * Method to calculate price of all members, and subtract any discounts.
-   */
-  public function getAllMemberPrices(
-    ImmutableConfig $config,
-    $form_values,
-    $memberQty,
-    $types,
-    $addOnPrices,
-    $symbol,
-    $discountEnabled,
-    $discountFreeEvery,
-  ) {
-    $fullPrice = 0;
-    $fullMinusFree = 0;
-    $discountPrice = 0;
-    $totalPrice = 0;
-    $totalPriceMinusFree = 0;
-    $memberPrices = [];
-    $prices = [];
-    $defaultType = $config->get('member_type_default');
-
-    // First check for add-ons.
-    [,
-      $globalTotal,
-      $globalMinusFree,
-      $addOnMembers,
-      $addOnMembersMinusFree,
-    ] = Addons::getAllAddonPrices($config, $form_values);
-    $fullPrice = $globalTotal;
-    $fullMinusFree = $globalMinusFree;
-
-    for ($cnt = 1; $cnt <= $memberQty; $cnt++) {
-      // Check member price.
-      $memberPrices[$cnt] = $this->getMemberPrice($form_values, $cnt, $types, $addOnMembers[$cnt], $addOnMembersMinusFree[$cnt], $symbol, $defaultType);
-      if ($memberPrices[$cnt]->basePrice > 0) {
-        $prices[] = (object) [
-          'memberNo' => $memberPrices[$cnt]->memberNo + ($addOnMembers[$cnt] ?? 0),
-          'basePrice' => $memberPrices[$cnt]->basePrice,
-        ];
-      }
-      $fullPrice += $memberPrices[$cnt]->price;
-      $fullMinusFree += $memberPrices[$cnt]->priceMinusFree;
-    }
-    // Sort prices array in reverse order, but keep indexes.
-    $cnt = 0;
-    if ($discountEnabled && usort($prices, [$this, 'memberPriceCompare'])) {
-      foreach ($prices as $curPrice) {
-        $cnt++;
-        // Check if discount applies (count divisible by number pre discount).
-        if ($cnt % ($discountFreeEvery + 1) == 0) {
-          $discountPrice += $curPrice->basePrice;
-          // Take base price off member price (but leave add-ons).
-          $memberPrices[$curPrice->memberNo]->price = $memberPrices[$curPrice->memberNo]->price - $curPrice->basePrice;
-          $memberPrices[$curPrice->memberNo]->priceMinusFree = $memberPrices[$curPrice->memberNo]->priceMinusFree - $curPrice->basePrice;
-          $memberPrices[$curPrice->memberNo]->basePriceMinusFree = $memberPrices[$curPrice->memberNo]->basePriceMinusFree - $curPrice->basePrice;
-          // New message. Be sure to include add-on price if there is one.
-          if ($memberPrices[$curPrice->memberNo]->price == 0) {
-            $memberPrices[$curPrice->memberNo]->priceMessage = $this->t('Free member!');
-          }
-          else {
-            $memberPrices[$curPrice->memberNo]->priceMessage = $this->t(
-              'Free member! Price for add-on: @symbol<span id="@id">@price</span>',
-              [
-                '@symbol' => $symbol,
-                '@id' => "member" . $curPrice->memberNo . "-value",
-                '@price' => number_format($memberPrices[$curPrice->memberNo]->price, 2),
-              ]);
-          }
-        }
-      }
-    }
-    // Calculate total price with discounts.
-    $totalPrice = $fullPrice - $discountPrice;
-    $totalPriceMinusFree = $fullMinusFree - $discountPrice;
-
-    return [
-      $fullPrice,
-      $discountPrice,
-      $totalPrice,
-      $totalPriceMinusFree,
-      $memberPrices,
-    ];
-  }
-
-  /**
-   * Method to return the price of a member.
-   */
-  public function getMemberPrice(array $form_values, $memberNo, $types, $addOnPrice, $addOnMinusFree, $symbol, $defaultType) {
-    $price = 0;
-    // If type selected, look up value.
-    $memberType = $form_values['members']['member' . $memberNo]['type'] ?? $defaultType;
-    if (!empty($memberType)) {
-      $price = $types[$memberType]->price;
+      return $this->t(
+        'Free member! Price for add-on: @symbol<span id="@id">@price</span>',
+        [
+          '@symbol' => $symbol,
+          '@id' => "member$memberNo-value",
+          '@price' => number_format($result->price(), 2),
+        ]
+      );
     }
 
-    $daysPrice = 0;
-    $dayCodes = [];
-    $dayNames = [];
-    // Default days to none selected.
-    $days = isset($types[$memberType]) ? trim($types[$memberType]->defaultDays) : '';
-    $daysDesc = '';
-    if (isset($types[$memberType]->days)) {
-      // If day code = type code, whole weekend selected.
-      if (isset($form_values['members']['member' . $memberNo]['dayOptions']['days'][$memberType]) && $form_values['members']['member' . $memberNo]['dayOptions']['days'][$memberType]) {
-        $daysPrice = $price;
-      }
-      else {
-        foreach ($types[$memberType]->days as $dayCode => $dayOptions) {
-          if (isset($form_values['members']['member' . $memberNo]['dayOptions']['days'][$dayCode]) && $form_values['members']['member' . $memberNo]['dayOptions']['days'][$dayCode]) {
-            $daysPrice += $dayOptions->price;
-            $dayCodes[] = $dayCode;
-            $dayNames[] = $dayOptions->name;
-          }
-        }
-      }
-      if ($daysPrice > 0 and $daysPrice < $price) {
-        $price = $daysPrice;
-        $days = implode('|', $dayCodes);
-        $daysDesc = implode(', ', $dayNames);
-      }
-    }
-    $basePrice = $price;
-
-    // Make sure price can never be negative.
-    if ($price < 0) {
-      $price = 0;
-    }
-
-    $priceMessage = $this->t('Price for member #@number: @symbol<span id="@id">@price</span>', [
+    return $this->t('Price for member #@number: @symbol<span id="@id">@price</span>', [
       '@number' => $memberNo,
       '@symbol' => $symbol,
       '@id' => "member$memberNo-value",
-      '@price' => number_format($price + $addOnPrice, 2),
+      '@price' => number_format($result->price(), 2),
     ]);
-
-    return (object) [
-      'memberNo' => $memberNo,
-      'price' => $price + $addOnPrice,
-      'priceMinusFree' => $price + $addOnMinusFree,
-      'priceMessage' => $priceMessage,
-      'basePrice' => $basePrice,
-      'basePriceMinusFree' => $basePrice,
-      'addOnPrice' => $addOnPrice,
-      'addOnMinusFree' => $addOnMinusFree,
-      'memberType' => $memberType,
-      'days' => $days,
-      'daysDesc' => $daysDesc,
-    ];
   }
 
 }

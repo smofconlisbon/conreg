@@ -11,6 +11,7 @@ exception is `conreg_mailing_list`'s `conreg_subscription_rule`, a config entity
 | Domain object | `Drupal\conreg\Member` (`stdClass`-based) |
 | Storage services | `MemberStorage`, `EventStorage`, `AddonStorage`, `UpgradeStorage` |
 | Event config | `conreg.settings.{eid}` (core keys schema-backed, integration keys partly runtime-only) |
+| Pricing | `PricingService` + `MemberPricingRule`/`PricingAdjustment` plugins — see `docs/architecture/pricing.md` |
 | Extension points | `hook_convention_member_added/updated/deleted` — most subscribers act directly; `conreg_mailing_list` instead fans `convention_member_added` out into a queue-driven subscription pipeline (see below) |
 | Payment | Stripe Checkout + `conreg_payments*` tables |
 

@@ -55,6 +55,25 @@ services:
     class: Drupal\conreg\Service\MemberPresenter
   Drupal\conreg\Service\MemberPresenter: '@conreg.member.presenter'
 
+  conreg.pricing.member_rule_manager:
+    class: Drupal\conreg\Pricing\MemberPricingRulePluginManager
+    parent: default_plugin_manager
+  Drupal\conreg\Pricing\MemberPricingRulePluginManager: '@conreg.pricing.member_rule_manager'
+
+  conreg.pricing.adjustment_manager:
+    class: Drupal\conreg\Pricing\PricingAdjustmentPluginManager
+    parent: default_plugin_manager
+  Drupal\conreg\Pricing\PricingAdjustmentPluginManager: '@conreg.pricing.adjustment_manager'
+
+  conreg.pricing:
+    class: Drupal\conreg\Service\PricingService
+  Drupal\conreg\Service\PricingServiceInterface: '@conreg.pricing'
+
+  logger.channel.conreg:
+    parent: logger.channel_base
+    arguments:
+      - 'conreg'
+
   Drupal\conreg\Hook\ConregHooks:
     class: Drupal\conreg\Hook\ConregHooks
 

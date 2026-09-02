@@ -3,7 +3,9 @@
 ## Extension approach
 
 The core extension seam is member lifecycle hooks fired from `Member` save and
-delete operations.
+delete operations. For extension points with multiple, selectable,
+orderable implementations (pricing rules, mailing-list providers), ConReg
+uses Drupal plugins instead — see `docs/development/plugins.md`.
 
 ## Example hook skeleton
 

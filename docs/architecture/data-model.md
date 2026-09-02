@@ -5,7 +5,7 @@
 | Table | Purpose |
 |---|---|
 | `conreg_events` | Event records and open/closed state |
-| `conreg_members` | Member identity, contact, status, pricing fields |
+| `conreg_members` | Member identity, contact, status, pricing fields (see `docs/architecture/pricing.md`) |
 | `conreg_payments` | Payment headers |
 | `conreg_payment_sessions` | Stripe session tracking |
 | `conreg_payment_lines` | Per-member payment lines |

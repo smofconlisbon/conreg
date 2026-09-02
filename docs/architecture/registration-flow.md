@@ -33,3 +33,8 @@ sequenceDiagram
 
 - Zero-balance checkout completes without a Stripe redirect.
 - Auto-approval behavior is config driven (`payments.auto_approve`).
+- Before building Stripe line items, checkout recomputes each member's
+  price from their current persisted data (not the original registration
+  submission), so an admin edit to a member's pricing-relevant details
+  after registration isn't charged at a stale price. See
+  `docs/architecture/pricing.md`.
