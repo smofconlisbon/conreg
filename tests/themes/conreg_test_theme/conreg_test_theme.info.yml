@@ -2,5 +2,5 @@ name: 'Conreg Test Theme'
 type: theme
 description: 'Test-only theme with member_type_card and member_day_option overrides, for conreg kernel tests.'
 package: Testing
-core_version_requirement: ^10 || ^11
+core_version_requirement: ^11.2 || ^12
 base theme: false

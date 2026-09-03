@@ -4,7 +4,7 @@
 
 | Requirement | Source |
 |---|---|
-| Drupal core `^10.1 || ^11.0` | `conreg.info.yml` and most submodule `*.info.yml` |
+| Drupal core `^11.2 || ^12` | `conreg.info.yml` and most submodule `*.info.yml` |
 | Drupal core `^11.3 || ^12` | `conreg_mailing_list`, `conreg_mailerlite`, `conreg_simplenews` `*.info.yml` — narrower than the rest, due to core plugin-autowiring and entity-attribute features they depend on |
 | Contrib module `key` | `conreg.info.yml` dependency — Stripe keys and per-event category keys are stored as Key entities, not plaintext config |
 | PHP package `stripe/stripe-php` | `composer.json` |
