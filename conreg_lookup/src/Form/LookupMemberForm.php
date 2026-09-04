@@ -4,7 +4,6 @@ namespace Drupal\conreg_lookup\Form;
 
 use Drupal\Component\Utility\DeprecationHelper;
 use Drupal\Core\Database\Statement\FetchAs;
-use Drupal\Component\Utility\Html;
 use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\AlertCommand;
 use Drupal\Core\Ajax\HtmlCommand;
@@ -16,7 +15,9 @@ use Drupal\Core\Cache\Cache;
 use Drupal\Core\Render\RendererInterface;
 use Drupal\Core\TempStore\PrivateTempStoreFactory;
 use Drupal\conreg\ConregOptions;
+use Drupal\conreg\ConregTable;
 use Drupal\conreg\Service\EventStorage;
+use Drupal\conreg\TableRole;
 
 /**
  * Simple form to add an entry, with all the interesting fields.
@@ -151,16 +152,9 @@ class LookupMemberForm extends FormBase {
       return $form;
     }
 
-    $form['table'] = [
-      '#type' => 'table',
-      '#header' => $headers,
-      '#attributes' => ['id' => 'conreg-admin-member-list'],
-      '#empty' => $this->t('No entries available.'),
-      '#sticky' => TRUE,
-    ];
-
     $entries = $this->adminMemberLookupLoad($eid, $search);
 
+    $rows = [];
     foreach ($entries as $entry) {
       $mid = $entry['mid'];
       // Sanitize each entry.
@@ -171,24 +165,12 @@ class LookupMemberForm extends FormBase {
       else {
         $member_no = trim($entry['badge_type']) . sprintf("%0" . $digits . "d", $entry['member_no']);
       }
-      $row["member_no"] = [
-        '#markup' => $member_no,
-      ];
-      $row['first_name'] = [
-        '#markup' => Html::escape($entry['first_name']),
-      ];
-      $row['last_name'] = [
-        '#markup' => Html::escape($entry['last_name']),
-      ];
-      $row['email'] = [
-        '#markup' => Html::escape($entry['email']),
-      ];
-      $row['phone'] = [
-        '#markup' => Html::escape($entry['phone']),
-      ];
-      $row['badge_name'] = [
-        '#markup' => Html::escape($entry['badge_name']),
-      ];
+      $row["member_no"] = ['data' => $member_no];
+      $row['first_name'] = ['data' => $entry['first_name']];
+      $row['last_name'] = ['data' => $entry['last_name']];
+      $row['email'] = ['data' => $entry['email']];
+      $row['phone'] = ['data' => $entry['phone']];
+      $row['badge_name'] = ['data' => $entry['badge_name']];
       if (!empty($entry['days'])) {
         $dayDescriptions = [];
         foreach (explode('|', $entry['days']) as $day) {
@@ -199,21 +181,22 @@ class LookupMemberForm extends FormBase {
       else {
         $memberDays = '';
       }
-      $row['days'] = [
-        '#markup' => Html::escape($memberDays),
-      ];
+      $row['days'] = ['data' => $memberDays];
       $badgeType = trim($entry['badge_type']);
-      $row['badge_type'] = [
-        '#markup' => Html::escape($badgeTypes[$badgeType] ?? $badgeType),
-      ];
-      $row['registered_by'] = [
-        '#markup' => Html::escape($entry['registered_by'] ?? ''),
-      ];
-      $row['is_checked_in'] = [
-        '#markup' => Html::escape(($entry['is_checked_in'] ?? 0) ? $this->t('Yes') : $this->t('No')),
-      ];
-      $form['table'][$mid] = $row;
+      $row['badge_type'] = ['data' => $badgeTypes[$badgeType] ?? $badgeType];
+      $row['registered_by'] = ['data' => $entry['registered_by'] ?? ''];
+      $row['is_checked_in'] = ['data' => ($entry['is_checked_in'] ?? 0) ? $this->t('Yes') : $this->t('No')];
+      $rows[$mid] = $row;
     }
+
+    $form['table'] = [
+      '#type' => 'table',
+      '#header' => $headers,
+      '#attributes' => ConregTable::attributes('member-lookup', TableRole::ListTable),
+      '#rows' => $rows,
+      '#empty' => $this->t('No entries available.'),
+      '#sticky' => TRUE,
+    ];
 
     return $form;
   }

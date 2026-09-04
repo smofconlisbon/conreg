@@ -7,6 +7,8 @@ use Drupal\conreg\ConregOptions;
 use Drupal\conreg\Service\EventStorage;
 use Drupal\conreg\Service\MemberStorage;
 use Drupal\conreg\Trait\ShowBadgeNumberTrait;
+use Drupal\conreg\ConregTable;
+use Drupal\conreg\TableRole;
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Datetime\DateHelper;
@@ -43,7 +45,7 @@ class ConregController extends ControllerBase {
   /**
    * Display simple thank you page.
    */
-  public function registrationThanks($eid = 1) {
+  public function registrationThanks(int $eid = 1) {
     $config = $this->config('conreg.settings.' . $eid);
     $event = $this->eventStorage->load(['eid' => $eid]);
     $drupalTokenData = [
@@ -72,7 +74,7 @@ class ConregController extends ControllerBase {
   /**
    * Render a list of entries in the database.
    */
-  public function memberList($eid = 1) {
+  public function memberList(int $eid = 1) {
     // ControllerBase::config() always returns an immutable config object;
     // its docblock (@return Config) is just stale.
     /** @var \Drupal\Core\Config\ImmutableConfig $config */
@@ -202,7 +204,6 @@ class ConregController extends ControllerBase {
       if (!empty($entry['display']) && $entry['display'] != 'N' && !empty($entry['country'])) {
         $rows[$key] = $member;
       }
-      $total++;
     }
 
     // Sort array by key.
@@ -216,14 +217,19 @@ class ConregController extends ControllerBase {
     $content['table'] = [
       '#type' => 'table',
       '#header' => $headers,
-      // '#footer' => array(t("Total")),
+      '#attributes' => ConregTable::attributes('member-list', TableRole::ListTable),
       '#rows' => $rows,
       '#empty' => $this->t('No entries available.'),
     ];
 
     // Member summary page.
     if ($showSummary) {
-      $content['summary_heading'] = [
+      $content['country_summary'] = [
+        '#prefix' => '<div class="conreg-table-section conreg-table-section--country-breakdown">',
+        '#suffix' => '</div>',
+      ];
+
+      $content['country_summary']['summary_heading'] = [
         '#markup' => $this->t('Country Breakdown'),
         '#prefix' => '<h2>',
         '#suffix' => '</h2>',
@@ -243,12 +249,19 @@ class ConregController extends ControllerBase {
           $total += $entry['num'];
         }
       }
-      // Add a row for the total.
-      $rows[] = [$this->t("Total"), $total];
-      $content['summary'] = [
+      // Add a footer row for the total.
+      $footer = [
+        [
+          ['data' => $this->t('Total')],
+          ['data' => $total],
+        ],
+      ];
+      $content['country_summary']['summary'] = [
         '#type' => 'table',
         '#header' => $headers,
+        '#attributes' => ConregTable::attributes('member-list-country-summary', TableRole::Summary),
         '#rows' => $rows,
+        '#footer' => $footer,
         '#empty' => $this->t('No entries available.'),
       ];
     }
@@ -258,84 +271,113 @@ class ConregController extends ControllerBase {
 
   /**
    * Add a summary by member type to render array.
+   *
+   * Also called from memberAdminMemberList(), which builds its own page
+   * heading and doesn't want this method's - hence $showHeading.
    */
-  public function memberAdminMemberListSummary($eid, &$content) {
+  public function memberAdminMemberListSummary(int $eid, bool $showHeading = TRUE): array {
+
+    $element = [
+      '#prefix' => '<div class="conreg-table-section conreg-table-section--member-type">',
+      '#suffix' => '</div>',
+    ];
+
+    if ($showHeading) {
+      $element['message_member'] = [
+        '#markup' => $this->t('Summary by member type'),
+        '#prefix' => '<h3>',
+        '#suffix' => '</h3>',
+      ];
+    }
+
     $types = ConregOptions::memberTypes($eid);
     $headers = [
-      $this->t('Member Type'),
-      $this->t('Number of members'),
+      'type' => $this->t('Member Type'),
+      'number' => $this->t('Number of members'),
     ];
-    $content['summary'] = [
-      '#type' => 'table',
-      '#header' => $headers,
-      '#empty' => $this->t('No entries available.'),
-    ];
+    $rows = [];
     $total = 0;
     foreach ($this->memberStorage->adminMemberSummaryLoad($eid) as $entry) {
       // Replace type code with description.
-      $content['summary'][] = [
-        ['#markup' => isset($types->types[$entry['member_type']]) ? $types->types[$entry['member_type']]->name : $entry['member_type']],
-        ['#markup' => $entry['num']],
+      $rows[] = [
+        'type' => ['data' => isset($types->types[$entry['member_type']]) ? $types->types[$entry['member_type']]->name : $entry['member_type']],
+        'number' => ['data' => $entry['num']],
       ];
       $total += $entry['num'];
     }
     // Add a row for the total.
-    $content['summary']['total'] = [
-      [
-        '#markup' => $this->t("Total"),
-        '#wrapper_attributes' => ['class' => ['table-total']],
-      ],
-      [
-        '#markup' => $total,
-        '#wrapper_attributes' => ['class' => ['table-total']],
-      ],
+    $footer = ConregTable::totalFooterRow(['type' => $this->t('Total'), 'number' => $total]);
+    $element['summary'] = [
+      '#type' => 'table',
+      '#header' => $headers,
+      '#attributes' => ConregTable::attributes('member-summary-by-type', TableRole::Summary),
+      '#rows' => $rows,
+      '#footer' => $footer,
+      '#empty' => $this->t('No entries available.'),
     ];
 
-    return $content;
+    return $element;
   }
 
   /**
-   * Add a summary by payment method to render array.
+   * Add a summary by badge type to render array.
    */
-  public function memberAdminMemberListBadgeSummary($eid, &$content) {
+  public function memberAdminMemberListBadgeSummary(int $eid): array {
+    $element = [
+      '#prefix' => '<div class="conreg-table-section conreg-table-section--badge-type">',
+      '#suffix' => '</div>',
+    ];
+
+    $element['message_badge_type'] = [
+      '#markup' => $this->t('Summary by badge type'),
+      '#prefix' => '<h3>',
+      '#suffix' => '</h3>',
+    ];
+
     $types = ConregOptions::badgeTypes($eid);
     $headers = [
-      $this->t('Badge Type'),
-      $this->t('Number of members'),
+      'type' => $this->t('Badge Type'),
+      'number' => $this->t('Number of members'),
     ];
-    $content['badge_summary'] = [
-      '#type' => 'table',
-      '#header' => $headers,
-      '#empty' => $this->t('No entries available.'),
-    ];
+    $rows = [];
     $total = 0;
     foreach ($this->memberStorage->adminMemberBadgeSummaryLoad($eid) as $entry) {
       // Replace type code with description.
-      $content['badge_summary'][] = [
-        ['#markup' => $types[trim($entry['badge_type'])] ?? $entry['badge_type']],
-        ['#markup' => $entry['num']],
+      $rows[] = [
+        'type' => ['data' => $types[trim($entry['badge_type'])] ?? $entry['badge_type']],
+        'number' => ['data' => $entry['num']],
       ];
       $total += $entry['num'];
     }
     // Add a row for the total.
-    $content['badge_summary']['total'] = [
-      [
-        '#markup' => $this->t("Total"),
-        '#wrapper_attributes' => ['class' => ['table-total']],
-      ],
-      [
-        '#markup' => $total,
-        '#wrapper_attributes' => ['class' => ['table-total']],
-      ],
+    $footer = ConregTable::totalFooterRow(['type' => $this->t('Total'), 'number' => $total]);
+    $element['badge_summary'] = [
+      '#type' => 'table',
+      '#header' => $headers,
+      '#attributes' => ConregTable::attributes('member-summary-by-badge', TableRole::Summary),
+      '#rows' => $rows,
+      '#footer' => $footer,
+      '#empty' => $this->t('No entries available.'),
     ];
 
-    return $content;
+    return $element;
   }
 
   /**
-   * Add a summary by payment method to render array.
+   * Add a summary by day to render array.
    */
-  public function memberAdminMemberListDaysSummary($eid, &$content) {
+  public function memberAdminMemberListDaysSummary(int $eid): array {
+    $element = [
+      '#prefix' => '<div class="conreg-table-section conreg-table-section--days">',
+      '#suffix' => '</div>',
+    ];
+
+    $element['message_days'] = [
+      '#markup' => $this->t('Summary by day'),
+      '#prefix' => '<h3>',
+      '#suffix' => '</h3>',
+    ];
+
     $days = ConregOptions::days($eid);
 
     $dayTotals = [];
@@ -355,86 +397,92 @@ class ConregController extends ControllerBase {
       $this->t('Days'),
       $this->t('Number of members'),
     ];
-    $content['days_summary'] = [
-      '#type' => 'table',
-      '#header' => $headers,
-      '#empty' => $this->t('No entries available.'),
-    ];
+    $rows = [];
     foreach ($dayTotals as $key => $val) {
       // Sanitize each entry.
-      $content['days_summary'][] = [
-        ['#markup' => $days[$key] ?? $key],
-        ['#markup' => $val],
+      $rows[] = [
+        ['data' => $days[$key] ?? $key],
+        ['data' => $val],
       ];
     }
     // Add a row for the total.
-    $content['days_summary']['total'] = [
-      [
-        '#markup' => $this->t("Total"),
-        '#wrapper_attributes' => ['class' => ['table-total']],
-      ],
-      [
-        '#markup' => $total,
-        '#wrapper_attributes' => ['class' => ['table-total']],
-      ],
+    $footer = ConregTable::totalFooterRow([$this->t('Total'), $total]);
+    $element['days_summary'] = [
+      '#type' => 'table',
+      '#header' => $headers,
+      '#attributes' => ConregTable::attributes('member-summary-by-day', TableRole::Summary),
+      '#rows' => $rows,
+      '#footer' => $footer,
+      '#empty' => $this->t('No entries available.'),
     ];
 
-    return $content;
+    return $element;
   }
 
   /**
-   * Add a summary by badge type to render array.
+   * Add a summary by payment method to render array.
    */
-  public function memberAdminMemberListPaymentMethodSummary($eid, &$content) {
+  public function memberAdminMemberListPaymentMethodSummary(int $eid): array {
+    $element = [
+      '#prefix' => '<div class="conreg-table-section conreg-table-section--payment-method">',
+      '#suffix' => '</div>',
+    ];
+
+    $element['message_payment_method'] = [
+      '#markup' => $this->t('Summary by payment method'),
+      '#prefix' => '<h3>',
+      '#suffix' => '</h3>',
+    ];
+
     $headers = [
       $this->t('Payment Method'),
       $this->t('Number of members'),
     ];
-    // Set up table.
-    $rows = [
-      '#type' => 'table',
-      '#header' => $headers,
-      '#empty' => $this->t('No entries available.'),
-    ];
+    $rows = [];
     $total = 0;
     foreach ($this->memberStorage->adminMemberPaymentMethodSummaryLoad($eid) as $entry) {
       // Sanitize each entry.
       $rows[] = [
-        ['#markup' => $entry['payment_method']],
-        ['#markup' => $entry['num']],
+        ['data' => $entry['payment_method']],
+        ['data' => $entry['num']],
       ];
       $total += $entry['num'];
     }
     // Add a row for the total.
-    $rows['total'] = [
-      [
-        '#markup' => $this->t("Total"),
-        '#wrapper_attributes' => ['class' => ['table-total']],
-      ],
-      [
-        '#markup' => $total,
-        '#wrapper_attributes' => ['class' => ['table-total']],
-      ],
+    $footer = ConregTable::totalFooterRow([$this->t('Total'), $total]);
+    $element['payment_method_summary'] = [
+      '#type' => 'table',
+      '#header' => $headers,
+      '#attributes' => ConregTable::attributes('member-summary-by-payment-method', TableRole::Summary),
+      '#rows' => $rows,
+      '#footer' => $footer,
+      '#empty' => $this->t('No entries available.'),
     ];
-    $content['payment_method_summary'] = $rows;
 
-    return $content;
+    return $element;
   }
 
   /**
-   * Add a summary by badge type to render array.
+   * Add a summary by amount paid to render array.
    */
-  public function memberAdminMemberListAmountPaidSummary($eid, &$content) {
+  public function memberAdminMemberListAmountPaidSummary(int $eid): array {
+    $element = [
+      '#prefix' => '<div class="conreg-table-section conreg-table-section--amount-paid">',
+      '#suffix' => '</div>',
+    ];
+
+    $element['message_amount_paid'] = [
+      '#markup' => $this->t('Summary by amount paid'),
+      '#prefix' => '<h3>',
+      '#suffix' => '</h3>',
+    ];
+
     $headers = [
       $this->t('Amount Paid'),
       $this->t('Number of members'),
       $this->t('Total Paid'),
     ];
-    $rows = [
-      '#type' => 'table',
-      '#header' => $headers,
-      '#empty' => $this->t('No entries available.'),
-    ];
+    $rows = [];
     $total = 0;
     $total_amount = 0;
     foreach ($this->memberStorage->adminMemberAmountPaidSummaryLoad($eid) as $entry) {
@@ -442,37 +490,42 @@ class ConregController extends ControllerBase {
       $total_paid = $entry['member_price'] * $entry['num'];
       // Sanitize each entry.
       $rows[] = [
-        ['#markup' => $entry['member_price']],
-        ['#markup' => $entry['num']],
-        ['#markup' => number_format($total_paid, 2)],
+        ['data' => $entry['member_price']],
+        ['data' => $entry['num']],
+        ['data' => number_format($total_paid, 2)],
       ];
       $total += $entry['num'];
       $total_amount += $total_paid;
     }
     // Add a row for the total.
-    $rows['total'] = [
-      [
-        '#markup' => $this->t("Total"),
-        '#wrapper_attributes' => ['class' => ['table-total']],
-      ],
-      [
-        '#markup' => $total,
-        '#wrapper_attributes' => ['class' => ['table-total']],
-      ],
-      [
-        '#markup' => number_format($total_amount, 2),
-        '#wrapper_attributes' => ['class' => ['table-total']],
-      ],
+    $footer = ConregTable::totalFooterRow([$this->t('Total'), $total, number_format($total_amount, 2)]);
+    $element['amount_paid_summary'] = [
+      '#type' => 'table',
+      '#header' => $headers,
+      '#attributes' => ConregTable::attributes('member-summary-by-amount-paid', TableRole::Summary),
+      '#rows' => $rows,
+      '#footer' => $footer,
+      '#empty' => $this->t('No entries available.'),
     ];
-    $content['amount_paid_summary'] = $rows;
 
-    return $content;
+    return $element;
   }
 
   /**
    * Add a summary by member type and amount paid to render array.
    */
-  public function memberAdminMemberListAmountPaidByTypeSummary($eid, &$content) {
+  public function memberAdminMemberListAmountPaidByTypeSummary(int $eid): array {
+    $element = [
+      '#prefix' => '<div class="conreg-table-section conreg-table-section--amount-paid-by-type">',
+      '#suffix' => '</div>',
+    ];
+
+    $element['message_type_amount_paid'] = [
+      '#markup' => $this->t('Summary by member type and amount paid'),
+      '#prefix' => '<h3>',
+      '#suffix' => '</h3>',
+    ];
+
     $types = ConregOptions::memberTypes($eid);
     $headers = [
       $this->t('Member Type'),
@@ -480,11 +533,7 @@ class ConregController extends ControllerBase {
       $this->t('Number of members'),
       $this->t('Total Paid'),
     ];
-    $rows = [
-      '#type' => 'table',
-      '#header' => $headers,
-      '#empty' => $this->t('No entries available.'),
-    ];
+    $rows = [];
     $total = 0;
     $total_amount = 0;
     foreach ($this->memberStorage->adminMemberAmountPaidByTypeSummaryLoad($eid) as $entry) {
@@ -497,10 +546,10 @@ class ConregController extends ControllerBase {
       $entry['total_paid'] = number_format($total_paid, 2);
       // Sanitize each entry.
       $rows[] = [
-        ['#markup' => isset($types->types[$entry['member_type']]) ? $types->types[$entry['member_type']]->name : $entry['member_type']],
-        ['#markup' => $entry['member_price']],
-        ['#markup' => $entry['num']],
-        ['#markup' => number_format($total_paid, 2)],
+        ['data' => isset($types->types[$entry['member_type']]) ? $types->types[$entry['member_type']]->name : $entry['member_type']],
+        ['data' => $entry['member_price']],
+        ['data' => $entry['num']],
+        ['data' => number_format($total_paid, 2)],
       ];
 
       // Add to totals.
@@ -508,33 +557,34 @@ class ConregController extends ControllerBase {
       $total_amount += $total_paid;
     }
     // Add a row for the total.
-    $rows['total'] = [
-      [
-        '#markup' => $this->t("Total"),
-        '#wrapper_attributes' => ['class' => ['table-total']],
-      ],
-      [
-        '#markup' => '',
-        '#wrapper_attributes' => ['class' => ['table-total']],
-      ],
-      [
-        '#markup' => $total,
-        '#wrapper_attributes' => ['class' => ['table-total']],
-      ],
-      [
-        '#markup' => number_format($total_amount, 2),
-        '#wrapper_attributes' => ['class' => ['table-total']],
-      ],
+    $footer = ConregTable::totalFooterRow([$this->t('Total'), '', $total, number_format($total_amount, 2)]);
+    $element['type_amount_paid_summary'] = [
+      '#type' => 'table',
+      '#header' => $headers,
+      '#attributes' => ConregTable::attributes('member-summary-by-amount-paid-per-type', TableRole::Summary),
+      '#rows' => $rows,
+      '#footer' => $footer,
+      '#empty' => $this->t('No entries available.'),
     ];
-    $content['type_amount_paid_summary'] = $rows;
 
-    return $content;
+    return $element;
   }
 
   /**
    * Add a summary by date joined to render array.
    */
-  public function memberAdminMemberListByDateSummary($eid, &$content) {
+  public function memberAdminMemberListByDateSummary(int $eid): array {
+    $element = [
+      '#prefix' => '<div class="conreg-table-section conreg-table-section--by-date">',
+      '#suffix' => '</div>',
+    ];
+
+    $element['message_by_date'] = [
+      '#markup' => $this->t('Summary by date joined'),
+      '#prefix' => '<h3>',
+      '#suffix' => '</h3>',
+    ];
+
     $months = DateHelper::monthNames();
     $headers = [
       $this->t('Year'),
@@ -544,11 +594,7 @@ class ConregController extends ControllerBase {
       $this->t('Cumulative members'),
       $this->t('Cumulative Total Paid'),
     ];
-    $rows = [
-      '#type' => 'table',
-      '#header' => $headers,
-      '#empty' => $this->t('No entries available.'),
-    ];
+    $rows = [];
     $total = 0;
     $total_amount = 0;
     foreach ($this->memberStorage->adminMemberByDateSummaryLoad($eid) as $entry) {
@@ -558,50 +604,39 @@ class ConregController extends ControllerBase {
       $total_amount += $entry['total_paid'];
       // Sanitize each entry.
       $rows[] = [
-        ['#markup' => $entry['year']],
-        ['#markup' => $entry['month']],
-        ['#markup' => $entry['num']],
-        ['#markup' => number_format($entry['total_paid'], 2)],
-        ['#markup' => $total],
-        ['#markup' => number_format($total_amount, 2)],
+        ['data' => $entry['year']],
+        ['data' => $entry['month']],
+        ['data' => $entry['num']],
+        ['data' => number_format($entry['total_paid'], 2)],
+        ['data' => $total],
+        ['data' => number_format($total_amount, 2)],
       ];
     }
     // Add a row for the total.
-    $rows['total'] = [
-      [
-        '#markup' => $this->t("Total"),
-        '#wrapper_attributes' => ['class' => ['table-total']],
-      ],
-      [
-        '#markup' => '',
-        '#wrapper_attributes' => ['class' => ['table-total']],
-      ],
-      [
-        '#markup' => $total,
-        '#wrapper_attributes' => ['class' => ['table-total']],
-      ],
-      [
-        '#markup' => number_format($total_amount, 2),
-        '#wrapper_attributes' => ['class' => ['table-total']],
-      ],
-      [
-        '#markup' => $total,
-        '#wrapper_attributes' => ['class' => ['table-total']],
-      ],
-      [
-        '#markup' => number_format($total_amount, 2),
-        '#wrapper_attributes' => ['class' => ['table-total']],
-      ],
+    $footer = ConregTable::totalFooterRow([
+      $this->t('Total'),
+      '',
+      $total,
+      number_format($total_amount, 2),
+      $total,
+      number_format($total_amount, 2),
+    ]);
+    $element['by_date_summary'] = [
+      '#type' => 'table',
+      '#header' => $headers,
+      '#attributes' => ConregTable::attributes('member-summary-by-date', TableRole::Summary),
+      '#rows' => $rows,
+      '#footer' => $footer,
+      '#empty' => $this->t('No entries available.'),
     ];
-    $content['by_date_summary'] = $rows;
 
-    return $content;
+    return $element;
   }
 
   /**
    * Render a list of paid convention members in the database.
    */
-  public function memberAdminMemberList($eid) {
+  public function memberAdminMemberList(int $eid) {
     $config = ConregConfig::getConfig($eid);
     $countryOptions = ConregOptions::memberCountries($eid, $config);
     $types = ConregOptions::memberTypes($eid, $config);
@@ -674,7 +709,7 @@ class ConregController extends ControllerBase {
       '#attributes' => ['class' => ['table-copy']],
     ];
 
-    $this->memberAdminMemberListSummary($eid, $content);
+    $content['member_summary'] = $this->memberAdminMemberListSummary($eid, FALSE);
 
     $rows = [];
     $headers = [
@@ -761,6 +796,7 @@ class ConregController extends ControllerBase {
     $content['table'] = [
       '#type' => 'table',
       '#header' => $headers,
+      '#attributes' => ConregTable::attributes('admin-member-list', TableRole::ListTable),
       '#rows' => $rows,
       '#empty' => $this->t('No entries available.'),
       '#sticky' => TRUE,
@@ -774,7 +810,7 @@ class ConregController extends ControllerBase {
   /**
    * Render a summary convention members in the database.
    */
-  public function memberAdminMemberSummary($eid) {
+  public function memberAdminMemberSummary(int $eid) {
     $event = $this->eventStorage->load(['eid' => $eid]);
     $content = [
       '#title' => $this->t('@event_name Member Summary', ['@event_name' => $event['event_name']]),
@@ -793,54 +829,13 @@ class ConregController extends ControllerBase {
       '#attributes' => ['class' => ['table-copy']],
     ];
 
-    $content['message_member'] = [
-      '#markup' => $this->t('Summary by member type'),
-      '#prefix' => '<h3>',
-      '#suffix' => '</h3>',
-    ];
-    $this->memberAdminMemberListSummary($eid, $content);
-
-    $content['message_badge_type'] = [
-      '#markup' => $this->t('Summary by badge type'),
-      '#prefix' => '<h3>',
-      '#suffix' => '</h3>',
-    ];
-    $this->memberAdminMemberListBadgeSummary($eid, $content);
-
-    $content['message_days'] = [
-      '#markup' => $this->t('Summary by day'),
-      '#prefix' => '<h3>',
-      '#suffix' => '</h3>',
-    ];
-    $this->memberAdminMemberListDaysSummary($eid, $content);
-
-    $content['message_payment_method'] = [
-      '#markup' => $this->t('Summary by payment method'),
-      '#prefix' => '<h3>',
-      '#suffix' => '</h3>',
-    ];
-    $this->memberAdminMemberListPaymentMethodSummary($eid, $content);
-
-    $content['message_amount_paid'] = [
-      '#markup' => $this->t('Summary by amount paid'),
-      '#prefix' => '<h3>',
-      '#suffix' => '</h3>',
-    ];
-    $this->memberAdminMemberListAmountPaidSummary($eid, $content);
-
-    $content['message_type_amount_paid'] = [
-      '#markup' => $this->t('Summary by member type and amount paid'),
-      '#prefix' => '<h3>',
-      '#suffix' => '</h3>',
-    ];
-    $this->memberAdminMemberListAmountPaidByTypeSummary($eid, $content);
-
-    $content['message_by_date'] = [
-      '#markup' => $this->t('Summary by date joined'),
-      '#prefix' => '<h3>',
-      '#suffix' => '</h3>',
-    ];
-    $this->memberAdminMemberListByDateSummary($eid, $content);
+    $content['member_summary'] = $this->memberAdminMemberListSummary($eid);
+    $content['badge_summary'] = $this->memberAdminMemberListBadgeSummary($eid);
+    $content['days_summary'] = $this->memberAdminMemberListDaysSummary($eid);
+    $content['payment_method_summary'] = $this->memberAdminMemberListPaymentMethodSummary($eid);
+    $content['amount_paid_summary'] = $this->memberAdminMemberListAmountPaidSummary($eid);
+    $content['type_amount_paid_summary'] = $this->memberAdminMemberListAmountPaidByTypeSummary($eid);
+    $content['by_date_summary'] = $this->memberAdminMemberListByDateSummary($eid);
 
     // Don't cache this page.
     $content['#cache']['max-age'] = 0;
@@ -851,7 +846,7 @@ class ConregController extends ControllerBase {
   /**
    * Return a list of member add-ons.
    */
-  public function memberAdminMemberAddOns($eid) {
+  public function memberAdminMemberAddOns(int $eid) {
     $content = [
       '#cache' => [
         'tags' => ['event:' . $eid . ':members'],
@@ -880,12 +875,15 @@ class ConregController extends ControllerBase {
       $rows[] = $entry;
     }
 
-    $rows[] = [$this->t('Total'), '', '', '', '', number_format($total, 2)];
+    // Add a row for the total.
+    $footer = ConregTable::totalFooterRow([$this->t('Total'), '', '', '', '', number_format($total, 2)]);
 
     $content['table'] = [
       '#type' => 'table',
       '#header' => $headers,
+      '#attributes' => ConregTable::attributes('admin-member-addons', TableRole::ListTable),
       '#rows' => $rows,
+      '#footer' => $footer,
       '#empty' => $this->t('No entries available.'),
       '#sticky' => TRUE,
     ];
@@ -898,7 +896,7 @@ class ConregController extends ControllerBase {
   /**
    * Display a list of child members and their ages.
    */
-  public function memberAdminChildMemberAges($eid) {
+  public function memberAdminChildMemberAges(int $eid) {
     $content = [
       '#cache' => [
         'tags' => ['event:' . $eid . ':members'],
@@ -931,6 +929,7 @@ class ConregController extends ControllerBase {
     $content['table'] = [
       '#type' => 'table',
       '#header' => $headers,
+      '#attributes' => ConregTable::attributes('admin-member-child-ages', TableRole::ListTable),
       '#rows' => $rows,
       '#empty' => $this->t('No entries available.'),
       '#sticky' => TRUE,

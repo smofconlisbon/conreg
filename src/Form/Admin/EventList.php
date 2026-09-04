@@ -6,7 +6,8 @@ use Drupal\conreg\Service\EventStorage;
 use Drupal\Core\DependencyInjection\AutowireTrait;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Component\Utility\Html;
+use Drupal\conreg\ConregTable;
+use Drupal\conreg\TableRole;
 use Drupal\Core\Url;
 
 /**
@@ -57,43 +58,43 @@ class EventList extends ConfigFormBase {
       'link' => $this->t('Update'),
     ];
 
-    $form['table'] = [
-      '#type' => 'table',
-      '#header' => $headers,
-      '#attributes' => ['id' => 'conreg-admin-event-list'],
-      '#empty' => $this->t('No entries available.'),
-      '#sticky' => TRUE,
-    ];
-
+    $rows = [];
     foreach ($events as $event) {
       $eid = $event['eid'];
       // Sanitize each entry.
       $row = [];
-      $row['event_name'] = [
-        '#markup' => Html::escape($event['event_name']),
-      ];
-      $row['state'] = [
-        '#markup' => $event['is_open'] ? $this->t('Open') : $this->t('Closed'),
-      ];
+      $row['event_name'] = ['data' => $event['event_name']];
+      $row['state'] = ['data' => $event['is_open'] ? $this->t('Open') : $this->t('Closed')];
       $row['link'] = [
-        '#type' => 'dropbutton',
-        '#links' => [
-          'admin_button' => [
-            'title' => $this->t('Admin'),
-            'url' => Url::fromRoute('conreg_admin_members', ['eid' => $eid]),
-          ],
-          'config_button' => [
-            'title' => $this->t('Configure'),
-            'url' => Url::fromRoute('conreg_config', ['eid' => $eid]),
-          ],
-          'clone_button' => [
-            'title' => $this->t('Clone'),
-            'url' => Url::fromRoute('conreg_event_clone', ['eid' => $eid]),
+        'data' => [
+          '#type' => 'dropbutton',
+          '#links' => [
+            'admin_button' => [
+              'title' => $this->t('Admin'),
+              'url' => Url::fromRoute('conreg_admin_members', ['eid' => $eid]),
+            ],
+            'config_button' => [
+              'title' => $this->t('Configure'),
+              'url' => Url::fromRoute('conreg_config', ['eid' => $eid]),
+            ],
+            'clone_button' => [
+              'title' => $this->t('Clone'),
+              'url' => Url::fromRoute('conreg_event_clone', ['eid' => $eid]),
+            ],
           ],
         ],
       ];
-      $form['table'][$eid] = $row;
+      $rows[$eid] = $row;
     }
+
+    $form['table'] = [
+      '#type' => 'table',
+      '#header' => $headers,
+      '#attributes' => ConregTable::attributes('events-list', TableRole::ListTable),
+      '#rows' => $rows,
+      '#empty' => $this->t('No entries available.'),
+      '#sticky' => TRUE,
+    ];
 
     return $form;
   }

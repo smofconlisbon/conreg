@@ -4,8 +4,10 @@ namespace Drupal\conreg\Form;
 
 use Drupal\Component\Datetime\TimeInterface;
 use Drupal\conreg\ConregOptions;
+use Drupal\conreg\ConregTable;
 use Drupal\conreg\Payment;
 use Drupal\conreg\PaymentLine;
+use Drupal\conreg\TableRole;
 use Drupal\conreg\Service\AddonStorage;
 use Drupal\conreg\Service\MemberStorage;
 use Drupal\conreg\Service\PaymentStorage;
@@ -95,7 +97,7 @@ class MemberPortal extends FormBase {
       $form['table'] = [
         '#type' => 'table',
         '#header' => $headers,
-        '#attributes' => ['id' => 'conreg-admin-member-list'],
+        '#attributes' => ConregTable::attributes('member-portal-summary', TableRole::Summary),
         '#empty' => $this->t('No entries available.'),
         '#sticky' => TRUE,
       ];
@@ -179,13 +181,7 @@ class MemberPortal extends FormBase {
       'price' => ['data' => $this->t('Price'), 'field' => 'm.member_total'],
     ];
 
-    $unpaid = [
-      '#type' => 'table',
-      '#header' => $headers,
-      '#attributes' => ['id' => 'conreg-admin-member-list'],
-      '#empty' => $this->t('No entries available.'),
-      '#sticky' => TRUE,
-    ];
+    $rows = [];
 
     foreach ($entries as $entry) {
       $mid = $entry['mid'];
@@ -193,38 +189,52 @@ class MemberPortal extends FormBase {
       $is_paid = $entry['is_paid'];
 
       if (!$is_paid) {
-        $row = [];
-        $row['type'] = ['#markup' => $this->t('Member')];
-        $row['name'] = ['#markup' => Html::escape($entry['first_name'] . ' ' . $entry['last_name'])];
-        $row['email'] = ['#markup' => Html::escape($entry['email'])];
         $memberType = $types->types[trim($entry['member_type'])]->name ?? trim($entry['member_type']);
-        $row['member_type'] = ['#markup' => Html::escape($memberType)];
-        $row['price'] = ['#markup' => Html::escape($entry['member_price'])];
-        $unpaid[$mid] = $row;
+        $rows[] = [
+          'type' => ['data' => $this->t('Member')],
+          'name' => ['data' => $entry['first_name'] . ' ' . $entry['last_name']],
+          'email' => ['data' => $entry['email']],
+          'member_type' => ['data' => $memberType],
+          'price' => ['data' => $entry['member_price']],
+        ];
         $display_unpaid = TRUE;
       }
 
       foreach ($this->addonStorage->loadAll(['mid' => $mid, 'is_paid' => 0]) as $addon) {
-        $row = [];
-        $row['type'] = ['#markup' => $this->t('Add-on')];
-        $row['name'] = ['#markup' => Html::escape($entry['first_name'] . ' ' . $entry['last_name'])];
-        $row['email'] = ['#markup' => Html::escape($entry['email'])];
-        $row['member_type'] = ['#markup' => Html::escape($addon['addon_name'] . (isset($addon['addon_option']) ? ' - ' . $addon['addon_option'] : ''))];
-        $row['price'] = ['#markup' => Html::escape($addon['addon_amount'])];
-        $unpaid['addon_' . $addon['addonid']] = $row;
+        $rows[] = [
+          'type' => ['data' => $this->t('Add-on')],
+          'name' => ['data' => $entry['first_name'] . ' ' . $entry['last_name']],
+          'email' => ['data' => $entry['email']],
+          'member_type' => ['data' => $addon['addon_name'] . (isset($addon['addon_option']) ? ' - ' . $addon['addon_option'] : '')],
+          'price' => ['data' => $addon['addon_amount']],
+        ];
         $display_unpaid = TRUE;
       }
     }
 
+    $unpaid = [
+      '#type' => 'table',
+      '#header' => $headers,
+      '#attributes' => ConregTable::attributes('member-portal-unpaid', TableRole::ListTable),
+      '#rows' => $rows,
+      '#empty' => $this->t('No entries available.'),
+      '#sticky' => TRUE,
+    ];
+
     // Only show table if unpaid members found.
     if ($display_unpaid) {
-      $form['unpaid_title'] = [
+      $form['unpaid_section'] = [
+        '#prefix' => '<div class="conreg-table-section conreg-table-section--unpaid-members">',
+        '#suffix' => '</div>',
+      ];
+
+      $form['unpaid_section']['unpaid_title'] = [
         '#markup' => $this->t('Unpaid Members and Add-ons'),
         '#prefix' => '<h2>',
         '#suffix' => '</h2>',
       ];
 
-      $form['unpaid'] = $unpaid;
+      $form['unpaid_section']['unpaid'] = $unpaid;
     }
 
     /*

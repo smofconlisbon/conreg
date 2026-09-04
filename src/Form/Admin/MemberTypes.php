@@ -5,6 +5,8 @@ namespace Drupal\conreg\Form\Admin;
 use Drupal\Component\Utility\Html;
 use Drupal\conreg\Service\EventStorage;
 use Drupal\conreg\ConregOptions;
+use Drupal\conreg\ConregTable;
+use Drupal\conreg\TableRole;
 use Drupal\conreg\Trait\EasyEmailTypeOptionsTrait;
 use Drupal\conreg\Trait\TokenTreeLinkTrait;
 use Drupal\Core\Cache\CacheTagsInvalidator;
@@ -331,7 +333,7 @@ class MemberTypes extends ConfigFormBase {
     $daysForm['daysTable'] = [
       '#type' => 'table',
       '#header' => $headers,
-      '#attributes' => ['id' => 'conreg-member-type-' . $typeRef . '-days'],
+      '#attributes' => ConregTable::attributes('member-type-' . $typeRef . '-days', TableRole::ListTable, ['conreg-table--member-type-days']),
       '#empty' => $this->t('No entries available.'),
       '#sticky' => TRUE,
     ];

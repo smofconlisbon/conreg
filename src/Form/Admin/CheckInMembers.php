@@ -5,6 +5,7 @@ namespace Drupal\conreg\Form\Admin;
 use Drupal\Component\Utility\Html;
 use Drupal\conreg\ConregOptions;
 use Drupal\conreg\ConregConfig;
+use Drupal\conreg\ConregTable;
 use Drupal\conreg\Payment;
 use Drupal\conreg\PaymentLine;
 use Drupal\conreg\Pricing\PricingContext;
@@ -13,6 +14,7 @@ use Drupal\conreg\Service\EventStorage;
 use Drupal\conreg\Service\MemberStorage;
 use Drupal\conreg\Service\PaymentStorage;
 use Drupal\conreg\Service\PricingServiceInterface;
+use Drupal\conreg\TableRole;
 use Drupal\conreg\Trait\ShowBadgeNumberTrait;
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Config\ImmutableConfig;
@@ -75,11 +77,13 @@ class CheckInMembers extends FormBase {
       $total += $entry['num'];
     }
     // Add a row for the total.
-    $rows[] = [$this->t("Total"), $total];
+    $footer = ConregTable::totalFooterRow([$this->t('Total'), $total]);
     $content['check_in_summary'] = [
       '#type' => 'table',
       '#header' => $headers,
+      '#attributes' => ConregTable::attributes('member-checkin-summary', TableRole::ListTable),
       '#rows' => $rows,
+      '#footer' => $footer,
       '#empty' => $this->t('No entries available.'),
     ];
 
@@ -203,7 +207,7 @@ class CheckInMembers extends FormBase {
     $form['table'] = [
       '#type' => 'table',
       '#header' => $headers,
-      '#attributes' => ['id' => 'conreg-admin-member-list'],
+      '#attributes' => ConregTable::attributes('member-checkin', TableRole::ListTable),
       '#empty' => $this->t('No entries available.'),
       '#sticky' => TRUE,
     ];
@@ -313,7 +317,7 @@ class CheckInMembers extends FormBase {
     $form['unpaid'] = [
       '#type' => 'table',
       '#header' => $headers,
-      '#attributes' => ['id' => 'conreg-admin-member-list'],
+      '#attributes' => ConregTable::attributes('member-unpaid', TableRole::ListTable),
       '#empty' => $this->t('No entries available.'),
       '#sticky' => TRUE,
     ];

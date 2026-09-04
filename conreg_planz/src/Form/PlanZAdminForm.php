@@ -3,9 +3,11 @@
 namespace Drupal\conreg_planz\Form;
 
 use Drupal\Component\Utility\DeprecationHelper;
+use Drupal\conreg\ConregTable;
 use Drupal\Core\Database\Statement\FetchAs;
 use Drupal\conreg\FieldOptions;
 use Drupal\conreg\Member;
+use Drupal\conreg\TableRole;
 use Drupal\conreg_planz\PlanZ;
 use Drupal\conreg_planz\PlanZUser;
 use Drupal\Core\Database\Connection;
@@ -213,6 +215,7 @@ class PlanZAdminForm extends FormBase {
     $form['search_results']['table'] = [
       '#type' => 'table',
       '#header' => $headers,
+      '#attributes' => ConregTable::attributes('planz-members', TableRole::ListTable),
       '#rows' => $rows,
       '#empty' => $this->t('No entries available.'),
       '#sticky' => TRUE,

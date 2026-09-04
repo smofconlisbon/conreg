@@ -7,6 +7,7 @@ use Drupal\Component\Utility\Html;
 use Drupal\conreg\Addons;
 use Drupal\conreg\ConregConfig;
 use Drupal\conreg\ConregOptions;
+use Drupal\conreg\ConregTable;
 use Drupal\conreg\Member;
 use Drupal\conreg\Payment;
 use Drupal\conreg\PaymentLine;
@@ -15,6 +16,7 @@ use Drupal\conreg\Service\MemberStorage;
 use Drupal\conreg\Service\PaymentStorage;
 use Drupal\conreg\Service\RegistrationConfirmationMailer;
 use Drupal\conreg\Service\UpgradeStorage;
+use Drupal\conreg\TableRole;
 use Drupal\conreg\Upgrade;
 use Drupal\conreg\UpgradeManager;
 use Drupal\Core\DependencyInjection\AutowireTrait;
@@ -147,7 +149,7 @@ class FanTable extends FormBase {
     $form['search']['table'] = [
       '#type' => 'table',
       '#header' => $headers,
-      '#attributes' => ['id' => 'conreg-admin-member-list'],
+      '#attributes' => ConregTable::attributes('fantable-search', TableRole::ListTable),
       '#empty' => t('No entries available.'),
       '#sticky' => TRUE,
     ];
@@ -242,7 +244,7 @@ class FanTable extends FormBase {
     $form['unpaid']['unpaid'] = [
       '#type' => 'table',
       '#header' => $headers,
-      '#attributes' => ['id' => 'conreg-admin-member-list'],
+      '#attributes' => ConregTable::attributes('checkin-unpaid', TableRole::ListTable),
       '#empty' => t('No entries available.'),
       '#sticky' => TRUE,
     ];
@@ -329,17 +331,18 @@ class FanTable extends FormBase {
     foreach ($this->memberStorage->adminMemberSummaryLoad($eid) as $entry) {
       // Replace type code with description.
       $headers[] = isset($types->types[$entry['member_type']]) ? $types->types[$entry['member_type']]->name : $entry['member_type'];
-      $rows[] = ['#markup' => $entry['num']];
+      $rows[] = ['data' => $entry['num']];
       $total += $entry['num'];
     }
-    // Add a row for the total.
-    $headers[] = $this->t("Total");
-    $rows[] = ['#markup' => $total];
+    // Add a column for the total.
+    $headers[] = $this->t('Total');
+    $rows[] = ['data' => $total, 'class' => ['table-total']];
     $content['summary'] = [
       '#type' => 'table',
       '#header' => $headers,
+      '#attributes' => ConregTable::attributes('fantable-summary', TableRole::ListTable),
+      '#rows' => [$rows],
       '#empty' => $this->t('No entries available.'),
-      'rows' => $rows,
     ];
 
     return $content;

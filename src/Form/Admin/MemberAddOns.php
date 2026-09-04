@@ -3,7 +3,9 @@
 namespace Drupal\conreg\Form\Admin;
 
 use Drupal\conreg\Addons;
+use Drupal\conreg\ConregTable;
 use Drupal\conreg\Service\AddonStorage;
+use Drupal\conreg\TableRole;
 use Drupal\Core\DependencyInjection\AutowireTrait;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
@@ -118,12 +120,15 @@ class MemberAddOns extends FormBase {
       $rows[] = array_map('Drupal\Component\Utility\Html::escape', (array) $entry);
     }
 
-    $rows[] = ['', '', '', '', $this->t('Total'), '', '', number_format($total, 2), ''];
+    // Add a row for the total.
+    $footer = ConregTable::totalFooterRow(['', '', '', '', $this->t('Total'), '', '', number_format($total, 2), '']);
 
     $form['table'] = [
       '#type' => 'table',
       '#header' => $headers,
+      '#attributes' => ConregTable::attributes('member-addons', TableRole::ListTable),
       '#rows' => $rows,
+      '#footer' => $footer,
       '#empty' => $this->t('No entries available.'),
       '#sticky' => TRUE,
     ];

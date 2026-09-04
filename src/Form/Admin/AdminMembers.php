@@ -4,9 +4,11 @@ namespace Drupal\conreg\Form\Admin;
 
 use Drupal\Component\Utility\Html;
 use Drupal\conreg\ConregOptions;
+use Drupal\conreg\ConregTable;
 use Drupal\conreg\Member;
 use Drupal\conreg\Service\EventStorage;
 use Drupal\conreg\Service\MemberStorage;
+use Drupal\conreg\TableRole;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Ajax\AjaxResponse;
@@ -252,7 +254,7 @@ class AdminMembers extends FormBase {
     $form['table'] = [
       '#type' => 'table',
       '#header' => $headers,
-      '#attributes' => ['id' => 'conreg-admin-member-list'],
+      '#attributes' => ConregTable::attributes('admin-members', TableRole::ListTable),
       '#empty' => $this->t('No entries available.'),
       '#sticky' => TRUE,
     ];

@@ -2,9 +2,10 @@
 
 namespace Drupal\conreg\Form\Admin;
 
-use Drupal\Component\Utility\Html;
 use Drupal\conreg\ConregOptions;
+use Drupal\conreg\ConregTable;
 use Drupal\conreg\Service\MemberStorage;
+use Drupal\conreg\TableRole;
 use Drupal\Core\DependencyInjection\AutowireTrait;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
@@ -163,13 +164,7 @@ class MailoutEmails extends FormBase {
         $headers['language'] = ['data' => $this->t('Language'), 'field' => 'm.language'];
       }
 
-      $form['table'] = [
-        '#type' => 'table',
-        '#header' => $headers,
-        '#attributes' => ['id' => 'conreg-admin-member-list'],
-        '#empty' => $this->t('No entries available.'),
-        '#sticky' => TRUE,
-      ];
+      $rows = [];
 
       if (!empty($methods) && !empty($languages)) {
         // Fetch all entries for selected option or group.
@@ -179,29 +174,28 @@ class MailoutEmails extends FormBase {
         foreach ($mailoutMembers as $entry) {
           $row = [];
           if ($showName) {
-            $row['first_name'] = [
-              '#markup' => Html::escape($entry['first_name']),
-            ];
-            $row['last_name'] = [
-              '#markup' => Html::escape($entry['last_name']),
-            ];
+            $row['first_name'] = ['data' => $entry['first_name']];
+            $row['last_name'] = ['data' => $entry['last_name']];
           }
-          $row['email'] = [
-            '#markup' => Html::escape($entry['email']),
-          ];
+          $row['email'] = ['data' => $entry['email']];
           if ($showMethod) {
-            $row['communication_method'] = [
-              '#markup' => Html::escape($methodOptions[$entry['communication_method']]),
-            ];
+            $row['communication_method'] = ['data' => $methodOptions[$entry['communication_method']]];
           }
           if ($showLanguage) {
-            $row['language'] = [
-              '#markup' => Html::escape($langOptions[$entry['language']]),
-            ];
+            $row['language'] = ['data' => $langOptions[$entry['language']]];
           }
-          $form['table'][] = $row;
+          $rows[] = $row;
         }
       }
+
+      $form['table'] = [
+        '#type' => 'table',
+        '#header' => $headers,
+        '#attributes' => ConregTable::attributes('mailout-emails', TableRole::ListTable),
+        '#rows' => $rows,
+        '#empty' => $this->t('No entries available.'),
+        '#sticky' => TRUE,
+      ];
     }
 
     return $form;

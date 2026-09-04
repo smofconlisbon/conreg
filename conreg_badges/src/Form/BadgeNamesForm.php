@@ -10,7 +10,9 @@ use Drupal\Core\Url;
 use Drupal\Core\Link;
 use Drupal\conreg\ConregConfig;
 use Drupal\conreg\ConregOptions;
+use Drupal\conreg\ConregTable;
 use Drupal\conreg\Service\MemberStorage;
+use Drupal\conreg\TableRole;
 use Drupal\Core\DependencyInjection\AutowireTrait;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -165,6 +167,7 @@ class BadgeNamesForm extends FormBase {
     $form['table'] = [
       '#type' => 'table',
       '#header' => $headers,
+      '#attributes' => ConregTable::attributes('badge-names', TableRole::ListTable),
       '#rows' => $badgeNameRows->rows,
       '#empty' => $this->t('No entries available.'),
       '#sticky' => TRUE,

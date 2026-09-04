@@ -6,9 +6,10 @@ use Drupal\Core\DependencyInjection\AutowireTrait;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\TempStore\PrivateTempStoreFactory;
-use Drupal\Component\Utility\Html;
+use Drupal\conreg\ConregTable;
 use Drupal\conreg\FieldOptions;
 use Drupal\conreg\FieldOptionStorage;
+use Drupal\conreg\TableRole;
 
 /**
  * Simple form to add an entry, with all the interesting fields.
@@ -208,13 +209,8 @@ class MemberOptions extends FormBase {
 
     $headers['total'] = ['data' => 'Total', 'field' => 'total'];
 
-    $form['table'] = [
-      '#type' => 'table',
-      '#header' => $headers,
-      '#attributes' => ['id' => 'conreg-admin-member-list'],
-      '#empty' => $this->t('No entries available.'),
-      '#sticky' => TRUE,
-    ];
+    $rows = [];
+    $totalRows = 0;
 
     if (!empty($selOption)) {
       // Fetch all entries for selected option or group.
@@ -232,22 +228,13 @@ class MemberOptions extends FormBase {
         }
         $optRows[$entry['mid']]['option_' . $entry['optid']] = ($entry['is_selected'] ? '✓ ' . $entry['option_detail'] : '');
       }
-      // Track the total number of members in the category.
-      $totalRows = 0;
-
       // Now loop through the combined results.
       foreach ($optRows as $entry) {
         $row = [];
-        $row['first_name'] = [
-          '#markup' => Html::escape($entry['first_name']),
-        ];
-        $row['last_name'] = [
-          '#markup' => Html::escape($entry['last_name']),
-        ];
+        $row['first_name'] = ['data' => $entry['first_name']];
+        $row['last_name'] = ['data' => $entry['last_name']];
         if ($showEmail) {
-          $row['email'] = [
-            '#markup' => Html::escape($entry['email']),
-          ];
+          $row['email'] = ['data' => $entry['email']];
         }
         $rowTotal = 0;
         foreach ($displayOpts as $display) {
@@ -259,42 +246,42 @@ class MemberOptions extends FormBase {
           else {
             $val = '';
           }
-          $row['option_' . $display] = [
-            '#markup' => Html::escape($val),
-          ];
+          $row['option_' . $display] = ['data' => $val];
         }
-        $row['total'] = [
-          '#markup' => $rowTotal,
-        ];
-        $form['table'][] = $row;
+        $row['total'] = ['data' => $rowTotal];
+        $rows[] = $row;
         $totalRows++;
       }
     }
 
     // Populate final row of table with totals.
-    $totalRow = [
+    $footerRow = [
       'first_name' => [
-        '#markup' => $this->t('Total members'),
-        '#wrapper_attributes' => ['colspan' => 2, 'class' => ['table-total']],
+        'data' => $this->t('Total members'),
+        'colspan' => 2,
+        'class' => ['table-total'],
       ],
     ];
     if ($showEmail) {
-      $totalRow['email'] = [
-        '#markup' => '',
-        '#wrapper_attributes' => ['class' => ['table-total']],
-      ];
+      $footerRow['email'] = ['data' => '', 'class' => ['table-total']];
     }
     foreach ($displayOpts as $display) {
-      $totalRow['option_' . $display] = [
-        '#markup' => $optionTotals[$display],
-        '#wrapper_attributes' => ['class' => ['table-total']],
-      ];
+      $footerRow['option_' . $display] = ['data' => $optionTotals[$display], 'class' => ['table-total']];
     }
-    $totalRow['total'] = [
-      '#markup' => $this->t('@total members', ['@total' => $totalRows]),
-      '#wrapper_attributes' => ['class' => ['table-total']],
+    $footerRow['total'] = [
+      'data' => $this->t('@total members', ['@total' => $totalRows]),
+      'class' => ['table-total'],
     ];
-    $form['table'][] = $totalRow;
+
+    $form['table'] = [
+      '#type' => 'table',
+      '#header' => $headers,
+      '#attributes' => ConregTable::attributes('member-options', TableRole::ListTable),
+      '#rows' => $rows,
+      '#footer' => [$footerRow],
+      '#empty' => $this->t('No entries available.'),
+      '#sticky' => TRUE,
+    ];
 
     return $form;
   }
