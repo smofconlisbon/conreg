@@ -431,3 +431,27 @@ conreg_admin_fantable:
     _permission: 'fan table registration'
     eid: ^[0-9]+$
     lead_mid: ^[0-9]+$
+
+conreg.print_job_next:
+  path: '/api/print-jobs/{eid}/next'
+  defaults:
+    _controller: '\Drupal\conreg\Controller\PrintJobController::next'
+  methods: [GET]
+  requirements:
+    # Placeholder access control; real per-device auth tokens come later.
+    _access: 'TRUE'
+    eid: ^[0-9]+$
+  options:
+    no_cache: true
+
+conreg.print_job_result:
+  path: '/api/print-jobs/{eid}/{id}/result'
+  defaults:
+    _controller: '\Drupal\conreg\Controller\PrintJobController::result'
+  methods: [POST]
+  requirements:
+    # Placeholder access control; real per-device auth tokens come later.
+    _access: 'TRUE'
+    eid: ^[0-9]+$
+  options:
+    no_cache: true
