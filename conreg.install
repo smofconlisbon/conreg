@@ -1304,3 +1304,14 @@ function conreg_update_9014() {
     '@ids' => implode(', ', $created) ?: '(none found)',
   ]);
 }
+
+/**
+ * Install the conreg_printer and conreg_print_job entity types.
+ */
+function conreg_update_9015() {
+  $update_manager = \Drupal::entityDefinitionUpdateManager();
+  $entity_type_manager = \Drupal::entityTypeManager();
+
+  $update_manager->installEntityType($entity_type_manager->getDefinition('conreg_printer'));
+  $update_manager->installEntityType($entity_type_manager->getDefinition('conreg_print_job'));
+}

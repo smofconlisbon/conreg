@@ -439,6 +439,9 @@ conreg.print_job_next:
   methods: [GET]
   requirements:
     # Placeholder access control; real per-device auth tokens come later.
+    # Requires a "?printer=<name>" query parameter identifying the printer
+    # polling for work; not declared as a path parameter since printer
+    # names are free text (e.g. "Bilbo Baggins").
     _access: 'TRUE'
     eid: ^[0-9]+$
   options:
@@ -453,5 +456,6 @@ conreg.print_job_result:
     # Placeholder access control; real per-device auth tokens come later.
     _access: 'TRUE'
     eid: ^[0-9]+$
+    id: ^[0-9]+$
   options:
     no_cache: true

@@ -35,6 +35,10 @@ services:
     class: Drupal\conreg\Service\UpgradeStorage
   Drupal\conreg\Service\UpgradeStorage: '@conreg.upgrade.storage'
 
+  conreg.print_job.manager:
+    class: Drupal\conreg\Service\PrintJobManager
+  Drupal\conreg\Service\PrintJobManager: '@conreg.print_job.manager'
+
   conreg.email.sender:
     class: Drupal\conreg\Service\ConregEmailSender
   Drupal\conreg\Service\ConregEmailSender: '@conreg.email.sender'
