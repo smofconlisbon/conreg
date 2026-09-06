@@ -7,14 +7,14 @@ use Drupal\conreg\Controller\PrintJobController;
 use Drupal\conreg\Entity\PrintJob;
 use Drupal\conreg\Entity\Printer;
 use Drupal\KernelTests\KernelTestBase;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
  * Tests PrintJobController, the badge label print job exchange API.
- *
- * @group conreg
  */
+#[Group('conreg')]
 #[RunTestsInSeparateProcesses]
 class PrintJobControllerKernelTest extends KernelTestBase {
 
@@ -52,9 +52,13 @@ class PrintJobControllerKernelTest extends KernelTestBase {
 
   /**
    * Helper: create a printer entity.
+   *
+   * Derives a CUPS-safe machine name from the display name (e.g. "Bilbo
+   * Baggins" -> "bilbo_baggins") unless one is given explicitly.
    */
-  protected function createPrinter(int $eid, string $name): Printer {
-    $printer = Printer::create(['eid' => $eid, 'name' => $name]);
+  protected function createPrinter(int $eid, string $name, ?string $machineName = NULL): Printer {
+    $machineName ??= strtolower(str_replace(' ', '_', $name));
+    $printer = Printer::create(['eid' => $eid, 'name' => $name, 'machine_name' => $machineName]);
     $printer->save();
     return $printer;
   }
@@ -92,7 +96,7 @@ class PrintJobControllerKernelTest extends KernelTestBase {
     $older = $this->createJob(1, (int) $printer->id(), ['member_name' => 'Older Job']);
     $this->createJob(1, (int) $printer->id(), ['member_name' => 'Newer Job']);
 
-    $request = Request::create('/api/print-jobs/1/next', 'GET', ['printer' => 'Bilbo Baggins']);
+    $request = Request::create('/api/print-jobs/1/next', 'GET', ['printer' => 'bilbo_baggins']);
     $response = $this->callController()->next($request, 1);
 
     $this->assertSame(200, $response->getStatusCode());
@@ -114,7 +118,7 @@ class PrintJobControllerKernelTest extends KernelTestBase {
     $printer = $this->createPrinter(1, 'Bilbo Baggins');
     $this->createJob(1, (int) $printer->id());
 
-    $request = Request::create('/api/print-jobs/1/next', 'GET', ['printer' => 'Bilbo Baggins']);
+    $request = Request::create('/api/print-jobs/1/next', 'GET', ['printer' => 'bilbo_baggins']);
     $controller = $this->callController();
 
     $first = $controller->next($request, 1);
@@ -125,6 +129,45 @@ class PrintJobControllerKernelTest extends KernelTestBase {
   }
 
   /**
+   * Test that a job claimed long enough ago with no result is reclaimed.
+   *
+   * A crashed or disconnected agent could otherwise leave a job "claimed"
+   * forever with nothing else happening to it.
+   */
+  public function testNextReclaimsStaleClaimedJob(): void {
+    $printer = $this->createPrinter(1, 'Bilbo Baggins');
+    // PrintJobController::STALE_CLAIM_TIMEOUT_SECONDS is 300; one second
+    // past that counts as abandoned.
+    $job = $this->createJob(1, (int) $printer->id(), [
+      'status' => 'claimed',
+      'changed' => self::CURRENT_TIME - 301,
+    ]);
+
+    $request = Request::create('/api/print-jobs/1/next', 'GET', ['printer' => 'bilbo_baggins']);
+    $response = $this->callController()->next($request, 1);
+
+    $this->assertSame(200, $response->getStatusCode());
+    $data = json_decode($response->getContent(), TRUE);
+    $this->assertSame((string) $job->id(), $data['job_id']);
+  }
+
+  /**
+   * Test that a job claimed recently is not treated as abandoned.
+   */
+  public function testNextDoesNotReclaimRecentlyClaimedJob(): void {
+    $printer = $this->createPrinter(1, 'Bilbo Baggins');
+    $this->createJob(1, (int) $printer->id(), [
+      'status' => 'claimed',
+      'changed' => self::CURRENT_TIME - 60,
+    ]);
+
+    $request = Request::create('/api/print-jobs/1/next', 'GET', ['printer' => 'bilbo_baggins']);
+    $response = $this->callController()->next($request, 1);
+
+    $this->assertSame(204, $response->getStatusCode());
+  }
+
+  /**
    * Test that a pending job for a different printer is not claimed.
    */
   public function testNextIgnoresJobForDifferentPrinter(): void {
@@ -132,7 +175,7 @@ class PrintJobControllerKernelTest extends KernelTestBase {
     $this->createPrinter(1, 'Darth Printer');
     $this->createJob(1, (int) $printerA->id());
 
-    $request = Request::create('/api/print-jobs/1/next', 'GET', ['printer' => 'Darth Printer']);
+    $request = Request::create('/api/print-jobs/1/next', 'GET', ['printer' => 'darth_printer']);
     $response = $this->callController()->next($request, 1);
 
     $this->assertSame(204, $response->getStatusCode());
@@ -146,7 +189,7 @@ class PrintJobControllerKernelTest extends KernelTestBase {
     $this->createJob(1, (int) $printer->id());
 
     // Same printer name, but the request is scoped to a different event.
-    $request = Request::create('/api/print-jobs/2/next', 'GET', ['printer' => 'Bilbo Baggins']);
+    $request = Request::create('/api/print-jobs/2/next', 'GET', ['printer' => 'bilbo_baggins']);
     $response = $this->callController()->next($request, 2);
 
     $this->assertSame(404, $response->getStatusCode());
@@ -178,7 +221,7 @@ class PrintJobControllerKernelTest extends KernelTestBase {
   public function testNextReturnsNoContentWhenNoJobsPending(): void {
     $this->createPrinter(1, 'Bilbo Baggins');
 
-    $request = Request::create('/api/print-jobs/1/next', 'GET', ['printer' => 'Bilbo Baggins']);
+    $request = Request::create('/api/print-jobs/1/next', 'GET', ['printer' => 'bilbo_baggins']);
     $response = $this->callController()->next($request, 1);
 
     $this->assertSame(204, $response->getStatusCode());

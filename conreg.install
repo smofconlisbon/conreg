@@ -8,6 +8,7 @@
 use Drupal\Component\Utility\DeprecationHelper;
 use Drupal\Core\Extension\Requirement\RequirementSeverity;
 use Drupal\Core\Database\Database;
+use Drupal\Core\Field\BaseFieldDefinition;
 
 /**
  * Implements hook_requirements().
@@ -1314,4 +1315,18 @@ function conreg_update_9015() {
 
   $update_manager->installEntityType($entity_type_manager->getDefinition('conreg_printer'));
   $update_manager->installEntityType($entity_type_manager->getDefinition('conreg_print_job'));
+}
+
+/**
+ * Add the machine_name field to the conreg_printer entity type.
+ */
+function conreg_update_9016() {
+  $storage_definition = BaseFieldDefinition::create('string')
+    ->setLabel(t('Machine name'))
+    ->setDescription(t('A stable, CUPS-safe identifier (e.g. "bilbo_baggins") matching the print agent\'s CUPS queue name. Sent over the API and matched against the --printer argument the agent polls with; never shown to staff.'))
+    ->setRequired(TRUE)
+    ->setSetting('max_length', 64);
+
+  \Drupal::entityDefinitionUpdateManager()
+    ->installFieldStorageDefinition('machine_name', 'conreg_printer', 'conreg', $storage_definition);
 }

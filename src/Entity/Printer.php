@@ -39,7 +39,13 @@ class Printer extends ContentEntityBase {
 
     $fields['name'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Name'))
-      ->setDescription(t('The "fun name" stickered on the physical printer, e.g. "Bilbo Baggins". Also used as the CUPS queue name.'))
+      ->setDescription(t('The "fun name" stickered on the physical printer, e.g. "Bilbo Baggins". Shown to staff in the check-in printer picker.'))
+      ->setRequired(TRUE)
+      ->setSetting('max_length', 64);
+
+    $fields['machine_name'] = BaseFieldDefinition::create('string')
+      ->setLabel(t('Machine name'))
+      ->setDescription(t('A stable, CUPS-safe identifier (e.g. "bilbo_baggins") matching the print agent\'s CUPS queue name. Sent over the API and matched against the --printer argument the agent polls with; never shown to staff.'))
       ->setRequired(TRUE)
       ->setSetting('max_length', 64);
 

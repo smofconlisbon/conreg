@@ -5,6 +5,8 @@ namespace Drupal\Tests\conreg\Kernel;
 use Drupal\user\RoleInterface;
 use Drupal\filter\Entity\FilterFormat;
 use Drupal\conreg\Addons;
+use Drupal\conreg\Entity\Printer;
+use Drupal\conreg\Form\Admin\CheckInMembers;
 use Drupal\conreg\Form\Admin\EventAddOns;
 use Drupal\conreg\Form\Admin\EventConfig;
 use Drupal\conreg\Payment;
@@ -18,6 +20,9 @@ use Drupal\Core\Session\UserSession;
 use Drupal\KernelTests\KernelTestBase;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Session\Session;
+use Symfony\Component\HttpFoundation\Session\Storage\MockArraySessionStorage;
 use Symfony\Component\Routing\Route;
 
 /**
@@ -445,6 +450,55 @@ class FormBuildTest extends KernelTestBase {
   }
 
   /**
+   * With no config saved, "Enable badge label printing" defaults to off.
+   */
+  public function testAdminEventConfigFormLabelPrintingDefaultsToDisabled(): void {
+    $form = $this->container
+      ->get('form_builder')
+      ->getForm(EventConfig::class);
+
+    $this->assertArrayHasKey('label_printing_enabled', $form['conreg_checkin']);
+    $this->assertFalse((bool) $form['conreg_checkin']['label_printing_enabled']['#default_value']);
+  }
+
+  /**
+   * The "Enable badge label printing" checkbox reflects a saved config value.
+   */
+  public function testAdminEventConfigFormLabelPrintingReflectsConfig(): void {
+    $this->container
+      ->get('config.factory')
+      ->getEditable('conreg.settings.1')
+      ->set('checkin.label_printing_enabled', TRUE)
+      ->save();
+
+    $form = $this->container
+      ->get('form_builder')
+      ->getForm(EventConfig::class);
+
+    $this->assertArrayHasKey('label_printing_enabled', $form['conreg_checkin']);
+    $this->assertTrue((bool) $form['conreg_checkin']['label_printing_enabled']['#default_value']);
+  }
+
+  /**
+   * Checking "Enable badge label printing" and submitting persists it.
+   */
+  public function testAdminEventConfigFormSubmitPersistsLabelPrintingEnabled(): void {
+    $formObject = EventConfig::create($this->container);
+    $formState = new FormState();
+    $form = $formObject->buildForm([], $formState, 1);
+
+    $values = $this->extractFormValues($form);
+    $values['conreg_checkin']['label_printing_enabled'] = 1;
+    $formState->setValues($values);
+
+    $formObject->submitForm($form, $formState);
+
+    $this->assertTrue(
+      $this->config('conreg.settings.1')->get('checkin.label_printing_enabled')
+    );
+  }
+
+  /**
    * Harvest defaults from built form.
    *
    * Recursively harvests default values from a built form, keyed as
@@ -752,6 +806,181 @@ class FormBuildTest extends KernelTestBase {
     $this->assertIsArray($form);
     $this->assertArrayHasKey('#form_id', $form);
     $this->assertEquals('conreg_admin_checkin_members', $form['#form_id']);
+  }
+
+  /**
+   * With label printing disabled (the default), no printer UI is shown.
+   */
+  public function testAdminCheckInFormHidesPrinterSelectWhenDisabled(): void {
+    $route = $this->container
+      ->get('router.route_provider')
+      ->getRouteByName('conreg_admin_checkin');
+
+    $form = $this->container
+      ->get('form_builder')
+      ->getForm($route->getDefault('_form'));
+
+    $this->assertArrayNotHasKey('printer', $form['checkin_actions']);
+    $this->assertArrayNotHasKey('submit_print', $form['checkin_actions']);
+  }
+
+  /**
+   * With label printing enabled and a printer, the printer UI is usable.
+   */
+  public function testAdminCheckInFormShowsPrinterSelectWhenEnabled(): void {
+    $this->installEntitySchema('conreg_printer');
+    $this->container
+      ->get('config.factory')
+      ->getEditable('conreg.settings.1')
+      ->set('checkin.label_printing_enabled', TRUE)
+      ->save();
+    Printer::create(['eid' => 1, 'name' => 'Bilbo Baggins', 'machine_name' => 'bilbo_baggins'])->save();
+
+    $route = $this->container
+      ->get('router.route_provider')
+      ->getRouteByName('conreg_admin_checkin');
+
+    $form = $this->container
+      ->get('form_builder')
+      ->getForm($route->getDefault('_form'));
+
+    $this->assertSame('Bilbo Baggins', $form['checkin_actions']['printer']['#options']['bilbo_baggins'] ?? NULL);
+    $this->assertArrayHasKey('submit_print', $form['checkin_actions']);
+    $this->assertEmpty($form['checkin_actions']['submit_print']['#disabled'] ?? FALSE);
+  }
+
+  /**
+   * With label printing enabled but no printers, the print button is off.
+   */
+  public function testAdminCheckInFormDisablesPrintButtonWhenNoPrinters(): void {
+    $this->installEntitySchema('conreg_printer');
+    $this->container
+      ->get('config.factory')
+      ->getEditable('conreg.settings.1')
+      ->set('checkin.label_printing_enabled', TRUE)
+      ->save();
+
+    $route = $this->container
+      ->get('router.route_provider')
+      ->getRouteByName('conreg_admin_checkin');
+
+    $form = $this->container
+      ->get('form_builder')
+      ->getForm($route->getDefault('_form'));
+
+    $this->assertTrue($form['checkin_actions']['submit_print']['#disabled']);
+    $this->assertArrayHasKey('no_printers', $form);
+  }
+
+  /**
+   * Submitting "Check In and Print Labels" with no printer chosen errors.
+   */
+  public function testCheckInAndPrintRequiresPrinterSelection(): void {
+    $formObject = CheckInMembers::create($this->container);
+    $formState = new FormState();
+    $formState->setValue('printer', '');
+
+    $form = [];
+    $formObject->validatePrinterSelected($form, $formState);
+
+    $this->assertTrue($formState->hasAnyErrors());
+  }
+
+  /**
+   * Submitting "Check In and Print Labels" with a printer chosen is valid.
+   */
+  public function testCheckInAndPrintAllowsSelectedPrinter(): void {
+    $formObject = CheckInMembers::create($this->container);
+    $formState = new FormState();
+    $formState->setValue('printer', 'bilbo_baggins');
+
+    $form = [];
+    $formObject->validatePrinterSelected($form, $formState);
+
+    $this->assertFalse($formState->hasAnyErrors());
+  }
+
+  /**
+   * Helper: push a request with a fresh session onto the request stack.
+   */
+  protected function pushRequestWithSession(): Session {
+    $session = new Session(new MockArraySessionStorage());
+    $request = Request::create('/');
+    $request->setSession($session);
+    $this->container->get('request_stack')->push($request);
+    return $session;
+  }
+
+  /**
+   * The printer select preselects a printer remembered in session.
+   */
+  public function testAdminCheckInFormPreselectsRememberedPrinter(): void {
+    $this->installEntitySchema('conreg_printer');
+    $this->container
+      ->get('config.factory')
+      ->getEditable('conreg.settings.1')
+      ->set('checkin.label_printing_enabled', TRUE)
+      ->save();
+    Printer::create(['eid' => 1, 'name' => 'Bilbo Baggins', 'machine_name' => 'bilbo_baggins'])->save();
+
+    $session = $this->pushRequestWithSession();
+    $session->set('conreg_checkin_printer_1', 'bilbo_baggins');
+
+    $route = $this->container
+      ->get('router.route_provider')
+      ->getRouteByName('conreg_admin_checkin');
+
+    $form = $this->container
+      ->get('form_builder')
+      ->getForm($route->getDefault('_form'));
+
+    $this->assertSame('bilbo_baggins', $form['checkin_actions']['printer']['#default_value']);
+  }
+
+  /**
+   * A remembered printer that no longer exists is not preselected.
+   */
+  public function testAdminCheckInFormIgnoresRememberedPrinterThatNoLongerExists(): void {
+    $this->installEntitySchema('conreg_printer');
+    $this->container
+      ->get('config.factory')
+      ->getEditable('conreg.settings.1')
+      ->set('checkin.label_printing_enabled', TRUE)
+      ->save();
+    Printer::create(['eid' => 1, 'name' => 'Bilbo Baggins', 'machine_name' => 'bilbo_baggins'])->save();
+
+    $session = $this->pushRequestWithSession();
+    $session->set('conreg_checkin_printer_1', 'deleted_printer');
+
+    $route = $this->container
+      ->get('router.route_provider')
+      ->getRouteByName('conreg_admin_checkin');
+
+    $form = $this->container
+      ->get('form_builder')
+      ->getForm($route->getDefault('_form'));
+
+    $this->assertNull($form['checkin_actions']['printer']['#default_value']);
+  }
+
+  /**
+   * Submitting "Check In and Print Labels" remembers the printer chosen.
+   */
+  public function testCheckInAndPrintSubmitRemembersPrinterInSession(): void {
+    $session = $this->pushRequestWithSession();
+
+    $formObject = CheckInMembers::create($this->container);
+    $formState = new FormState();
+    $formState->set('eid', 1);
+    $formState->setValues([
+      'table' => [1 => ['is_checked_in' => 1]],
+      'printer' => 'bilbo_baggins',
+    ]);
+
+    $form = ['checkin_actions' => ['printer' => ['#options' => ['bilbo_baggins' => 'Bilbo Baggins']]]];
+    $formObject->checkInAndPrintSubmit($form, $formState);
+
+    $this->assertSame('bilbo_baggins', $session->get('conreg_checkin_printer_1'));
   }
 
   /**

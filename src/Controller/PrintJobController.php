@@ -5,6 +5,7 @@ namespace Drupal\conreg\Controller;
 use Drupal\Component\Datetime\TimeInterface;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Database\Connection;
+use Drupal\Core\Database\Query\Condition;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 
@@ -12,6 +13,15 @@ use Symfony\Component\HttpFoundation\Request;
  * Controller for the badge label print job exchange API.
  */
 class PrintJobController extends ControllerBase {
+
+  /**
+   * How long a job may sit "claimed" with no result before it's abandoned.
+   *
+   * E.g. the agent crashed or lost its network connection - once this
+   * many seconds pass with no result, the job is offered to the next
+   * poll again.
+   */
+  protected const STALE_CLAIM_TIMEOUT_SECONDS = 300;
 
   public function __construct(
     protected Connection $database,
@@ -26,13 +36,13 @@ class PrintJobController extends ControllerBase {
    * receive it.
    */
   public function next(Request $request, int $eid): JsonResponse {
-    $printerName = $request->query->get('printer');
-    if (!$printerName) {
+    $printerMachineName = $request->query->get('printer');
+    if (!$printerMachineName) {
       return new JsonResponse(['error' => 'Missing required "printer" query parameter.'], 400);
     }
 
     $printerStorage = $this->entityTypeManager()->getStorage('conreg_printer');
-    $printers = $printerStorage->loadByProperties(['eid' => $eid, 'name' => $printerName]);
+    $printers = $printerStorage->loadByProperties(['eid' => $eid, 'machine_name' => $printerMachineName]);
     $printer = reset($printers);
     if (!$printer) {
       return new JsonResponse(['error' => 'Unknown printer for this event.'], 404);
@@ -56,15 +66,22 @@ class PrintJobController extends ControllerBase {
   }
 
   /**
-   * Atomically claims the oldest pending job for an event/printer pair.
+   * Atomically claims the oldest pending or abandoned job for a printer.
    *
    * Entity API's query system can find candidates, but a find-then-save
    * from PHP isn't atomic across two concurrently polling agents. The
-   * claiming UPDATE re-checks status = 'pending', so a second agent
-   * racing the same printer can't also claim the row this SELECT found.
+   * claiming UPDATE re-checks the same eligibility condition, so a second
+   * agent racing the same printer can't also claim the row this SELECT
+   * found.
+   *
+   * A job claimed longer than STALE_CLAIM_TIMEOUT_SECONDS ago with no
+   * result is treated as abandoned (the agent that claimed it presumably
+   * crashed or lost connectivity) and becomes eligible again, so a job
+   * can never be stuck in "claimed" forever with nothing else happening
+   * to it.
    *
    * @return int|null
-   *   The claimed job ID, or NULL if no job was pending.
+   *   The claimed job ID, or NULL if no job was pending or abandoned.
    */
   protected function claimNextJob(int $eid, int $printerId): ?int {
     $table = $this->entityTypeManager()->getDefinition('conreg_print_job')->getBaseTable();
@@ -74,7 +91,7 @@ class PrintJobController extends ControllerBase {
       ->fields('pj', ['id'])
       ->condition('eid', $eid)
       ->condition('printer', $printerId)
-      ->condition('status', 'pending')
+      ->condition($this->eligibleForClaimCondition())
       ->orderBy('created', 'ASC')
       ->range(0, 1)
       ->execute()
@@ -87,7 +104,7 @@ class PrintJobController extends ControllerBase {
           'changed' => $this->time->getRequestTime(),
         ])
         ->condition('id', $jobId)
-        ->condition('status', 'pending')
+        ->condition($this->eligibleForClaimCondition())
         ->execute();
       if (!$claimed) {
         // Lost the race to another agent between the SELECT and the UPDATE.
@@ -97,6 +114,24 @@ class PrintJobController extends ControllerBase {
     unset($transaction);
 
     return $jobId ? (int) $jobId : NULL;
+  }
+
+  /**
+   * Builds the "pending, or abandoned" condition used to find/claim a job.
+   *
+   * A fresh Condition object is built on every call rather than shared,
+   * since the same instance shouldn't be attached to two different query
+   * builders.
+   */
+  protected function eligibleForClaimCondition(): Condition {
+    $staleBefore = $this->time->getRequestTime() - self::STALE_CLAIM_TIMEOUT_SECONDS;
+
+    return (new Condition('OR'))
+      ->condition('status', 'pending')
+      ->condition((new Condition('AND'))
+        ->condition('status', 'claimed')
+        ->condition('changed', $staleBefore, '<')
+      );
   }
 
   /**

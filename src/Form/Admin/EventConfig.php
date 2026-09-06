@@ -577,6 +577,13 @@ class EventConfig extends ConfigFormBase {
       '#default_value' => $config->get('checkin.communication_method'),
     ];
 
+    $form['conreg_checkin']['label_printing_enabled'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Enable badge label printing'),
+      '#description' => $this->t('Show a printer selector and "Check In and Print Labels" button on the Member Check-In page. Leave disabled for events that do not use label printers.'),
+      '#default_value' => $config->get('checkin.label_printing_enabled') ?? FALSE,
+    ];
+
     /*
      * Fields for confirmation emails.
      */
@@ -1058,6 +1065,7 @@ class EventConfig extends ConfigFormBase {
     $config->set('discount.free_every', intval($vals['conreg_discount']['free_every']) ?: NULL);
     $config->set('checkin.display', $vals['conreg_checkin']['display']);
     $config->set('checkin.communication_method', $vals['conreg_checkin']['communication_method']);
+    $config->set('checkin.label_printing_enabled', $vals['conreg_checkin']['label_printing_enabled']);
     $config->set('confirmation.copy_us', $vals['conreg_confirmation']['copy_us']);
     $config->set('confirmation.from_name', $vals['conreg_confirmation']['from_name']);
     $config->set('confirmation.from_email', $vals['conreg_confirmation']['from_email']);

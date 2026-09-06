@@ -14,6 +14,7 @@ use Drupal\conreg\Service\EventStorage;
 use Drupal\conreg\Service\MemberStorage;
 use Drupal\conreg\Service\PaymentStorage;
 use Drupal\conreg\Service\PricingServiceInterface;
+use Drupal\conreg\Service\PrintJobManager;
 use Drupal\conreg\TableRole;
 use Drupal\conreg\Trait\ShowBadgeNumberTrait;
 use Drupal\Core\Cache\Cache;
@@ -43,6 +44,8 @@ class CheckInMembers extends FormBase {
    *   The site's language manager.
    * @param \Drupal\conreg\Service\PricingServiceInterface $pricingService
    *   The pricing service.
+   * @param \Drupal\conreg\Service\PrintJobManager $printJobManager
+   *   The print job manager.
    */
   public function __construct(
     protected MemberStorage $memberStorage,
@@ -50,6 +53,7 @@ class CheckInMembers extends FormBase {
     protected PaymentStorage $paymentStorage,
     protected LanguageManagerInterface $languageManager,
     protected PricingServiceInterface $pricingService,
+    protected PrintJobManager $printJobManager,
   ) {}
 
   /**
@@ -109,6 +113,7 @@ class CheckInMembers extends FormBase {
     $form_values = $form_state->getValues();
 
     $config = $this->config('conreg.settings.' . $eid);
+    $labelPrintingEnabled = $config->get('checkin.label_printing_enabled') ?? FALSE;
     $types = ConregOptions::memberTypes($eid, $config);
     $badgeTypes = ConregOptions::badgeTypes($eid, $config);
     $days = ConregOptions::days($eid, $config);
@@ -140,7 +145,7 @@ class CheckInMembers extends FormBase {
 
         case "checkIn":
           $toPay = $form_state->get("toPay");
-          return $this->buildConfirmForm($eid, $toPay);
+          return $this->buildConfirmForm($eid, $toPay, $form_state->get("printerDisplayName"));
       }
     }
 
@@ -148,6 +153,11 @@ class CheckInMembers extends FormBase {
 
     $form = [
       '#title' => $this->t('@event_name Member Checkin', ['@event_name' => $event['event_name']]),
+      '#attached' => [
+        'library' => [
+          'conreg/conreg_form',
+        ],
+      ],
       '#prefix' => '<div id="memberForm">',
       '#suffix' => '</div>',
     ];
@@ -283,12 +293,52 @@ class CheckInMembers extends FormBase {
       }
     }
 
-    $form['submit'] = [
+    $form['checkin_actions'] = [
+      '#type' => 'container',
+      '#attributes' => ['class' => ['conreg-checkin-actions']],
+    ];
+
+    $form['checkin_actions']['submit'] = [
       '#type' => 'submit',
       '#value' => $this->t('Check-in Selected'),
       '#submit' => [[$this, 'checkInSubmit']],
       '#attributes' => ['id' => "submitBtn"],
     ];
+
+    if ($labelPrintingEnabled) {
+      $printers = $this->printJobManager->getPrintersForEvent($eid);
+      $printerOptions = [];
+      foreach ($printers as $printer) {
+        $printerOptions[$printer->get('machine_name')->value] = $printer->label();
+      }
+
+      $rememberedPrinter = $this->getRememberedPrinter($eid);
+
+      $form['checkin_actions']['printer'] = [
+        '#type' => 'select',
+        '#title' => $this->t('Printer'),
+        '#options' => $printerOptions,
+        '#empty_option' => $this->t('- Select -'),
+        '#default_value' => isset($printerOptions[$rememberedPrinter]) ? $rememberedPrinter : NULL,
+      ];
+
+      $form['checkin_actions']['submit_print'] = [
+        '#type' => 'submit',
+        '#value' => $this->t('Check In and Print Labels'),
+        '#validate' => [[$this, 'validatePrinterSelected']],
+        '#submit' => [[$this, 'checkInAndPrintSubmit']],
+        '#disabled' => !$printerOptions,
+      ];
+
+      if (!$printerOptions) {
+        $form['no_printers'] = [
+          '#type' => 'markup',
+          '#markup' => $this->t('No printers are configured for this event, so badge labels cannot be printed.'),
+          '#prefix' => '<div class="messages messages--warning">',
+          '#suffix' => '</div>',
+        ];
+      }
+    }
 
     $headers = [
       'first_name' => [
@@ -497,7 +547,7 @@ class CheckInMembers extends FormBase {
   /**
    * Set up markup fields to display check-in confirm.
    */
-  public function buildConfirmForm(int $eid, array $toPay) {
+  public function buildConfirmForm(int $eid, array $toPay, ?string $printerDisplayName = NULL) {
     $config = $this->config('conreg.settings.' . $eid);
     $form = [];
     $form['intro'] = [
@@ -506,6 +556,14 @@ class CheckInMembers extends FormBase {
       '#prefix' => '<div><h3>',
       '#suffix' => '</h3></div>',
     ];
+    if ($printerDisplayName) {
+      $form['printer_notice'] = [
+        '#type' => 'markup',
+        '#markup' => $this->t('Badge labels will be printed on printer %printer.', ['%printer' => $printerDisplayName]),
+        '#prefix' => '<div>',
+        '#suffix' => '</div>',
+      ];
+    }
     $maxMemberNo = $this->memberStorage->loadMaxMemberNo($eid);
     foreach ($toPay as $mid) {
       if ($member = $this->memberStorage->load(['mid' => $mid])) {
@@ -643,6 +701,71 @@ class CheckInMembers extends FormBase {
   }
 
   /**
+   * Validate a printer was selected before checking in and printing.
+   */
+  public function validatePrinterSelected(array &$form, FormStateInterface $form_state) {
+    if (!$form_state->getValue('printer')) {
+      $form_state->setErrorByName('printer', $this->t('Select a printer before checking in and printing labels.'));
+    }
+  }
+
+  /**
+   * Callback for check-in-and-print submit button.
+   */
+  public function checkInAndPrintSubmit(array &$form, FormStateInterface $form_state) {
+    $form_values = $form_state->getValues();
+
+    $toPay = [];
+    foreach ($form_values["table"] as $mid => $member) {
+      if (isset($member["is_checked_in"]) && $member["is_checked_in"]) {
+        $toPay[] = $mid;
+      }
+    }
+    if (count($toPay)) {
+      $form_state->set("action", "checkIn");
+      $form_state->set("toPay", $toPay);
+      $printerMachineName = $form_values['printer'];
+      $form_state->set("printerMachineName", $printerMachineName);
+      $form_state->set("printerDisplayName", $form['checkin_actions']['printer']['#options'][$printerMachineName] ?? $printerMachineName);
+      $this->rememberPrinter((int) $form_state->get('eid'), $printerMachineName);
+    }
+    $form_state->setRebuild();
+  }
+
+  /**
+   * Session key used to remember the selected printer for an event.
+   */
+  protected function printerSessionKey(int $eid): string {
+    return 'conreg_checkin_printer_' . $eid;
+  }
+
+  /**
+   * Gets the printer machine name remembered for this event, if any.
+   *
+   * Deliberately session-scoped rather than a user setting: the same
+   * staff account is often used across multiple reg-desk computers at
+   * once, each of which may have a different physical printer attached,
+   * so each session should remember its own choice independently.
+   */
+  protected function getRememberedPrinter(int $eid): ?string {
+    $request = $this->getRequest();
+    if (!$request || !$request->hasSession()) {
+      return NULL;
+    }
+    return $request->getSession()->get($this->printerSessionKey($eid));
+  }
+
+  /**
+   * Remembers the selected printer in session for this event.
+   */
+  protected function rememberPrinter(int $eid, string $printerMachineName): void {
+    $request = $this->getRequest();
+    if ($request && $request->hasSession()) {
+      $request->getSession()->set($this->printerSessionKey($eid), $printerMachineName);
+    }
+  }
+
+  /**
    * Callback for pay cash button.
    */
   public function payCash(array &$form, FormStateInterface $form_state) {
@@ -705,6 +828,8 @@ class CheckInMembers extends FormBase {
     $config = $this->config('conreg.settings.' . $eid);
     $toPay = $form_state->get("toPay");
     $uid = $this->currentUser()->id();
+    $printerMachineName = $form_state->get("printerMachineName");
+    $printerDisplayName = $form_state->get("printerDisplayName");
     // Loop through members and mark checked in.
     foreach ($toPay as $mid) {
       $update = [
@@ -719,6 +844,21 @@ class CheckInMembers extends FormBase {
           '%badge_no' => $this->showBadgeNumber($member, $config),
           '%badge_name' => $member['badge_name'],
         ]));
+        if ($printerMachineName) {
+          try {
+            $this->printJobManager->createJob($mid, $printerMachineName);
+            $this->messenger()->addMessage($this->t("Print job for %badge_name queued on %printer.", [
+              '%badge_name' => $member['badge_name'],
+              '%printer' => $printerDisplayName,
+            ]));
+          }
+          catch (\InvalidArgumentException $e) {
+            $this->messenger()->addError($this->t("Could not queue a print job for %badge_name: @message", [
+              '%badge_name' => $member['badge_name'],
+              '@message' => $e->getMessage(),
+            ]));
+          }
+        }
       }
     }
     // Form may have checked in member in URL. Redirect to clear.

@@ -2,14 +2,18 @@
 
 namespace Drupal\conreg\Service;
 
+use Drupal\conreg\ConregConfig;
 use Drupal\conreg\ConregOptions;
 use Drupal\conreg\Entity\PrintJob;
+use Drupal\conreg\Trait\ShowBadgeNumberTrait;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 
 /**
  * Creates badge label print jobs for members.
  */
 class PrintJobManager {
+
+  use ShowBadgeNumberTrait;
 
   public function __construct(
     protected EntityTypeManagerInterface $entityTypeManager,
@@ -19,14 +23,15 @@ class PrintJobManager {
   /**
    * Creates a pending print job for a member.
    *
-   * Snapshots the member's current badge name, member number, and days
-   * attending onto the job, so it stays correct even if the member
-   * record changes before the job is printed.
+   * Snapshots the member's current badge name, formatted badge number
+   * (badge type prefix plus zero-padded number, matching the check-in
+   * table), and days attending onto the job, so it stays correct even
+   * if the member record changes before the job is printed.
    *
    * @param int $mid
    *   The member ID to print a label for.
-   * @param string $printerName
-   *   The target printer's name, e.g. "Bilbo Baggins".
+   * @param string $printerMachineName
+   *   The target printer's machine name, e.g. "bilbo_baggins".
    *
    * @return \Drupal\conreg\Entity\PrintJob
    *   The newly created, pending print job.
@@ -34,7 +39,7 @@ class PrintJobManager {
    * @throws \InvalidArgumentException
    *   If the member or printer cannot be found.
    */
-  public function createJob(int $mid, string $printerName): PrintJob {
+  public function createJob(int $mid, string $printerMachineName): PrintJob {
     $member = $this->memberStorage->load(['mid' => $mid]);
     if (!$member) {
       throw new \InvalidArgumentException("Unknown member ID: $mid");
@@ -43,15 +48,17 @@ class PrintJobManager {
     $eid = (int) $member['eid'];
 
     $printerStorage = $this->entityTypeManager->getStorage('conreg_printer');
-    $printers = $printerStorage->loadByProperties(['eid' => $eid, 'name' => $printerName]);
+    $printers = $printerStorage->loadByProperties(['eid' => $eid, 'machine_name' => $printerMachineName]);
     $printer = reset($printers);
     if (!$printer) {
-      throw new \InvalidArgumentException("Unknown printer \"$printerName\" for event $eid.");
+      throw new \InvalidArgumentException("Unknown printer \"$printerMachineName\" for event $eid.");
     }
+
+    $config = ConregConfig::getConfig($eid);
 
     $daysAttending = '';
     if (!empty($member['days'])) {
-      $dayOptions = ConregOptions::days($eid);
+      $dayOptions = ConregOptions::days($eid, $config);
       $dayDescriptions = [];
       foreach (explode('|', $member['days']) as $day) {
         $dayDescriptions[] = $dayOptions[$day] ?? $day;
@@ -65,7 +72,7 @@ class PrintJobManager {
       'eid' => $eid,
       'mid' => $mid,
       'member_name' => $member['badge_name'],
-      'member_number' => $member['member_no'],
+      'member_number' => $this->showBadgeNumber($member, $config),
       'days_attending' => $daysAttending,
       'printer' => $printer->id(),
       'status' => 'pending',
@@ -73,6 +80,20 @@ class PrintJobManager {
     $job->save();
 
     return $job;
+  }
+
+  /**
+   * Loads all printers configured for an event.
+   *
+   * @param int $eid
+   *   The event ID.
+   *
+   * @return \Drupal\conreg\Entity\Printer[]
+   *   Printer entities for the event, keyed by entity ID.
+   */
+  public function getPrintersForEvent(int $eid): array {
+    $printerStorage = $this->entityTypeManager->getStorage('conreg_printer');
+    return $printerStorage->loadByProperties(['eid' => $eid]);
   }
 
 }

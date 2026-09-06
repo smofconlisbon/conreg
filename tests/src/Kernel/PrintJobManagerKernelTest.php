@@ -7,13 +7,13 @@ use Drupal\conreg\Entity\Printer;
 use Drupal\conreg\Service\PrintJobManager;
 use Drupal\Core\Database\Database;
 use Drupal\KernelTests\KernelTestBase;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
 /**
  * Tests PrintJobManager, which creates print jobs for members.
- *
- * @group conreg
  */
+#[Group('conreg')]
 #[RunTestsInSeparateProcesses]
 class PrintJobManagerKernelTest extends KernelTestBase {
 
@@ -51,9 +51,7 @@ class PrintJobManagerKernelTest extends KernelTestBase {
   }
 
   /**
-   * Helper: create a test member. Days use conreg.settings.1's codes
-   * (Fr = Friday, Sa = Saturday, Su = Sunday - see
-   * config/install/conreg.settings.1.yml).
+   * Helper function to create a test member.
    */
   protected function createTestMember(array $overrides = []): int {
     $defaults = [
@@ -78,9 +76,13 @@ class PrintJobManagerKernelTest extends KernelTestBase {
 
   /**
    * Helper: create a printer entity.
+   *
+   * Derives a CUPS-safe machine name from the display name (e.g. "Bilbo
+   * Baggins" -> "bilbo_baggins") unless one is given explicitly.
    */
-  protected function createPrinter(int $eid, string $name): Printer {
-    $printer = Printer::create(['eid' => $eid, 'name' => $name]);
+  protected function createPrinter(int $eid, string $name, ?string $machineName = NULL): Printer {
+    $machineName ??= strtolower(str_replace(' ', '_', $name));
+    $printer = Printer::create(['eid' => $eid, 'name' => $name, 'machine_name' => $machineName]);
     $printer->save();
     return $printer;
   }
@@ -93,11 +95,15 @@ class PrintJobManagerKernelTest extends KernelTestBase {
     $this->createPrinter(1, 'Bilbo Baggins');
 
     $manager = $this->container->get(PrintJobManager::class);
-    $job = $manager->createJob($mid, 'Bilbo Baggins');
+    $job = $manager->createJob($mid, 'bilbo_baggins');
 
     $this->assertSame(1, (int) $job->get('eid')->value);
     $this->assertSame($mid, (int) $job->get('mid')->value);
     $this->assertSame('Jane Doe', $job->get('member_name')->value);
+    // showBadgeNumber() with no badge_type and an already-4-digit number
+    // (conreg.settings.1's member_no_digits is 4) happens to equal the
+    // raw number here - see testCreateJobFormatsMemberNumberWithBadgeType
+    // for a case that actually exercises the formatting.
     $this->assertSame('4021', $job->get('member_number')->value);
     $this->assertSame('Friday, Saturday, Sunday', $job->get('days_attending')->value);
     $this->assertSame('pending', $job->get('status')->value);
@@ -106,6 +112,22 @@ class PrintJobManagerKernelTest extends KernelTestBase {
     // Confirm it was actually persisted, not just held in memory.
     $this->container->get('entity_type.manager')->getStorage('conreg_print_job')->resetCache();
     $this->assertNotNull(PrintJob::load($job->id()));
+  }
+
+  /**
+   * Test the member number is formatted like the check-in table's.
+   *
+   * ShowBadgeNumberTrait::showBadgeNumber() prefixes the badge type and
+   * zero-pads to conreg.settings.1's configured member_no_digits (4).
+   */
+  public function testCreateJobFormatsMemberNumberWithBadgeType(): void {
+    $mid = $this->createTestMember(['member_no' => 42, 'badge_type' => 'A']);
+    $this->createPrinter(1, 'Bilbo Baggins');
+
+    $manager = $this->container->get(PrintJobManager::class);
+    $job = $manager->createJob($mid, 'bilbo_baggins');
+
+    $this->assertSame('A0042', $job->get('member_number')->value);
   }
 
   /**
@@ -119,7 +141,7 @@ class PrintJobManagerKernelTest extends KernelTestBase {
     $this->createPrinter(1, 'Bilbo Baggins');
 
     $manager = $this->container->get(PrintJobManager::class);
-    $job = $manager->createJob($mid, 'Bilbo Baggins');
+    $job = $manager->createJob($mid, 'bilbo_baggins');
 
     $this->assertNull($job->get('days_attending')->value);
   }
@@ -133,11 +155,11 @@ class PrintJobManagerKernelTest extends KernelTestBase {
     $manager = $this->container->get(PrintJobManager::class);
 
     $this->expectException(\InvalidArgumentException::class);
-    $manager->createJob(999, 'Bilbo Baggins');
+    $manager->createJob(999, 'bilbo_baggins');
   }
 
   /**
-   * Test that an unknown printer name is rejected.
+   * Test that an unknown printer machine name is rejected.
    */
   public function testCreateJobThrowsForUnknownPrinter(): void {
     $mid = $this->createTestMember();
@@ -145,7 +167,31 @@ class PrintJobManagerKernelTest extends KernelTestBase {
     $manager = $this->container->get(PrintJobManager::class);
 
     $this->expectException(\InvalidArgumentException::class);
-    $manager->createJob($mid, 'No Such Printer');
+    $manager->createJob($mid, 'no_such_printer');
+  }
+
+  /**
+   * Test that only the requested event's printers are returned.
+   */
+  public function testGetPrintersForEventReturnsOnlyThatEventsPrinters(): void {
+    $this->createPrinter(1, 'Bilbo Baggins');
+    $this->createPrinter(1, 'Frodo Baggins');
+    $this->createPrinter(2, 'Other Event Printer');
+
+    $manager = $this->container->get(PrintJobManager::class);
+    $printers = $manager->getPrintersForEvent(1);
+
+    $names = array_map(fn ($printer) => $printer->label(), $printers);
+    sort($names);
+    $this->assertSame(['Bilbo Baggins', 'Frodo Baggins'], $names);
+  }
+
+  /**
+   * Test that an event with no printers gets an empty array.
+   */
+  public function testGetPrintersForEventReturnsEmptyArrayWhenNoneConfigured(): void {
+    $manager = $this->container->get(PrintJobManager::class);
+    $this->assertSame([], $manager->getPrintersForEvent(1));
   }
 
 }
