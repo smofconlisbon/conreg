@@ -13,3 +13,6 @@
 
 - Check-in updates attendance status fields.
 - Fan table flow supports staff-assisted signup and follow-up actions.
+- When an event has badge label printing enabled, check-in can also
+  queue a printed label for the member in the same action - see
+  `site-building/label-printing.md`.

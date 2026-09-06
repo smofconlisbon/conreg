@@ -10,6 +10,7 @@
 | Member admin | `conreg_admin_members*`, `conreg_admin_checkin`, `conreg_admin_fantable` |
 | Reports/email | `conreg_admin_member_list`, `conreg_admin_member_options`, `conreg_admin_member_addons`, `conreg_admin_mailout_*`, `conreg_admin_member_summary`, `conreg_admin_child_member_ages`, `conreg_admin_bulk_email*` |
 | Badge upload | `conreg_badge_upload` |
+| Print job API | `conreg.print_job_next` (`GET /api/print-jobs/{eid}/next`), `conreg.print_job_result` (`POST /api/print-jobs/{eid}/{id}/result`) - shared-key authenticated, not Drupal-permission gated; see `site-building/label-printing.md` |
 
 ## Submodule routes
 

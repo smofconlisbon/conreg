@@ -366,6 +366,9 @@ conreg.settings.*:
           type: string
         label_printing_enabled:
           type: boolean
+        print_api_key:
+          type: string
+          label: 'Print job API shared key (Key ID)'
     thanks:
       type: mapping
       label: 'Settings for Thank You page'

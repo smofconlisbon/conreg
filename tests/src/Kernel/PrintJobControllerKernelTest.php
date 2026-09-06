@@ -6,6 +6,7 @@ use Drupal\Component\Datetime\TimeInterface;
 use Drupal\conreg\Controller\PrintJobController;
 use Drupal\conreg\Entity\PrintJob;
 use Drupal\conreg\Entity\Printer;
+use Drupal\key\Entity\Key;
 use Drupal\KernelTests\KernelTestBase;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
@@ -48,6 +49,23 @@ class PrintJobControllerKernelTest extends KernelTestBase {
     $time = $this->createMock(TimeInterface::class);
     $time->method('getRequestTime')->willReturn(self::CURRENT_TIME);
     $this->container->set('datetime.time', $time);
+
+    // Event 1 has a print API key configured; most tests authenticate
+    // against it via authenticatedRequest(). Event 2 deliberately has
+    // none, except in the two tests that specifically need it for
+    // cross-event assertions.
+    Key::create([
+      'id' => 'print_api_test_key',
+      'label' => 'Print API test key',
+      'key_type' => 'authentication',
+      'key_provider' => 'config',
+      'key_provider_settings' => ['key_value' => 'test-secret-token'],
+    ])->save();
+
+    $this->container->get('config.factory')
+      ->getEditable('conreg.settings.1')
+      ->set('checkin.print_api_key', 'print_api_test_key')
+      ->save();
   }
 
   /**
@@ -88,6 +106,16 @@ class PrintJobControllerKernelTest extends KernelTestBase {
   }
 
   /**
+   * Builds a request carrying a valid Authorization header.
+   *
+   * Defaults to event 1's configured test key; pass $server to override
+   * (e.g. a different event's key, or a deliberately wrong one).
+   */
+  protected function authenticatedRequest(string $uri, string $method, array $query = [], string $content = '', array $server = []): Request {
+    return Request::create($uri, $method, $query, [], [], $server + ['HTTP_AUTHORIZATION' => 'Bearer test-secret-token'], $content);
+  }
+
+  /**
    * Test that the oldest pending job for the printer is claimed and returned.
    */
   public function testNextReturnsOldestPendingJobForPrinter(): void {
@@ -96,7 +124,7 @@ class PrintJobControllerKernelTest extends KernelTestBase {
     $older = $this->createJob(1, (int) $printer->id(), ['member_name' => 'Older Job']);
     $this->createJob(1, (int) $printer->id(), ['member_name' => 'Newer Job']);
 
-    $request = Request::create('/api/print-jobs/1/next', 'GET', ['printer' => 'bilbo_baggins']);
+    $request = $this->authenticatedRequest('/api/print-jobs/1/next', 'GET', ['printer' => 'bilbo_baggins']);
     $response = $this->callController()->next($request, 1);
 
     $this->assertSame(200, $response->getStatusCode());
@@ -118,7 +146,7 @@ class PrintJobControllerKernelTest extends KernelTestBase {
     $printer = $this->createPrinter(1, 'Bilbo Baggins');
     $this->createJob(1, (int) $printer->id());
 
-    $request = Request::create('/api/print-jobs/1/next', 'GET', ['printer' => 'bilbo_baggins']);
+    $request = $this->authenticatedRequest('/api/print-jobs/1/next', 'GET', ['printer' => 'bilbo_baggins']);
     $controller = $this->callController();
 
     $first = $controller->next($request, 1);
@@ -143,7 +171,7 @@ class PrintJobControllerKernelTest extends KernelTestBase {
       'changed' => self::CURRENT_TIME - 301,
     ]);
 
-    $request = Request::create('/api/print-jobs/1/next', 'GET', ['printer' => 'bilbo_baggins']);
+    $request = $this->authenticatedRequest('/api/print-jobs/1/next', 'GET', ['printer' => 'bilbo_baggins']);
     $response = $this->callController()->next($request, 1);
 
     $this->assertSame(200, $response->getStatusCode());
@@ -161,7 +189,7 @@ class PrintJobControllerKernelTest extends KernelTestBase {
       'changed' => self::CURRENT_TIME - 60,
     ]);
 
-    $request = Request::create('/api/print-jobs/1/next', 'GET', ['printer' => 'bilbo_baggins']);
+    $request = $this->authenticatedRequest('/api/print-jobs/1/next', 'GET', ['printer' => 'bilbo_baggins']);
     $response = $this->callController()->next($request, 1);
 
     $this->assertSame(204, $response->getStatusCode());
@@ -175,7 +203,7 @@ class PrintJobControllerKernelTest extends KernelTestBase {
     $this->createPrinter(1, 'Darth Printer');
     $this->createJob(1, (int) $printerA->id());
 
-    $request = Request::create('/api/print-jobs/1/next', 'GET', ['printer' => 'darth_printer']);
+    $request = $this->authenticatedRequest('/api/print-jobs/1/next', 'GET', ['printer' => 'darth_printer']);
     $response = $this->callController()->next($request, 1);
 
     $this->assertSame(204, $response->getStatusCode());
@@ -188,8 +216,22 @@ class PrintJobControllerKernelTest extends KernelTestBase {
     $printer = $this->createPrinter(1, 'Bilbo Baggins');
     $this->createJob(1, (int) $printer->id());
 
+    // Event 2 needs its own key so this test exercises the printer/event
+    // mismatch (404), not the separate auth-refusal behavior.
+    Key::create([
+      'id' => 'print_api_test_key_2',
+      'label' => 'Print API test key (event 2)',
+      'key_type' => 'authentication',
+      'key_provider' => 'config',
+      'key_provider_settings' => ['key_value' => 'test-secret-token-2'],
+    ])->save();
+    $this->container->get('config.factory')
+      ->getEditable('conreg.settings.2')
+      ->set('checkin.print_api_key', 'print_api_test_key_2')
+      ->save();
+
     // Same printer name, but the request is scoped to a different event.
-    $request = Request::create('/api/print-jobs/2/next', 'GET', ['printer' => 'bilbo_baggins']);
+    $request = $this->authenticatedRequest('/api/print-jobs/2/next', 'GET', ['printer' => 'bilbo_baggins'], '', ['HTTP_AUTHORIZATION' => 'Bearer test-secret-token-2']);
     $response = $this->callController()->next($request, 2);
 
     $this->assertSame(404, $response->getStatusCode());
@@ -199,7 +241,7 @@ class PrintJobControllerKernelTest extends KernelTestBase {
    * Test the missing "printer" query parameter is rejected.
    */
   public function testNextRequiresPrinterParameter(): void {
-    $request = Request::create('/api/print-jobs/1/next', 'GET');
+    $request = $this->authenticatedRequest('/api/print-jobs/1/next', 'GET');
     $response = $this->callController()->next($request, 1);
 
     $this->assertSame(400, $response->getStatusCode());
@@ -209,7 +251,7 @@ class PrintJobControllerKernelTest extends KernelTestBase {
    * Test an unknown printer name is rejected.
    */
   public function testNextRejectsUnknownPrinter(): void {
-    $request = Request::create('/api/print-jobs/1/next', 'GET', ['printer' => 'No Such Printer']);
+    $request = $this->authenticatedRequest('/api/print-jobs/1/next', 'GET', ['printer' => 'No Such Printer']);
     $response = $this->callController()->next($request, 1);
 
     $this->assertSame(404, $response->getStatusCode());
@@ -221,10 +263,51 @@ class PrintJobControllerKernelTest extends KernelTestBase {
   public function testNextReturnsNoContentWhenNoJobsPending(): void {
     $this->createPrinter(1, 'Bilbo Baggins');
 
-    $request = Request::create('/api/print-jobs/1/next', 'GET', ['printer' => 'bilbo_baggins']);
+    $request = $this->authenticatedRequest('/api/print-jobs/1/next', 'GET', ['printer' => 'bilbo_baggins']);
     $response = $this->callController()->next($request, 1);
 
     $this->assertSame(204, $response->getStatusCode());
+  }
+
+  /**
+   * Test the missing Authorization header is rejected.
+   */
+  public function testNextRejectsMissingAuthorizationHeader(): void {
+    $this->createPrinter(1, 'Bilbo Baggins');
+
+    $request = Request::create('/api/print-jobs/1/next', 'GET', ['printer' => 'bilbo_baggins']);
+    $response = $this->callController()->next($request, 1);
+
+    $this->assertSame(401, $response->getStatusCode());
+  }
+
+  /**
+   * Test an incorrect Authorization header is rejected.
+   */
+  public function testNextRejectsWrongApiKey(): void {
+    $this->createPrinter(1, 'Bilbo Baggins');
+
+    $request = $this->authenticatedRequest('/api/print-jobs/1/next', 'GET', ['printer' => 'bilbo_baggins'], '', ['HTTP_AUTHORIZATION' => 'Bearer wrong-token']);
+    $response = $this->callController()->next($request, 1);
+
+    $this->assertSame(401, $response->getStatusCode());
+  }
+
+  /**
+   * Test that an event with no configured key refuses every request.
+   *
+   * This is the "refuse by default" behavior - not just an incorrect
+   * key being rejected, but there being no open fallback at all when
+   * nobody has configured a key yet.
+   */
+  public function testNextRejectsAllRequestsWhenNoKeyConfiguredForEvent(): void {
+    $this->createPrinter(3, 'Bilbo Baggins');
+
+    // A well-formed header, but event 3 has no key configured anywhere.
+    $request = $this->authenticatedRequest('/api/print-jobs/3/next', 'GET', ['printer' => 'bilbo_baggins']);
+    $response = $this->callController()->next($request, 3);
+
+    $this->assertSame(401, $response->getStatusCode());
   }
 
   /**
@@ -234,12 +317,9 @@ class PrintJobControllerKernelTest extends KernelTestBase {
     $printer = $this->createPrinter(1, 'Bilbo Baggins');
     $job = $this->createJob(1, (int) $printer->id());
 
-    $request = Request::create(
+    $request = $this->authenticatedRequest(
       '/api/print-jobs/1/' . $job->id() . '/result',
       'POST',
-      [],
-      [],
-      [],
       [],
       json_encode(['status' => 'success', 'message' => 'Printed OK']),
     );
@@ -262,14 +342,26 @@ class PrintJobControllerKernelTest extends KernelTestBase {
     $printer = $this->createPrinter(1, 'Bilbo Baggins');
     $job = $this->createJob(1, (int) $printer->id());
 
-    $request = Request::create(
+    // Event 2 needs its own key so this test exercises the event-id
+    // mismatch (404), not the separate auth-refusal behavior.
+    Key::create([
+      'id' => 'print_api_test_key_2',
+      'label' => 'Print API test key (event 2)',
+      'key_type' => 'authentication',
+      'key_provider' => 'config',
+      'key_provider_settings' => ['key_value' => 'test-secret-token-2'],
+    ])->save();
+    $this->container->get('config.factory')
+      ->getEditable('conreg.settings.2')
+      ->set('checkin.print_api_key', 'print_api_test_key_2')
+      ->save();
+
+    $request = $this->authenticatedRequest(
       '/api/print-jobs/2/' . $job->id() . '/result',
       'POST',
       [],
-      [],
-      [],
-      [],
       json_encode(['status' => 'success']),
+      ['HTTP_AUTHORIZATION' => 'Bearer test-secret-token-2'],
     );
 
     $response = $this->callController()->result($request, 2, (int) $job->id());
@@ -281,8 +373,27 @@ class PrintJobControllerKernelTest extends KernelTestBase {
    * Test posting a result for a job ID that doesn't exist is rejected.
    */
   public function testResultRejectsUnknownJob(): void {
-    $request = Request::create(
+    $request = $this->authenticatedRequest(
       '/api/print-jobs/1/999/result',
+      'POST',
+      [],
+      json_encode(['status' => 'success']),
+    );
+
+    $response = $this->callController()->result($request, 1, 999);
+
+    $this->assertSame(404, $response->getStatusCode());
+  }
+
+  /**
+   * Test the missing Authorization header is rejected on result().
+   */
+  public function testResultRejectsMissingAuthorizationHeader(): void {
+    $printer = $this->createPrinter(1, 'Bilbo Baggins');
+    $job = $this->createJob(1, (int) $printer->id());
+
+    $request = Request::create(
+      '/api/print-jobs/1/' . $job->id() . '/result',
       'POST',
       [],
       [],
@@ -291,9 +402,9 @@ class PrintJobControllerKernelTest extends KernelTestBase {
       json_encode(['status' => 'success']),
     );
 
-    $response = $this->callController()->result($request, 1, 999);
+    $response = $this->callController()->result($request, 1, (int) $job->id());
 
-    $this->assertSame(404, $response->getStatusCode());
+    $this->assertSame(401, $response->getStatusCode());
   }
 
 }

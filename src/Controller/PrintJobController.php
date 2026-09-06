@@ -6,6 +6,8 @@ use Drupal\Component\Datetime\TimeInterface;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Database\Connection;
 use Drupal\Core\Database\Query\Condition;
+use Drupal\key\KeyRepositoryInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 
@@ -26,7 +28,43 @@ class PrintJobController extends ControllerBase {
   public function __construct(
     protected Connection $database,
     protected TimeInterface $time,
+    #[Autowire(service: 'key.repository')]
+    protected KeyRepositoryInterface $keyRepository,
   ) {}
+
+  /**
+   * Resolves the configured print-job API key's value for an event.
+   */
+  protected function resolvePrintApiKey(int $eid): string {
+    $keyId = $this->config('conreg.settings.' . $eid)->get('checkin.print_api_key');
+    if (empty($keyId)) {
+      return '';
+    }
+    try {
+      return trim((string) ($this->keyRepository->getKey($keyId)?->getKeyValue() ?? ''));
+    }
+    catch (\Throwable) {
+      return '';
+    }
+  }
+
+  /**
+   * Checks the request's Authorization header against the event's key.
+   *
+   * Refuses by default: if no key is configured for the event, this
+   * always returns FALSE - there is no open fallback.
+   */
+  protected function isAuthorized(Request $request, int $eid): bool {
+    $configuredKey = $this->resolvePrintApiKey($eid);
+    if ($configuredKey === '') {
+      return FALSE;
+    }
+    $header = (string) $request->headers->get('Authorization', '');
+    if (!str_starts_with($header, 'Bearer ')) {
+      return FALSE;
+    }
+    return hash_equals($configuredKey, substr($header, strlen('Bearer ')));
+  }
 
   /**
    * Returns the next print job for an agent to process.
@@ -36,6 +74,10 @@ class PrintJobController extends ControllerBase {
    * receive it.
    */
   public function next(Request $request, int $eid): JsonResponse {
+    if (!$this->isAuthorized($request, $eid)) {
+      return new JsonResponse(['error' => 'Missing or invalid API key.'], 401);
+    }
+
     $printerMachineName = $request->query->get('printer');
     if (!$printerMachineName) {
       return new JsonResponse(['error' => 'Missing required "printer" query parameter.'], 400);
@@ -138,6 +180,10 @@ class PrintJobController extends ControllerBase {
    * Accepts a print result from an agent and updates the job status.
    */
   public function result(Request $request, int $eid, int $id): JsonResponse {
+    if (!$this->isAuthorized($request, $eid)) {
+      return new JsonResponse(['error' => 'Missing or invalid API key.'], 401);
+    }
+
     $jobStorage = $this->entityTypeManager()->getStorage('conreg_print_job');
     /** @var \Drupal\conreg\Entity\PrintJob|null $job */
     $job = $jobStorage->load($id);

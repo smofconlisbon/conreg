@@ -12,6 +12,7 @@ Most runtime behavior is keyed by event-specific config objects:
 | Group | Examples |
 |---|---|
 | `payments` | Stripe mode/keys, currency, auto-approve |
+| `checkin` | Check-in defaults, `label_printing_enabled`, `print_api_key` — see `site-building/label-printing.md` |
 | `member.classes` | Field labels, mandatory flags, max lengths |
 | `member.types` | Type code, price, default days, class mapping |
 | `thanks`, `member_check`, `member_edit` | User-facing content and labels (`member_check` also references its confirm/unknown `EasyEmailType`s) |

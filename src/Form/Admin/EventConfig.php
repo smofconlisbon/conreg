@@ -584,6 +584,14 @@ class EventConfig extends ConfigFormBase {
       '#default_value' => $config->get('checkin.label_printing_enabled') ?? FALSE,
     ];
 
+    $form['conreg_checkin']['print_api_key'] = [
+      '#type' => 'key_select',
+      '#title' => $this->t('Print Job API Key'),
+      '#description' => $this->t('The Key containing the shared secret print-server agents must send as an "Authorization: Bearer" header. Leave unset to refuse all print job API requests for this event.'),
+      '#key_filters' => ['type_group' => 'authentication'],
+      '#default_value' => $config->get('checkin.print_api_key') ?: '',
+    ];
+
     /*
      * Fields for confirmation emails.
      */
@@ -1066,6 +1074,7 @@ class EventConfig extends ConfigFormBase {
     $config->set('checkin.display', $vals['conreg_checkin']['display']);
     $config->set('checkin.communication_method', $vals['conreg_checkin']['communication_method']);
     $config->set('checkin.label_printing_enabled', $vals['conreg_checkin']['label_printing_enabled']);
+    $config->set('checkin.print_api_key', trim($vals['conreg_checkin']['print_api_key']));
     $config->set('confirmation.copy_us', $vals['conreg_confirmation']['copy_us']);
     $config->set('confirmation.from_name', $vals['conreg_confirmation']['from_name']);
     $config->set('confirmation.from_email', $vals['conreg_confirmation']['from_email']);

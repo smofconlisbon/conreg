@@ -29,10 +29,17 @@
 | `conreg_discord` | `conreg_discord` |
 | `conreg_planz` | `conreg_planz` |
 
-## First Drupal entity type: `conreg_subscription_rule`
+## First Drupal entity types
 
-`conreg_mailing_list` defines `conreg_subscription_rule` — the first actual Drupal
+`conreg_mailing_list` defines `conreg_subscription_rule`, the first actual Drupal
 entity type anywhere in this codebase (everything else above is a custom table with a
 storage service, per "No Drupal entity type is defined for members" above). It's a
 **config** entity, deliberately with no database table: each rule is stored as a config
 object, not a row.
+
+Badge label printing later added `conreg_printer` and `conreg_print_job`
+(`Drupal\conreg\Entity\Printer`/`PrintJob`) — the first **content** entities in this
+codebase, each with a real base table. See
+`site-building/label-printing.md` for their fields; new storage going
+forward should follow this content-entity pattern rather than adding
+more `hook_schema()` tables.

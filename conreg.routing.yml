@@ -438,7 +438,8 @@ conreg.print_job_next:
     _controller: '\Drupal\conreg\Controller\PrintJobController::next'
   methods: [GET]
   requirements:
-    # Placeholder access control; real per-device auth tokens come later.
+    # Real access control lives in PrintJobController::isAuthorized(),
+    # checked against a shared per-event API key (see checkin.print_api_key).
     # Requires a "?printer=<name>" query parameter identifying the printer
     # polling for work; not declared as a path parameter since printer
     # names are free text (e.g. "Bilbo Baggins").
@@ -453,7 +454,8 @@ conreg.print_job_result:
     _controller: '\Drupal\conreg\Controller\PrintJobController::result'
   methods: [POST]
   requirements:
-    # Placeholder access control; real per-device auth tokens come later.
+    # Real access control lives in PrintJobController::isAuthorized(),
+    # checked against a shared per-event API key (see checkin.print_api_key).
     _access: 'TRUE'
     eid: ^[0-9]+$
     id: ^[0-9]+$

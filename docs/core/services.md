@@ -10,6 +10,7 @@
 | `conreg.event.storage` | `EventStorage` | Event table access |
 | `conreg.addon_storage` | `AddonStorage` | Add-on table access |
 | `conreg.upgrade.storage` | `UpgradeStorage` | Upgrade table access and upgrade lookups |
+| `conreg.print_job.manager` | `PrintJobManager` | Creates/loads badge-label print jobs and printers — see `site-building/label-printing.md` |
 | `conreg.pricing` | `PricingService` | Registration pricing via `MemberPricingRule`/`PricingAdjustment` plugins — see `docs/architecture/pricing.md` |
 | `conreg.pricing.member_rule_manager` | `MemberPricingRulePluginManager` | Discovers `MemberPricingRule` plugins |
 | `conreg.pricing.adjustment_manager` | `PricingAdjustmentPluginManager` | Discovers `PricingAdjustment` plugins |

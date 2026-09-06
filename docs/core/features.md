@@ -14,6 +14,7 @@
 - Event config, member classes, member types, add-ons, email templates.
 - Member admin (`AdminMembers`) with add/edit/delete/transfer/email.
 - Check-in, fan table registration, options/add-ons reports.
+- Badge label printing, opt-in per event (`site-building/label-printing.md`).
 - Mailout export and bulk email sender.
 
 ## Extension-facing

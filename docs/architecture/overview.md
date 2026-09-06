@@ -1,8 +1,9 @@
 # Architecture Overview
 
-ConReg uses custom tables and service classes, not Drupal content entities (the one
-exception is `conreg_mailing_list`'s `conreg_subscription_rule`, a config entity — see
-`docs/architecture/data-model.md`).
+ConReg mostly uses custom tables and service classes rather than Drupal entities.
+Exceptions: `conreg_mailing_list`'s `conreg_subscription_rule` (a config entity), and
+badge label printing's `conreg_printer`/`conreg_print_job` (content entities, each with
+a real base table) — see `docs/architecture/data-model.md`.
 
 ## Core building blocks
 

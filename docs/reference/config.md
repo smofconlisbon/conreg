@@ -14,6 +14,7 @@
 | Group | Contents |
 |---|---|
 | `payments` | Stripe and payment behavior |
+| `checkin` | Check-in defaults, `label_printing_enabled`, `print_api_key` (Key entity ID for the print job API) - see `site-building/label-printing.md` |
 | `badge_types`, `badge_name_options`, `days` | Pipe-delimited code/label lists |
 | `member.classes`, `member.types` | Registration field and type models |
 | `submit`, `thanks`, `member_check`, `member_edit` | User-facing labels/messages (`member_check` also holds `confirm_easy_email_type`/`unknown_easy_email_type` references) |

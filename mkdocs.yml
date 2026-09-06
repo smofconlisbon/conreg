@@ -74,6 +74,7 @@ nav:
       - Member classes and types: site-building/member-setup.md
       - Field options and add-ons: site-building/options-and-addons.md
       - Stripe and payments: site-building/payments.md
+      - Badge label printing: site-building/label-printing.md
       - Email templates: site-building/email-templates.md
       - Simplenews linking: site-building/simplenews.md
   - Administration:
