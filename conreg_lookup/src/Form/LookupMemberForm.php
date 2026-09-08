@@ -279,8 +279,8 @@ class LookupMemberForm extends FormBase {
         $select->condition($likes);
       }
     }
-    $select->condition("m.is_deleted", FALSE);
-    $select->condition("m.is_paid", TRUE);
+    $select->condition("m.is_deleted", 0);
+    $select->condition("m.is_paid", 1);
     $select->orderby("member_no");
 
     $entries = $select->execute()->fetchAll(FetchAs::Associative);

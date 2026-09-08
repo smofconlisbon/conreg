@@ -594,7 +594,7 @@ class FanTable extends FormBase {
 
     // Load upgrades into upgrade manager and process.
     $mgr = new UpgradeManager($this->upgradeStorage, $this->memberStorage, $this->time, $eid);
-    $mgr->loadUpgrades($lead_mid, FALSE);
+    $mgr->loadUpgrades($lead_mid, 0);
     // Add total price of upgrades to total price of new members.
     $payment_amount += $mgr->getTotalPrice();
     $mgr->completeUpgrades($payment_amount, $form_values['payment_method'], $form_values['payment_id']);

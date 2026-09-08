@@ -181,7 +181,7 @@ class PlanZAdminForm extends FormBase {
     $select->condition('m.is_paid', 1);
     $select->condition('m.is_approved', 1);
     // Only include members who aren't deleted.
-    $select->condition("is_deleted", FALSE);
+    $select->condition("is_deleted", 0);
     foreach (explode(' ', $vals['member_search']) as $word) {
       // Escape search word to prevent dangerous characters.
       $esc_word = '%' . $this->connection->escapeLike($word) . '%';

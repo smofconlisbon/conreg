@@ -200,9 +200,9 @@ class FieldOptionStorage {
       $select->condition('o.optid', $optid);
     }
     // Only include members have paid.
-    $select->condition("is_paid", TRUE);
+    $select->condition("is_paid", 1);
     // Only include members who aren't deleted.
-    $select->condition("is_deleted", FALSE);
+    $select->condition("is_deleted", 0);
     $select->orderby('m.mid', 'ASC');
     $select->orderby('o.optid', 'ASC');
 

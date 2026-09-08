@@ -170,7 +170,7 @@ class AddonStorage {
     $select->condition('m.eid', $eid);
     $select->condition('m.is_paid', 1);
     // Only include members who aren't deleted and have paid.
-    $select->condition("m.is_deleted", FALSE);
+    $select->condition("m.is_deleted", 0);
     $select->condition('a.is_paid', 1);
 
     if (!empty($addOn)) {

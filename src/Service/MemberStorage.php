@@ -145,7 +145,7 @@ class MemberStorage {
     }
     // Unless mid specified, exclude deleted members.
     if (!array_key_exists("mid", $entry)) {
-      $select->condition("is_deleted", FALSE);
+      $select->condition("is_deleted", 0);
     }
     // Return the result in associative array format.
     return $select->execute()->fetchAssoc();
@@ -171,7 +171,7 @@ class MemberStorage {
     }
     // Unless mid specified, only fetch members who don't have deleted flag set.
     if (!array_key_exists("mid", $entry)) {
-      $select->condition("is_deleted", FALSE);
+      $select->condition("is_deleted", 0);
     }
     // Return the result in associative array format.
     $entries = $select->execute()->fetchAll(FetchAs::Associative);
@@ -197,7 +197,7 @@ class MemberStorage {
     $select->condition("mid", $mid);
     $select->condition("random_key", $key);
     // Only include members who aren't deleted.
-    $select->condition("is_deleted", FALSE);
+    $select->condition("is_deleted", 0);
 
     // Return the result in object format.
     if ($select->countQuery()->execute()->fetchField() > 0) {
@@ -228,7 +228,7 @@ class MemberStorage {
     $select->condition('m.eid', $eid);
     $select->condition('m.is_approved', 1);
     // Only include members who aren't deleted.
-    $select->condition("is_deleted", FALSE);
+    $select->condition("is_deleted", 0);
     $select->orderBy('m.member_no');
 
     $entries = $select->execute()->fetchAll(FetchAs::Associative);
@@ -261,23 +261,23 @@ class MemberStorage {
       case 'approval':
         $select->condition('m.is_paid', 1);
         $select->condition('m.is_approved', 0);
-        $select->condition("m.is_deleted", FALSE);
+        $select->condition("m.is_deleted", 0);
         break;
 
       case 'approved':
         $select->condition('m.is_paid', 1);
         $select->condition('m.is_approved', 1);
-        $select->condition("m.is_deleted", FALSE);
+        $select->condition("m.is_deleted", 0);
         break;
 
       case 'unpaid':
         $select->condition('m.is_paid', 0);
-        $select->condition("m.is_deleted", FALSE);
+        $select->condition("m.is_deleted", 0);
         break;
 
       case 'all':
         // All members.
-        $select->condition("m.is_deleted", FALSE);
+        $select->condition("m.is_deleted", 0);
         break;
 
       case 'custom':
@@ -306,7 +306,7 @@ class MemberStorage {
           $select->condition('m.join_date', $dateto, '<=');
         }
         // Only include members who aren't deleted.
-        $select->condition("m.is_deleted", FALSE);
+        $select->condition("m.is_deleted", 0);
     }
     return $select;
   }
@@ -428,7 +428,7 @@ class MemberStorage {
       }
     }
     $select->condition('m.is_paid', 1);
-    $select->condition("m.is_deleted", FALSE);
+    $select->condition("m.is_deleted", 0);
 
     return $select;
   }
@@ -497,7 +497,7 @@ class MemberStorage {
     $select->condition('m.is_paid', 0);
     $select->condition('m.is_checked_in', 0);
     // Only include members who aren't deleted.
-    $select->condition("m.is_deleted", FALSE);
+    $select->condition("m.is_deleted", 0);
     // Sort by specified field and direction.
     $select->orderby('m.mid', 'ASC');
 
@@ -538,7 +538,7 @@ class MemberStorage {
       $select->condition('m.is_paid', $is_paid);
     }
     // Only include members who aren't deleted.
-    $select->condition("m.is_deleted", FALSE);
+    $select->condition("m.is_deleted", 0);
     // Sort by specified field and direction.
     $select->orderby('m.mid', 'ASC');
 
@@ -559,7 +559,7 @@ class MemberStorage {
     $select->addField('m', 'is_checked_in');
     $select->condition('m.eid', $eid);
     // Only include members who aren't deleted.
-    $select->condition("is_deleted", FALSE);
+    $select->condition("is_deleted", 0);
 
     $entries = $select->execute()->fetchAll(FetchAs::Associative);
     $members = [];
@@ -580,7 +580,7 @@ class MemberStorage {
     $select->addExpression('MAX(m.member_no)');
     $select->condition('m.eid', $eid);
     // Only include members who aren't deleted.
-    $select->condition("is_deleted", FALSE);
+    $select->condition("is_deleted", 0);
     $select->condition('m.is_approved', 1);
     // Make sure we only get items 0-49, for scalability reasons.
     // $select->range(0, 50);.
@@ -626,7 +626,7 @@ class MemberStorage {
     $select->condition('m.eid', $eid);
     $select->condition('m.is_paid', 1);
     // Only include members who aren't deleted.
-    $select->condition("is_deleted", FALSE);
+    $select->condition("is_deleted", 0);
     $select->orderby($order, $direction);
     // Make sure we only get items 0-49, for scalability reasons.
     // $select->range(0, 50);.
@@ -668,7 +668,7 @@ class MemberStorage {
     $select->condition('m.is_paid', 1);
     $select->condition('m.is_approved', 1);
     // Only include members who aren't deleted.
-    $select->condition('m.is_deleted', FALSE);
+    $select->condition('m.is_deleted', 0);
     if (!empty($options['member_no_from'])) {
       $select->condition('m.member_no', $options['member_no_from'], '>=');
     }
@@ -745,7 +745,7 @@ class MemberStorage {
     $select->condition('m.eid', $eid);
     $select->condition('m.is_paid', 1);
     // Only include members who aren't deleted.
-    $select->condition("is_deleted", FALSE);
+    $select->condition("is_deleted", 0);
     $select->groupby('m.member_type');
 
     $entries = $select->execute()->fetchAll(FetchAs::Associative);
@@ -764,7 +764,7 @@ class MemberStorage {
     $select->condition('m.eid', $eid);
     $select->condition('m.is_paid', 1);
     // Only include members who aren't deleted.
-    $select->condition("is_deleted", FALSE);
+    $select->condition("is_deleted", 0);
     $select->groupby('m.badge_type');
 
     $entries = $select->execute()->fetchAll(FetchAs::Associative);
@@ -783,7 +783,7 @@ class MemberStorage {
     $select->condition('m.eid', $eid);
     $select->condition('m.is_paid', 1);
     // Only include members who aren't deleted.
-    $select->condition("is_deleted", FALSE);
+    $select->condition("is_deleted", 0);
     $select->groupby('m.days');
 
     $entries = $select->execute()->fetchAll(FetchAs::Associative);
@@ -802,7 +802,7 @@ class MemberStorage {
     $select->condition('m.eid', $eid);
     $select->condition('m.is_paid', 1);
     // Only include members who aren't deleted.
-    $select->condition("is_deleted", FALSE);
+    $select->condition("is_deleted", 0);
     $select->groupby('m.payment_method');
 
     $entries = $select->execute()->fetchAll(FetchAs::Associative);
@@ -821,7 +821,7 @@ class MemberStorage {
     $select->condition('m.eid', $eid);
     $select->condition('m.is_paid', 1);
     // Only include members who aren't deleted.
-    $select->condition("is_deleted", FALSE);
+    $select->condition("is_deleted", 0);
     $select->groupby('m.member_price');
 
     $entries = $select->execute()->fetchAll(FetchAs::Associative);
@@ -841,7 +841,7 @@ class MemberStorage {
     $select->condition('m.eid', $eid);
     $select->condition('m.is_paid', 1);
     // Only include members who aren't deleted.
-    $select->condition("is_deleted", FALSE);
+    $select->condition("is_deleted", 0);
     $select->groupby('m.member_type');
     $select->groupby('m.member_price');
 
@@ -863,7 +863,7 @@ class MemberStorage {
     $select->condition('m.eid', $eid);
     $select->condition('m.is_paid', 1);
     // Only include members who aren't deleted.
-    $select->condition("is_deleted", FALSE);
+    $select->condition("is_deleted", 0);
     $select->groupby('year');
     $select->groupby('month');
 
@@ -883,7 +883,7 @@ class MemberStorage {
     $select->condition('m.eid', $eid);
     $select->condition('m.is_paid', 1);
     // Only include members who aren't deleted.
-    $select->condition("is_deleted", FALSE);
+    $select->condition("is_deleted", 0);
     $select->groupby('m.is_checked_in');
 
     $entries = $select->execute()->fetchAll(FetchAs::Associative);
@@ -906,7 +906,7 @@ class MemberStorage {
     $select->condition('m.eid', $eid);
     $select->condition('m.is_paid', 1);
     // Only include members who aren't deleted.
-    $select->condition("is_deleted", FALSE);
+    $select->condition("is_deleted", 0);
     // Only list members if they have an add-on.
     $select->condition("add_on_price", 0, ">");
 
@@ -934,7 +934,7 @@ class MemberStorage {
     $select->condition('m.member_type', ['C', 'I'], 'IN');
     $select->condition('m.is_paid', 1);
     // Only include members who aren't deleted.
-    $select->condition("m.is_deleted", FALSE);
+    $select->condition("m.is_deleted", 0);
 
     $entries = $select->execute()->fetchAll(FetchAs::Associative);
 
@@ -952,7 +952,7 @@ class MemberStorage {
     $select->condition('m.eid', $eid);
     $select->condition('m.is_paid', 1);
     // Only include members who aren't deleted.
-    $select->condition("is_deleted", FALSE);
+    $select->condition("is_deleted", 0);
     $select->groupby('m.country');
     $select->orderby('num', $direction = 'DESC');
     // Make sure we only get items 0-49, for scalability reasons.
@@ -985,7 +985,7 @@ class MemberStorage {
     // Only include paid members.
     $select->condition("is_paid", 1);
     // Only include members who aren't deleted.
-    $select->condition("is_deleted", FALSE);
+    $select->condition("is_deleted", 0);
     $select->condition('m.communication_method', $methods, 'IN');
     $select->condition('m.language', $languages, 'IN');
 

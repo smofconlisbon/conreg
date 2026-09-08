@@ -328,7 +328,7 @@ class FieldOptions {
       // or it has been set on the form.
       if (isset($memberOptions[$optid]) || $optionInfo['detail']) {
         $optionDetail = $optionInfo['detail'] ?? '';
-        $optionVal = empty($optionDetail) ? FALSE : TRUE;
+        $optionVal = empty($optionDetail) ? 0 : 1;
         $memberOptions[$optid] = new MemberOption($mid, $optid, $optionVal, $optionDetail);
       }
     }
