@@ -99,12 +99,3 @@ member_email_check:
       css/member_email_check.css: {}
   js:
     js/member_email_check.js: {}
-
-# CSS for navigation icon.
-icon:
-  version: 1.x
-  css:
-    theme:
-      css/conreg_navigation.css: {}
-  dependencies:
-    - navigation/internal.navigation

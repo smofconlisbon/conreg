@@ -27,15 +27,4 @@ class ConregHooks {
     }
   }
 
-  /**
-   * Implements hook_page_attachments().
-   */
-  #[Hook('page_attachments')]
-  public static function pageAttachments(&$variables) {
-    // Include Icon CSS if Drupal earlier than 11.1 - after this use Icon API.
-    if (version_compare(\Drupal::VERSION, '11.1', '<')) {
-      $variables['#attached']['library'][] = 'conreg/icon';
-    }
-  }
-
 }

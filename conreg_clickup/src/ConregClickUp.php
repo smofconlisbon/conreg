@@ -2,7 +2,6 @@
 
 namespace Drupal\conreg_clickup;
 
-use Drupal\Component\Utility\DeprecationHelper;
 use Drupal\Core\Database\Statement\FetchAs;
 use Drupal\Component\Serialization\Json;
 use Drupal\Core\Datetime\DrupalDateTime;
@@ -387,7 +386,7 @@ class ConregClickUp {
     }
     // Only selecting one field.
     else {
-      return DeprecationHelper::backwardsCompatibleCall(\Drupal::VERSION, '11.2.0', fn() => $select->execute()->fetchAll(FetchAs::Associative), fn() => $select->execute()->fetchAll(\PDO::FETCH_ASSOC));
+      return $select->execute()->fetchAll(FetchAs::Associative);
     }
   }
 

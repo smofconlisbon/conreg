@@ -2,7 +2,6 @@
 
 namespace Drupal\conreg\Service;
 
-use Drupal\Component\Utility\DeprecationHelper;
 use Drupal\Core\Database\Statement\FetchAs;
 use Drupal\Core\Database\Connection;
 use Drupal\Core\Messenger\MessengerInterface;
@@ -150,7 +149,7 @@ class AddonStorage {
     }
 
     // Return the result in associative array format.
-    return DeprecationHelper::backwardsCompatibleCall(\Drupal::VERSION, '11.2.0', fn() => $select->execute()->fetchAll(FetchAs::Associative), fn() => $select->execute()->fetchAll(\PDO::FETCH_ASSOC));
+    return $select->execute()->fetchAll(FetchAs::Associative);
   }
 
   /**
@@ -178,7 +177,7 @@ class AddonStorage {
       $select->condition('a.addon_name', $addOn);
     }
 
-    return DeprecationHelper::backwardsCompatibleCall(\Drupal::VERSION, '11.2.0', fn() => $select->execute()->fetchAll(FetchAs::Associative), fn() => $select->execute()->fetchAll(\PDO::FETCH_ASSOC));
+    return $select->execute()->fetchAll(FetchAs::Associative);
   }
 
 }

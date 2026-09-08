@@ -2,7 +2,6 @@
 
 namespace Drupal\conreg_planz;
 
-use Drupal\Component\Utility\DeprecationHelper;
 use Drupal\Core\Database\Statement\FetchAs;
 use Drupal\Core\Config\ImmutableConfig;
 use Drupal\Core\Database\Connection;
@@ -177,7 +176,7 @@ class PlanZ {
     $select->addField('P', 'permroleid');
     $select->addField('P', 'permrolename');
     $select->orderBy('P.display_order');
-    return DeprecationHelper::backwardsCompatibleCall(\Drupal::VERSION, '11.2.0', fn() => $select->execute()->fetchAll(FetchAs::Associative), fn() => $select->execute()->fetchAll(\PDO::FETCH_ASSOC));
+    return $select->execute()->fetchAll(FetchAs::Associative);
   }
 
   /**

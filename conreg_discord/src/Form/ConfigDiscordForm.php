@@ -11,6 +11,7 @@ use Drupal\conreg\Trait\EasyEmailTypeOptionsTrait;
 use Drupal\conreg_discord\Discord;
 use Drupal\Core\Config\ImmutableConfig;
 use Drupal\Core\Database\Connection;
+use Drupal\Core\Database\Statement\FetchAs;
 use Drupal\Core\DependencyInjection\AutowireTrait;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\ConfigFormBase;
@@ -509,7 +510,7 @@ class ConfigDiscordForm extends ConfigFormBase {
   private function getAwaitingMemberNos($eid) {
     $query = $this->getQuery($eid);
     $query->addField('m', 'member_no');
-    return $query->execute()->fetchAll(\PDO::FETCH_ASSOC);
+    return $query->execute()->fetchAll(FetchAs::Associative);
   }
 
   /**

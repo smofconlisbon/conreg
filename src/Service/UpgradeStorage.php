@@ -2,7 +2,6 @@
 
 namespace Drupal\conreg\Service;
 
-use Drupal\Component\Utility\DeprecationHelper;
 use Drupal\Core\Database\Statement\FetchAs;
 use Drupal\Core\Database\Connection;
 use Drupal\Core\Messenger\MessengerInterface;
@@ -184,7 +183,7 @@ class UpgradeStorage {
     foreach ($entry as $field => $value) {
       $select->condition($field, $value);
     }
-    $entries = DeprecationHelper::backwardsCompatibleCall(\Drupal::VERSION, '11.2.0', fn() => $select->execute()->fetchAll(FetchAs::Associative), fn() => $select->execute()->fetchAll(\PDO::FETCH_ASSOC));
+    $entries = $select->execute()->fetchAll(FetchAs::Associative);
 
     return $entries;
   }

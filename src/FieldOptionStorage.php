@@ -2,7 +2,6 @@
 
 namespace Drupal\conreg;
 
-use Drupal\Component\Utility\DeprecationHelper;
 use Drupal\Core\Database\Statement\FetchAs;
 
 /**
@@ -153,7 +152,7 @@ class FieldOptionStorage {
       $select->condition('m.is_selected', 1);
     }
 
-    $entries = DeprecationHelper::backwardsCompatibleCall(\Drupal::VERSION, '11.2.0', fn() => $select->execute()->fetchAll(FetchAs::Associative), fn() => $select->execute()->fetchAll(\PDO::FETCH_ASSOC));
+    $entries = $select->execute()->fetchAll(FetchAs::Associative);
 
     // Turn result into associative array.
     $memberOptions = [];
@@ -207,7 +206,7 @@ class FieldOptionStorage {
     $select->orderby('m.mid', 'ASC');
     $select->orderby('o.optid', 'ASC');
 
-    $entries = DeprecationHelper::backwardsCompatibleCall(\Drupal::VERSION, '11.2.0', fn() => $select->execute()->fetchAll(FetchAs::Associative), fn() => $select->execute()->fetchAll(\PDO::FETCH_ASSOC));
+    $entries = $select->execute()->fetchAll(FetchAs::Associative);
 
     return $entries;
   }

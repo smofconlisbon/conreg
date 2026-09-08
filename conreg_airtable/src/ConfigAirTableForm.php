@@ -2,7 +2,6 @@
 
 namespace Drupal\conreg_airtable;
 
-use Drupal\Component\Utility\DeprecationHelper;
 use Drupal\Core\Database\Statement\FetchAs;
 use Drupal\conreg\ConregConfig;
 use Drupal\conreg\FieldOptions;
@@ -304,7 +303,7 @@ class ConfigAirTableForm extends ConfigFormBase {
     $query->condition('m.is_paid', 1);
     $query->isNull('a.mid');
 
-    $result = DeprecationHelper::backwardsCompatibleCall(\Drupal::VERSION, '11.2.0', fn() => $query->execute()->fetchAll(FetchAs::Associative), fn() => $query->execute()->fetchAll(\PDO::FETCH_ASSOC));
+    $result = $query->execute()->fetchAll(FetchAs::Associative);
     $mids = [];
     foreach ($result as $mid) {
       $mids[] = $mid['mid'];
@@ -334,7 +333,7 @@ class ConfigAirTableForm extends ConfigFormBase {
     $query->condition('m.is_deleted', 0);
     $query->condition('m.is_paid', 1);
 
-    $result = DeprecationHelper::backwardsCompatibleCall(\Drupal::VERSION, '11.2.0', fn() => $query->execute()->fetchAll(FetchAs::Associative), fn() => $query->execute()->fetchAll(\PDO::FETCH_ASSOC));
+    $result = $query->execute()->fetchAll(FetchAs::Associative);
     $airtable_ids = [];
     foreach ($result as $mid) {
       $airtable_ids[$mid['mid']] = $mid['airtable_id'];
