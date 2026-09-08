@@ -94,6 +94,7 @@ member:
         display: 'How would you like your name displayed on public member lists?'
         communication_method: 'How would you like to receive progress reports?'
         same_address: 'Same as member 1'
+        address_heading: Address
         street: 'Address line 1'
         street2: 'Address line 2'
         city: Town/City

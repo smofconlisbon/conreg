@@ -574,8 +574,17 @@ class Registration extends FormBase {
         ];
       }
 
+      $form['members']['member' . $cnt]['address'] = [
+        '#prefix' => '<div id="memberAddress' . $cnt . '" class="member-address">',
+        '#suffix' => '</div>',
+      ];
+      if (!empty($curMemberClass->fields->address_heading)) {
+        $form['members']['member' . $cnt]['address']['#type'] = 'fieldset';
+        $form['members']['member' . $cnt]['address']['#title'] = $curMemberClass->fields->address_heading;
+      }
+
       if ($cnt > 1 && !empty($curMemberClass->fields->same_address)) {
-        $form['members']['member' . $cnt]['same_address'] = [
+        $form['members']['member' . $cnt]['address']['same_address'] = [
           '#type' => 'checkbox',
           '#title' => $curMemberClass->fields->same_address,
           '#ajax' => [
@@ -585,16 +594,11 @@ class Registration extends FormBase {
         ];
       }
 
-      $form['members']['member' . $cnt]['address'] = [
-        '#prefix' => '<div id="memberAddress' . $cnt . '">',
-        '#suffix' => '</div>',
-      ];
-
-      if (empty($member_values['same_address'])) {
+      if (empty($member_values['address']['same_address'])) {
         $same = FALSE;
       }
       else {
-        $same = $member_values['same_address'];
+        $same = $member_values['address']['same_address'];
       }
 
       // Always show address for member 1, and for other members
@@ -1196,7 +1200,7 @@ class Registration extends FormBase {
       }
 
       // If "same" checkbox ticked for member, use member 1 for address fields.
-      if ($cnt == 1 || $member_values['same_address']) {
+      if ($cnt == 1 || !empty($member_values['address']['same_address'])) {
         $addressMember = 1;
       }
       else {

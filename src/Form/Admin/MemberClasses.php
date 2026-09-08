@@ -198,6 +198,11 @@ class MemberClasses extends ConfigFormBase {
           'type' => 'textfield',
           'required' => FALSE,
         ],
+        'address_heading' => (object) [
+          'label' => $this->t('Address section heading (leave empty for no heading)'),
+          'type' => 'textfield',
+          'required' => FALSE,
+        ],
         'street' => (object) [
           'label' => $this->t('Street address label (leave empty to remove field)'),
           'type' => 'textfield',

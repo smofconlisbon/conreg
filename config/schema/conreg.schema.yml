@@ -195,6 +195,9 @@ conreg.settings.*:
                   same_address:
                     type: label
                     label: 'Label for address same as member 1'
+                  address_heading:
+                    type: label
+                    label: 'Heading for address section (leave empty for no heading)'
                   street:
                     type: label
                     label: 'Label for Address line 1'
