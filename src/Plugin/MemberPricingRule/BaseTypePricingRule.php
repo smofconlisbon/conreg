@@ -58,7 +58,7 @@ final class BaseTypePricingRule extends MemberPricingRulePluginBase {
           }
         }
       }
-      if ($daysPrice > 0 && $daysPrice < $price) {
+      if (!empty($dayCodes) && $daysPrice < $price) {
         $price = $daysPrice;
         $days = implode('|', $dayCodes);
         $daysDesc = implode(', ', $dayNames);

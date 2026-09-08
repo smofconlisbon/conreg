@@ -127,6 +127,56 @@ class BaseTypePricingRuleTest extends UnitTestCase {
   }
 
   /**
+   * Selecting a single day priced at $0.00 charges $0.00, not full price.
+   *
+   * Regression test for #3596618: a free day-price option was being
+   * ignored in favor of the type's default price, because the override
+   * guard checked `$daysPrice > 0` instead of whether any day had
+   * actually been selected.
+   */
+  public function testFreeDaySelectionChargesZero(): void {
+    $context = $this->makeContext([
+      'A' => $this->makeType(50.0, 'Fri|Sat|Sun', [
+        'Fri' => $this->makeDay(0.0, 'Friday'),
+        'Sat' => $this->makeDay(20.0, 'Saturday'),
+        'Sun' => $this->makeDay(20.0, 'Sunday'),
+      ]),
+    ]);
+    $subject = new PricingSubject(1, 'A', ['Fri'], []);
+
+    $rule = new BaseTypePricingRule([], 'base_type', ['label' => 'Base']);
+    $contribution = $rule->priceMember($subject, $context);
+
+    $this->assertSame(0.0, $contribution->lines[0]->amount);
+    $this->assertSame('Fri', $contribution->days);
+    $this->assertSame('Friday', $contribution->daysDesc);
+  }
+
+  /**
+   * Selecting multiple days that together sum to $0.00 also charges $0.00.
+   *
+   * Regression test for #3596618, covering a multi-day free selection so
+   * the fix isn't accidentally scoped to a single selected day.
+   */
+  public function testMultipleFreeDaysSelectionChargesZero(): void {
+    $context = $this->makeContext([
+      'A' => $this->makeType(50.0, 'Fri|Sat|Sun', [
+        'Fri' => $this->makeDay(0.0, 'Friday'),
+        'Sat' => $this->makeDay(0.0, 'Saturday'),
+        'Sun' => $this->makeDay(20.0, 'Sunday'),
+      ]),
+    ]);
+    $subject = new PricingSubject(1, 'A', ['Fri', 'Sat'], []);
+
+    $rule = new BaseTypePricingRule([], 'base_type', ['label' => 'Base']);
+    $contribution = $rule->priceMember($subject, $context);
+
+    $this->assertSame(0.0, $contribution->lines[0]->amount);
+    $this->assertSame('Fri|Sat', $contribution->days);
+    $this->assertSame('Friday, Saturday', $contribution->daysDesc);
+  }
+
+  /**
    * A negative configured price is clamped to zero.
    */
   public function testNegativePriceClampedToZero(): void {
