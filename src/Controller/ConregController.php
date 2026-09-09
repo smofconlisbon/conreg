@@ -90,6 +90,8 @@ class ConregController extends ControllerBase {
     $showMemberNo = $config->get('member_listing_page.show_member_no') ?? TRUE;
     $showCountries = $config->get('member_listing_page.show_countries') ?? TRUE;
     $showSummary = $config->get('member_listing_page.show_summary') ?? TRUE;
+    $defaultSort = $config->get('member_listing_page.default_sort') ?? 'member_no';
+    $deduplicate = $config->get('member_listing_page.deduplicate') ?? FALSE;
 
     switch ($this->requestStack->getCurrentRequest()->query->get('sort') ?? '') {
       case 'desc':
@@ -114,7 +116,7 @@ class ConregController extends ControllerBase {
         break;
 
       default:
-        $order = 'member_no';
+        $order = $defaultSort;
         break;
     }
 
@@ -166,7 +168,12 @@ class ConregController extends ControllerBase {
     }
     $total = 0;
 
-    foreach ($this->memberStorage->adminPublicListLoad($eid) as $entry) {
+    $entries = $this->memberStorage->adminPublicListLoad($eid);
+    if ($deduplicate) {
+      $entries = $this->deduplicateMemberEntries($entries);
+    }
+
+    foreach ($entries as $entry) {
       // Sanitize each entry.
       $badge_type = trim($entry['badge_type']);
       $member = [];
@@ -270,6 +277,39 @@ class ConregController extends ControllerBase {
     }
 
     return $content;
+  }
+
+  /**
+   * Reduces member entries to one per person for the public member list.
+   *
+   * Members sharing the same email address, first name, and last name
+   * (matched case-insensitively and trimmed) are treated as one person
+   * registered multiple times under the same email - only the entry with
+   * the highest member_price is kept, with the lowest member ID as a
+   * deterministic tie-break when prices match. Members with the same name
+   * but different emails are left as separate entries.
+   *
+   * @param array $entries
+   *   Member rows as returned by MemberStorage::adminPublicListLoad().
+   *
+   * @return array
+   *   The deduplicated member rows.
+   */
+  protected function deduplicateMemberEntries(array $entries): array {
+    $winners = [];
+    foreach ($entries as $entry) {
+      $key = mb_strtolower(trim($entry['email'] ?? ''))
+        . '|' . mb_strtolower(trim($entry['first_name'] ?? ''))
+        . '|' . mb_strtolower(trim($entry['last_name'] ?? ''));
+
+      if (!isset($winners[$key])
+        || $entry['member_price'] > $winners[$key]['member_price']
+        || ($entry['member_price'] == $winners[$key]['member_price'] && $entry['mid'] < $winners[$key]['mid'])) {
+        $winners[$key] = $entry;
+      }
+    }
+
+    return array_values($winners);
   }
 
   /**

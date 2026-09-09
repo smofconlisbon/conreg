@@ -85,7 +85,7 @@ class PublicMemberListTest extends KernelTestBase {
   /**
    * Insert an additional approved, publicly-listed member.
    */
-  protected function createMember(int $memberNo, string $name): void {
+  protected function createMember(int $memberNo, string $name, string $email = '', float $memberPrice = 0, string $country = 'IE'): void {
     Database::getConnection()->insert('conreg_members')
       ->fields([
         'eid' => 1,
@@ -97,7 +97,9 @@ class PublicMemberListTest extends KernelTestBase {
         'badge_name' => $name . ' User',
         'badge_type' => 'A',
         'display' => 'F',
-        'country' => 'IE',
+        'country' => $country,
+        'email' => $email,
+        'member_price' => $memberPrice,
         'is_deleted' => 0,
       ])
       ->execute();
@@ -155,8 +157,12 @@ class PublicMemberListTest extends KernelTestBase {
   /**
    * Call the controller the same way the route would.
    */
-  protected function callMemberList($eid = 1) {
-    $request = Request::create("/members/list/$eid");
+  protected function callMemberList($eid = 1, array $query = []) {
+    $uri = "/members/list/$eid";
+    if ($query) {
+      $uri .= '?' . http_build_query($query);
+    }
+    $request = Request::create($uri);
     $request->setSession(new Session(new MockArraySessionStorage()));
     $this->container->get('request_stack')->push($request);
 
@@ -278,6 +284,143 @@ class PublicMemberListTest extends KernelTestBase {
 
     $names = array_column($content['table']['#rows'], 'name');
     $this->assertSame(['Test User', 'Alpha User', 'Bravo User'], $names);
+  }
+
+  /**
+   * Deduplicating keeps only the higher-priced of two matching registrations.
+   */
+  public function testDeduplicateMergesSameEmailAndNameKeepingHighestPrice(): void {
+    $this->createMember(2, 'Dup', 'dup@example.com', 50.00);
+    $this->createMember(3, 'Dup', 'dup@example.com', 100.00);
+
+    $this->config('conreg.settings.1')
+      ->set('member_listing_page.deduplicate', TRUE)
+      ->save();
+
+    $content = $this->callMemberList();
+
+    $dupRows = array_filter($content['table']['#rows'], fn($row) => $row['name'] === 'Dup User');
+    $this->assertCount(1, $dupRows);
+    $this->assertSame('A0003', reset($dupRows)['member_no']);
+  }
+
+  /**
+   * Deduplication matching ignores case and surrounding whitespace.
+   */
+  public function testDeduplicateMatchingIsCaseInsensitiveAndTrimmed(): void {
+    $this->createMember(2, ' Dup ', ' DUP@Example.com ', 50.00);
+    $this->createMember(3, 'dup', 'dup@example.com', 100.00);
+
+    $this->config('conreg.settings.1')
+      ->set('member_listing_page.deduplicate', TRUE)
+      ->save();
+
+    $content = $this->callMemberList();
+
+    $dupRows = array_filter($content['table']['#rows'], fn($row) => mb_strtolower($row['name']) === 'dup user');
+    $this->assertCount(1, $dupRows);
+  }
+
+  /**
+   * Members with the same name but different emails are not merged.
+   */
+  public function testDeduplicateKeepsDistinctEmailsWithSameName(): void {
+    $this->createMember(2, 'Distinct', 'alice@example.com', 50.00);
+    $this->createMember(3, 'Distinct', 'bob@example.com', 50.00);
+
+    $this->config('conreg.settings.1')
+      ->set('member_listing_page.deduplicate', TRUE)
+      ->save();
+
+    $content = $this->callMemberList();
+
+    $distinctRows = array_filter($content['table']['#rows'], fn($row) => $row['name'] === 'Distinct User');
+    $this->assertCount(2, $distinctRows);
+  }
+
+  /**
+   * With deduplication off (or unset), every registration still shows.
+   */
+  public function testDeduplicateOffShowsAllRegistrations(): void {
+    $this->createMember(2, 'Dup', 'dup@example.com', 50.00);
+    $this->createMember(3, 'Dup', 'dup@example.com', 100.00);
+
+    $content = $this->callMemberList();
+
+    $dupRows = array_filter($content['table']['#rows'], fn($row) => $row['name'] === 'Dup User');
+    $this->assertCount(2, $dupRows);
+  }
+
+  /**
+   * A tied member_price is broken deterministically by the lowest member ID.
+   */
+  public function testDeduplicateTiebreaksOnLowestMemberIdWhenPricesMatch(): void {
+    // Inserted first, so gets the lower member ID.
+    $this->createMember(2, 'Dup', 'dup@example.com', 75.00, 'IE');
+    $this->createMember(3, 'Dup', 'dup@example.com', 75.00, 'FR');
+
+    $this->config('conreg.settings.1')
+      ->set('member_listing_page.deduplicate', TRUE)
+      ->save();
+
+    $content = $this->callMemberList();
+
+    $dupRows = array_filter($content['table']['#rows'], fn($row) => $row['name'] === 'Dup User');
+    $this->assertCount(1, $dupRows);
+    $this->assertSame('A0002', reset($dupRows)['member_no']);
+  }
+
+  /**
+   * The configured default sort order is used when no sort is requested.
+   */
+  public function testDefaultSortConfigOrdersByConfiguredColumn(): void {
+    $this->createMember(3, 'Bravo');
+    $this->createMember(2, 'Alpha');
+
+    $this->config('conreg.settings.1')
+      ->set('member_listing_page.default_sort', 'name')
+      ->save();
+
+    $content = $this->callMemberList();
+
+    $names = array_column($content['table']['#rows'], 'name');
+    $this->assertSame(['Alpha User', 'Bravo User', 'Test User'], $names);
+  }
+
+  /**
+   * With no default sort configured, the fallback is still member number.
+   */
+  public function testDefaultSortUnsetFallsBackToMemberNo(): void {
+    $this->createMember(3, 'Bravo');
+    $this->createMember(2, 'Alpha');
+
+    $content = $this->callMemberList();
+
+    $names = array_column($content['table']['#rows'], 'name');
+    $this->assertSame(['Test User', 'Alpha User', 'Bravo User'], $names);
+  }
+
+  /**
+   * An explicit sort request overrides the configured default sort order.
+   *
+   * Country names, not codes, are what's actually sorted on - "Alpha" is
+   * given France and "Zeta" is given Denmark, so alphabetical-by-name
+   * ('Alpha User' before 'Zeta User') and alphabetical-by-country-name
+   * ('Denmark' before 'France', so 'Zeta User' before 'Alpha User') give
+   * opposite orderings, proving which one actually took effect.
+   */
+  public function testExplicitSortQueryParamOverridesDefaultSortConfig(): void {
+    $this->createMember(2, 'Alpha', '', 0, 'FR');
+    $this->createMember(3, 'Zeta', '', 0, 'DK');
+
+    $this->config('conreg.settings.1')
+      ->set('member_listing_page.default_sort', 'name')
+      ->save();
+
+    $content = $this->callMemberList(1, ['order' => 'Country']);
+
+    $names = array_column($content['table']['#rows'], 'name');
+    $this->assertSame(['Zeta User', 'Alpha User', 'Test User'], $names);
   }
 
 }

@@ -425,6 +425,26 @@ class EventConfig extends ConfigFormBase {
       '#default_value' => $config->get('member_listing_page.show_summary') ?? TRUE,
     ];
 
+    $form['conreg_member_listing']['default_sort'] = [
+      '#type' => 'select',
+      '#title' => $this->t('Default sort order'),
+      '#description' => $this->t('Column to sort the public member list by when no sort has been explicitly selected.'),
+      '#options' => [
+        'member_no' => $this->t('Member No'),
+        'name' => $this->t('Name'),
+        'badge_type' => $this->t('Type'),
+        'country' => $this->t('Country'),
+      ],
+      '#default_value' => $config->get('member_listing_page.default_sort') ?? 'member_no',
+    ];
+
+    $form['conreg_member_listing']['deduplicate'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Deduplicate member list'),
+      '#description' => $this->t('If checked, members sharing the same email address, first name, and last name are treated as one person registered multiple times, and only the highest-priced registration is shown.'),
+      '#default_value' => $config->get('member_listing_page.deduplicate') ?? FALSE,
+    ];
+
     /*
      * Display settings - entries per page.
      */
@@ -1053,6 +1073,8 @@ class EventConfig extends ConfigFormBase {
     $config->set('member_listing_page.show_member_no', $vals['conreg_member_listing']['show_member_no']);
     $config->set('member_listing_page.show_countries', $vals['conreg_member_listing']['show_countries']);
     $config->set('member_listing_page.show_summary', $vals['conreg_member_listing']['show_summary']);
+    $config->set('member_listing_page.default_sort', $vals['conreg_member_listing']['default_sort']);
+    $config->set('member_listing_page.deduplicate', $vals['conreg_member_listing']['deduplicate']);
     $config->set('display.page_size', intval($vals['conreg_display']['page_size']));
     $config->set('reference.default_country', $vals['conreg_reference']['default_country']);
     $config->set('reference.no_country_label', $vals['conreg_reference']['no_country_label']);

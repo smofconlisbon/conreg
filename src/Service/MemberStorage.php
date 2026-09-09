@@ -225,6 +225,9 @@ class MemberStorage {
     $select->addField('m', 'badge_name');
     $select->addField('m', 'display');
     $select->addField('m', 'country');
+    $select->addField('m', 'email');
+    $select->addField('m', 'member_price');
+    $select->addField('m', 'mid');
     $select->condition('m.eid', $eid);
     $select->condition('m.is_approved', 1);
     // Only include members who aren't deleted.

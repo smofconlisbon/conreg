@@ -84,6 +84,12 @@ conreg.settings.*:
         show_summary:
           type: boolean
           label: 'True if breakdown by country to be shown'
+        default_sort:
+          type: string
+          label: 'The column to sort the public member list by when no sort is requested'
+        deduplicate:
+          type: boolean
+          label: 'True if members with the same email/first/last name should be deduplicated, keeping only the highest-priced entry'
     display:
       type: mapping
       mapping:
