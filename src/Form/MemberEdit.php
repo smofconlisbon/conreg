@@ -359,7 +359,7 @@ class MemberEdit extends FormBase {
     $ajax_response = new AjaxResponse();
     // @todo Add-ons not currently displayed on member edit form. Add here.
     foreach ($addons as $addOnId) {
-      if (!empty($form['member']['add_on'][$addOnId]['extra'])) {
+      if (!empty($form['member']['add_on'][$addOnId]['extra']['info'])) {
         $id = '#member_addon_' . $addOnId . '_info';
         $ajax_response->addCommand(new HtmlCommand($id, $this->renderer->render($form['member']['add_on'][$addOnId]['extra']['info'])));
       }

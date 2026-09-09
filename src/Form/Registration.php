@@ -842,7 +842,7 @@ class Registration extends FormBase {
 
     for ($cnt = 1; $cnt <= $memberQty; $cnt++) {
       foreach ($addons as $addOnId) {
-        if (!empty($form['members']['member' . $cnt]['add_on'][$addOnId]['extra'])) {
+        if (!empty($form['members']['member' . $cnt]['add_on'][$addOnId]['extra']['info'])) {
           $id = '#member_addon_' . $addOnId . '_info_' . $cnt;
           $ajax_response->addCommand(new HtmlCommand($id, $this->renderer->render($form['members']['member' . $cnt]['add_on'][$addOnId]['extra']['info'])));
         }
@@ -851,7 +851,7 @@ class Registration extends FormBase {
     }
     // If global addon, return update that.
     foreach ($addons as $addOnId) {
-      if (!empty($form['payment']['global_add_on'][$addOnId]['extra'])) {
+      if (!empty($form['payment']['global_add_on'][$addOnId]['extra']['info'])) {
         $id = '#global_addon_' . $addOnId . '_info';
         $ajax_response->addCommand(new HtmlCommand($id, $this->renderer->render($form['payment']['global_add_on'][$addOnId]['extra']['info'])));
       }
