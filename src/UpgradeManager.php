@@ -125,7 +125,7 @@ class UpgradeManager {
       $upgrades = $this->upgradeStorage->loadAll(['mid' => $mid, 'is_paid' => $isPaid]);
     }
     if (!empty($upgrades)) {
-      $this->leadMid = $upgrades['lead_mid'];
+      $this->leadMid = $upgrades[array_key_first($upgrades)]['lead_mid'];
       foreach ($upgrades as $upgrade) {
         $this->add(new Upgrade(
           $this->upgradeStorage,
