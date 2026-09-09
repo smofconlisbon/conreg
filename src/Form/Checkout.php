@@ -12,6 +12,7 @@ use Drupal\conreg\PaymentLine;
 use Drupal\conreg\Service\MemberPresenter;
 use Drupal\conreg\Service\MemberStorage;
 use Drupal\conreg\Service\PaymentStorage;
+use Drupal\conreg\Service\ConregOptions;
 use Drupal\conreg\Service\PricingServiceInterface;
 use Drupal\conreg\Service\RegistrationConfirmationMailer;
 use Drupal\conreg\Service\StripeServiceInterface;
@@ -72,6 +73,8 @@ class Checkout extends FormBase {
    *   The token service.
    * @param \Drupal\conreg\Service\PricingServiceInterface $pricingService
    *   The pricing service.
+   * @param \Drupal\conreg\Service\ConregOptions $conregOptions
+   *   The ConReg options service.
    */
   public function __construct(
     protected MemberStorage $memberStorage,
@@ -85,6 +88,7 @@ class Checkout extends FormBase {
     protected MemberPresenter $memberPresenter,
     protected Token $token,
     protected PricingServiceInterface $pricingService,
+    protected ConregOptions $conregOptions,
   ) {}
 
   /**
@@ -353,7 +357,7 @@ class Checkout extends FormBase {
       case "upgrade":
         $member = Member::loadMember($line->mid);
         if (isset($member) && is_object($member) && !$member->is_deleted) {
-          $mgr = new UpgradeManager($this->upgradeStorage, $this->memberStorage, $this->time, $member->eid);
+          $mgr = new UpgradeManager($this->upgradeStorage, $this->memberStorage, $this->time, $this->conregOptions, $member->eid);
           if ($mgr->loadUpgrades($member->mid, 0)) {
             $payment = Payment::loadBySessionId($session->id);
             $mgr->completeUpgrades($payment->paymentAmount, $payment->paymentMethod, $payment->paymentRef);

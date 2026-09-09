@@ -13,8 +13,8 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Render\RendererInterface;
 use Drupal\Core\TempStore\PrivateTempStoreFactory;
-use Drupal\conreg\ConregOptions;
 use Drupal\conreg\ConregTable;
+use Drupal\conreg\Service\ConregOptions;
 use Drupal\conreg\Service\EventStorage;
 use Drupal\conreg\TableRole;
 
@@ -36,12 +36,15 @@ class LookupMemberForm extends FormBase {
    *   The store for private data.
    * @param \Drupal\conreg\Service\EventStorage $eventStorage
    *   The event storage service.
+   * @param \Drupal\conreg\Service\ConregOptions $conregOptions
+   *   The ConReg options service.
    */
   public function __construct(
     protected RendererInterface $renderer,
     protected Connection $database,
     protected PrivateTempStoreFactory $privateTempStoreFactory,
     protected EventStorage $eventStorage,
+    protected ConregOptions $conregOptions,
   ) {}
 
   /**
@@ -63,8 +66,8 @@ class LookupMemberForm extends FormBase {
     $form_values = $form_state->getValues();
 
     $config = $this->config('conreg.settings.' . $eid);
-    $badgeTypes = ConregOptions::badgeTypes($eid, $config);
-    $days = ConregOptions::days($eid, $config);
+    $badgeTypes = $this->conregOptions->badgeTypes($eid);
+    $days = $this->conregOptions->days($eid);
     $digits = $config->get('member_no_digits');
 
     $tempstore = $this->privateTempStoreFactory->get('conreg');

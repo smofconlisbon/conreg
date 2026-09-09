@@ -19,7 +19,7 @@ final readonly class PricingContext {
    * @param \Drupal\Core\Config\ImmutableConfig $config
    *   The event's configuration.
    * @param array $types
-   *   The `ConregOptions::memberTypes($eid, $config)->types` map, keyed by
+   *   The `$conregOptions->memberTypes($eid)->types` map, keyed by
    *   type code to a `stdClass`. Left as the untyped array/stdClass graph
    *   it already is (submodules extend it with their own properties),
    *   rather than introduced into a strict typed class.
@@ -78,7 +78,7 @@ final readonly class PricingContext {
    * @param \Drupal\Core\Config\ImmutableConfig $config
    *   The event's configuration.
    * @param array $types
-   *   `ConregOptions::memberTypes($eid, $config)->types`.
+   *   `$conregOptions->memberTypes($eid)->types`.
    * @param array $form_values
    *   The full form values array.
    */

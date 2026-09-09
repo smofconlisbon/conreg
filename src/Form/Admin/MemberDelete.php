@@ -2,8 +2,8 @@
 
 namespace Drupal\conreg\Form\Admin;
 
-use Drupal\conreg\ConregOptions;
 use Drupal\conreg\Member;
+use Drupal\conreg\Service\ConregOptions;
 use Drupal\Core\DependencyInjection\AutowireTrait;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
@@ -18,6 +18,7 @@ class MemberDelete extends FormBase {
 
   final public function __construct(
     protected PrivateTempStoreFactory $tempStoreFactory,
+    protected ConregOptions $conregOptions,
   ) {}
 
   /**
@@ -99,7 +100,7 @@ class MemberDelete extends FormBase {
       '#suffix' => '</div>',
     ];
 
-    $methods = ConregOptions::paymentMethod();
+    $methods = $this->conregOptions->paymentMethod();
     $member_method = ($methods[$member->payment_method] ?? '');
     $form['member']['payment_method'] = [
       '#markup' => $this->t('Payment method: @payment_method', ['@payment_method' => $member_method]),

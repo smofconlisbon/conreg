@@ -6,11 +6,10 @@ namespace Drupal\conreg\Plugin\Block;
 
 use Drupal\Core\Block\Attribute\Block;
 use Drupal\Core\Block\BlockBase;
-use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
-use Drupal\conreg\ConregOptions;
+use Drupal\conreg\Service\ConregOptions;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -30,7 +29,7 @@ final class PriceAvailabilityBlock extends BlockBase implements ContainerFactory
     array $configuration,
     $plugin_id,
     $plugin_definition,
-    protected ConfigFactoryInterface $configFactory,
+    protected ConregOptions $conregOptions,
   ) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
   }
@@ -43,7 +42,7 @@ final class PriceAvailabilityBlock extends BlockBase implements ContainerFactory
       $configuration,
       $plugin_id,
       $plugin_definition,
-      $container->get('config.factory'),
+      $container->get('conreg.options'),
     );
   }
 
@@ -88,8 +87,7 @@ final class PriceAvailabilityBlock extends BlockBase implements ContainerFactory
    */
   public function build(): array {
     $eid = $this->configuration['eid'];
-    $config = $this->configFactory->get('conreg.settings.' . $eid);
-    $types = ConregOptions::memberTypes($eid, $config);
+    $types = $this->conregOptions->memberTypes($eid);
     $price_text = $this->configuration['price_text'];
     foreach ($types->types as $type_id => $type_vals) {
       $search = [

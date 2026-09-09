@@ -2,8 +2,8 @@
 
 namespace Drupal\conreg\Form\Admin;
 
-use Drupal\conreg\ConregOptions;
 use Drupal\conreg\FieldOptions;
+use Drupal\conreg\Service\ConregOptions;
 use Drupal\conreg\Service\MemberStorage;
 use Drupal\conreg\Trait\EasyEmailTypeOptionsTrait;
 use Drupal\Core\DependencyInjection\AutowireTrait;
@@ -26,10 +26,13 @@ class BulkEmail extends FormBase {
    *   The member storage service.
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager
    *   The entity type manager.
+   * @param \Drupal\conreg\Service\ConregOptions $conregOptions
+   *   The ConReg options service.
    */
   public function __construct(
     protected MemberStorage $memberStorage,
     protected EntityTypeManagerInterface $entityTypeManager,
+    protected ConregOptions $conregOptions,
   ) {}
 
   /**
@@ -97,20 +100,20 @@ class BulkEmail extends FormBase {
       '#type' => 'fieldset',
       '#title' => $this->t('Sending Options'),
     ];
-    $memberTypes = ConregOptions::memberTypes($eid, $config);
+    $memberTypes = $this->conregOptions->memberTypes($eid);
     $form['options']['member_types'] = [
       '#type' => 'checkboxes',
       '#title' => $this->t('Member types'),
       '#options' => $memberTypes->privateOptions,
     ];
-    $badgeTypes = ConregOptions::badgeTypes($eid, $config);
+    $badgeTypes = $this->conregOptions->badgeTypes($eid);
     $form['options']['badge_types'] = [
       '#type' => 'checkboxes',
       '#title' => $this->t('Badge types'),
       '#options' => $badgeTypes,
     ];
 
-    $communicationMethods = ConregOptions::communicationMethod($eid, $config, FALSE);
+    $communicationMethods = $this->conregOptions->communicationMethod($eid, FALSE);
     $form['options']['communication_methods'] = [
       '#type' => 'checkboxes',
       '#title' => $this->t('Communication methods'),

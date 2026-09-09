@@ -9,8 +9,8 @@ use Drupal\Core\Datetime\DrupalDateTime;
 use Drupal\Core\Url;
 use Drupal\Core\Link;
 use Drupal\conreg\ConregConfig;
-use Drupal\conreg\ConregOptions;
 use Drupal\conreg\ConregTable;
+use Drupal\conreg\Service\ConregOptions;
 use Drupal\conreg\Service\MemberStorage;
 use Drupal\conreg\TableRole;
 use Drupal\Core\DependencyInjection\AutowireTrait;
@@ -30,10 +30,13 @@ class BadgeNamesForm extends FormBase {
    *   The member storage service.
    * @param \Drupal\Core\Session\AccountInterface $account
    *   The current user account.
+   * @param \Drupal\conreg\Service\ConregOptions $conregOptions
+   *   The ConReg options service.
    */
   public function __construct(
     protected MemberStorage $memberStorage,
     protected AccountInterface $account,
+    protected ConregOptions $conregOptions,
   ) {}
 
   /**
@@ -314,9 +317,9 @@ class BadgeNamesForm extends FormBase {
     string|NULL $updated = NULL,
   ): object {
     $config = ConregConfig::getConfig($eid);
-    $badgeTypes = ConregOptions::badgeTypes($eid, $config);
-    $memberTypes = ConregOptions::memberTypes($eid, $config);
-    $days = ConregOptions::days($eid, $config);
+    $badgeTypes = $this->conregOptions->badgeTypes($eid);
+    $memberTypes = $this->conregOptions->memberTypes($eid);
+    $days = $this->conregOptions->days($eid);
     $digits = $config->get('member_no_digits');
 
     $headers = [];

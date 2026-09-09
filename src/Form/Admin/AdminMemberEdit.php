@@ -3,9 +3,9 @@
 namespace Drupal\conreg\Form\Admin;
 
 use Drupal\Component\Datetime\TimeInterface;
-use Drupal\conreg\ConregOptions;
 use Drupal\conreg\FieldOptions;
 use Drupal\conreg\Member;
+use Drupal\conreg\Service\ConregOptions;
 use Drupal\conreg\Service\MemberStorage;
 use Drupal\Core\Datetime\DrupalDateTime;
 use Drupal\Core\DependencyInjection\AutowireTrait;
@@ -29,11 +29,14 @@ class AdminMemberEdit extends FormBase {
    *   Temporary store for user session data.
    * @param \Drupal\Component\Datetime\TimeInterface $time
    *   The time interface.
+   * @param \Drupal\conreg\Service\ConregOptions $conregOptions
+   *   The ConReg options service.
    */
   public function __construct(
     protected MemberStorage $memberStorage,
     protected PrivateTempStoreFactory $tempStoreFactory,
     protected TimeInterface $time,
+    protected ConregOptions $conregOptions,
   ) {}
 
   /**
@@ -53,11 +56,11 @@ class AdminMemberEdit extends FormBase {
     // Get event configuration from config.
     $config = $this->config('conreg.settings.' . $eid);
 
-    $types = ConregOptions::memberTypes($eid, $config);
-    $memberClasses = ConregOptions::memberClasses($eid, $config);
-    $badgeTypeOptions = ConregOptions::badgeTypes($eid, $config);
-    $days = ConregOptions::days($eid, $config);
-    $countryOptions = ConregOptions::memberCountries($eid, $config);
+    $types = $this->conregOptions->memberTypes($eid);
+    $memberClasses = $this->conregOptions->memberClasses($eid);
+    $badgeTypeOptions = $this->conregOptions->badgeTypes($eid);
+    $days = $this->conregOptions->days($eid);
+    $countryOptions = $this->conregOptions->memberCountries($eid);
     $defaultCountry = $config->get('reference.default_country');
 
     if (isset($mid)) {
@@ -196,8 +199,8 @@ class AdminMemberEdit extends FormBase {
         '#type' => 'select',
         '#title' => $curMemberClass->fields->display,
         '#description' => $this->t('Select how you would like to appear on the membership list.'),
-        '#options' => ConregOptions::display($eid, $config),
-        '#default_value' => ($member->display ?? '') ?: ConregOptions::displayDefault($eid, $config),
+        '#options' => $this->conregOptions->display($eid),
+        '#default_value' => ($member->display ?? '') ?: $this->conregOptions->displayDefault($eid),
         '#required' => TRUE,
       ];
     }
@@ -207,7 +210,7 @@ class AdminMemberEdit extends FormBase {
         '#type' => 'select',
         '#title' => $curMemberClass->fields->communication_method,
         '#description' => $curMemberClass->fields->communication_method_description,
-        '#options' => ConregOptions::communicationMethod($eid, $config, FALSE),
+        '#options' => $this->conregOptions->communicationMethod($eid, FALSE),
         '#default_value' => ($member->communication_method ?? 'E'),
         '#required' => TRUE,
       ];
@@ -305,7 +308,7 @@ class AdminMemberEdit extends FormBase {
     $form['member']['payment_method'] = [
       '#type' => 'select',
       '#title' => $this->t('Payment method'),
-      '#options' => ConregOptions::paymentMethod(),
+      '#options' => $this->conregOptions->paymentMethod(),
       '#default_value' => ($member->payment_method ?? ''),
       '#required' => TRUE,
     ];

@@ -3,7 +3,6 @@
 namespace Drupal\conreg\Service;
 
 use Drupal\conreg\ConregConfig;
-use Drupal\conreg\ConregOptions;
 use Drupal\conreg\Entity\PrintJob;
 use Drupal\conreg\Trait\ShowBadgeNumberTrait;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
@@ -18,6 +17,7 @@ class PrintJobManager {
   public function __construct(
     protected EntityTypeManagerInterface $entityTypeManager,
     protected MemberStorage $memberStorage,
+    protected ConregOptions $conregOptions,
   ) {}
 
   /**
@@ -58,7 +58,7 @@ class PrintJobManager {
 
     $daysAttending = '';
     if (!empty($member['days'])) {
-      $dayOptions = ConregOptions::days($eid, $config);
+      $dayOptions = $this->conregOptions->days($eid);
       $dayDescriptions = [];
       foreach (explode('|', $member['days']) as $day) {
         $dayDescriptions[] = $dayOptions[$day] ?? $day;

@@ -6,11 +6,11 @@ use Drupal\Component\Datetime\TimeInterface;
 use Drupal\Component\Utility\Html;
 use Drupal\conreg\Addons;
 use Drupal\conreg\ConregConfig;
-use Drupal\conreg\ConregOptions;
 use Drupal\conreg\ConregTable;
 use Drupal\conreg\Member;
 use Drupal\conreg\Payment;
 use Drupal\conreg\PaymentLine;
+use Drupal\conreg\Service\ConregOptions;
 use Drupal\conreg\Service\EventStorage;
 use Drupal\conreg\Service\MemberStorage;
 use Drupal\conreg\Service\PaymentStorage;
@@ -45,6 +45,8 @@ class FanTable extends FormBase {
    *   The upgrade storage service.
    * @param \Drupal\Component\Datetime\TimeInterface $time
    *   The time service.
+   * @param \Drupal\conreg\Service\ConregOptions $conregOptions
+   *   The ConReg options service.
    */
   public function __construct(
     protected MemberStorage $memberStorage,
@@ -53,6 +55,7 @@ class FanTable extends FormBase {
     protected PaymentStorage $paymentStorage,
     protected UpgradeStorage $upgradeStorage,
     protected TimeInterface $time,
+    protected ConregOptions $conregOptions,
   ) {}
 
   /**
@@ -74,10 +77,10 @@ class FanTable extends FormBase {
     $form_values = $form_state->getValues();
 
     $config = $this->config('conreg.settings.' . $eid);
-    $types = ConregOptions::memberTypes($eid, $config);
-    $upgrades = ConregOptions::memberUpgrades($eid, $config);
-    $badgeTypes = ConregOptions::badgeTypes($eid, $config);
-    $days = ConregOptions::days($eid, $config);
+    $types = $this->conregOptions->memberTypes($eid);
+    $upgrades = $this->conregOptions->memberUpgrades($eid);
+    $badgeTypes = $this->conregOptions->badgeTypes($eid);
+    $days = $this->conregOptions->days($eid);
 
     $form_state->set('auto_approve', $config->get('payments.auto_approve'));
 
@@ -324,7 +327,7 @@ class FanTable extends FormBase {
    * Add a summary by member type to render array.
    */
   public function memberAdminMemberListSummaryHorizontal($eid, &$content) {
-    $types = ConregOptions::memberTypes($eid);
+    $types = $this->conregOptions->memberTypes($eid);
     $headers = [];
     $rows = [];
     $total = 0;
@@ -376,7 +379,7 @@ class FanTable extends FormBase {
     $form['payment_method'] = [
       '#type' => 'select',
       '#title' => $this->t('Payment method'),
-      '#options' => ConregOptions::paymentMethod(),
+      '#options' => $this->conregOptions->paymentMethod(),
       '#default_value' => "Cash",
       '#required' => TRUE,
     ];
@@ -442,11 +445,11 @@ class FanTable extends FormBase {
    *   Payment object.
    */
   public function saveUpgrades($eid, $form_values, &$upgrade_price, Payment &$payment) {
-    $mgr = new UpgradeManager($this->upgradeStorage, $this->memberStorage, $this->time, $eid);
+    $mgr = new UpgradeManager($this->upgradeStorage, $this->memberStorage, $this->time, $this->conregOptions, $eid);
 
     if ($form_values["table"]) {
       foreach ($form_values["table"] as $mid => $memberRow) {
-        $upgrade = new Upgrade($this->upgradeStorage, $this->memberStorage, $this->time, $eid, $mid, $memberRow["member_type"]);
+        $upgrade = new Upgrade($this->upgradeStorage, $this->memberStorage, $this->time, $this->conregOptions, $eid, $mid, $memberRow["member_type"]);
         // Only save upgrade if price is not null.
         if (isset($upgrade->upgradePrice)) {
           $mgr->Add($upgrade);
@@ -593,7 +596,7 @@ class FanTable extends FormBase {
     }
 
     // Load upgrades into upgrade manager and process.
-    $mgr = new UpgradeManager($this->upgradeStorage, $this->memberStorage, $this->time, $eid);
+    $mgr = new UpgradeManager($this->upgradeStorage, $this->memberStorage, $this->time, $this->conregOptions, $eid);
     $mgr->loadUpgrades($lead_mid, 0);
     // Add total price of upgrades to total price of new members.
     $payment_amount += $mgr->getTotalPrice();

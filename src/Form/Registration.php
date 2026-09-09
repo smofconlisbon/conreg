@@ -5,8 +5,8 @@ namespace Drupal\conreg\Form;
 use Drupal\Component\Utility\EmailValidatorInterface;
 use Drupal\conreg\Addons;
 use Drupal\conreg\ConregConfig;
+use Drupal\conreg\Service\ConregOptions;
 use Drupal\conreg\Service\CountryServiceInterface;
-use Drupal\conreg\ConregOptions;
 use Drupal\conreg\FieldOptions;
 use Drupal\conreg\Member;
 use Drupal\conreg\Payment;
@@ -53,6 +53,8 @@ class Registration extends FormBase {
    *   The payment storage service.
    * @param \Drupal\conreg\Service\PricingServiceInterface $pricingService
    *   The pricing service.
+   * @param \Drupal\conreg\Service\ConregOptions $conregOptions
+   *   The ConReg options service.
    */
   final public function __construct(
     protected AccountProxyInterface $currentUser,
@@ -62,6 +64,7 @@ class Registration extends FormBase {
     protected EventStorage $eventStorage,
     protected PaymentStorage $paymentStorage,
     protected PricingServiceInterface $pricingService,
+    protected ConregOptions $conregOptions,
   ) {}
 
   /**
@@ -120,18 +123,18 @@ class Registration extends FormBase {
     }
 
     $defaultType = $config->get('member_type_default');
-    $types = ConregOptions::memberTypes($eid, $config);
+    $types = $this->conregOptions->memberTypes($eid);
     // A valid 'type' query parameter overrides the configured default type,
     // but only for the first member - later members keep the config default.
     $requestedType = $this->getRequest()->query->get('type');
     if (empty($requestedType) || !isset($types->types[$requestedType])) {
       $requestedType = NULL;
     }
-    $memberClasses = ConregOptions::memberClasses($eid, $config);
+    $memberClasses = $this->conregOptions->memberClasses($eid);
     $symbol = $config->get('payments.symbol');
-    $countryOptions = ConregOptions::memberCountries($eid, $config);
+    $countryOptions = $this->conregOptions->memberCountries($eid);
     $defaultCountry = $config->get('reference.default_country');
-    $defaultDisplay = ConregOptions::displayDefault($eid, $config);
+    $defaultDisplay = $this->conregOptions->displayDefault($eid);
     // If geoPlugin enabled in configuration, lookup country.
     if ($config->get('reference.geoplugin')) {
       $userCountry = $this->countryService->getUserCountry();
@@ -163,7 +166,7 @@ class Registration extends FormBase {
     }
     $lead_mid = $lead_member?->mid;
 
-    [$addOnOptions] = ConregOptions::memberAddons($eid, $config);
+    [$addOnOptions] = $this->conregOptions->memberAddons($eid);
 
     // Get the number of members on the form.
     $memberQty = $form_values['global']['member_quantity'] ?? 1;
@@ -517,7 +520,7 @@ class Registration extends FormBase {
         '#type' => 'radios',
         '#title' => $curMemberClass->fields->badge_name_option,
         '#description' => $curMemberClass->fields->badge_name_description,
-        '#options' => ConregOptions::badgeNameOptionsForName($eid, $firstName, $lastName, $badgename_max_length, $config),
+        '#options' => $this->conregOptions->badgeNameOptionsForName($eid, $firstName, $lastName, $badgename_max_length),
         '#default_value' => $config->get('badge_name_default'),
         '#required' => TRUE,
         '#attributes' => [
@@ -549,7 +552,7 @@ class Registration extends FormBase {
           '#type' => 'select',
           '#title' => $curMemberClass->fields->display,
           '#description' => $curMemberClass->fields->display_description,
-          '#options' => ConregOptions::display($eid, $config),
+          '#options' => $this->conregOptions->display($eid),
           '#default_value' => $defaultDisplay,
           '#required' => TRUE,
         ];
@@ -568,7 +571,7 @@ class Registration extends FormBase {
           '#title' => $curMemberClass->fields->communication_method,
           '#description' => $curMemberClass->fields->communication_method_description,
           '#options' =>
-          ConregOptions::communicationMethod($eid, $config, TRUE),
+          $this->conregOptions->communicationMethod($eid, TRUE),
           '#default_value' => $config->get('communications_method.default'),
           '#required' => TRUE,
         ];
@@ -1010,8 +1013,7 @@ class Registration extends FormBase {
    */
   public function validateForm(array &$form, FormStateInterface $form_state): void {
     $eid = $form_state->get('eid');
-    $config = ConregConfig::getConfig($eid);
-    $types = ConregOptions::memberTypes($eid, $config);
+    $types = $this->conregOptions->memberTypes($eid);
 
     $form_values = $form_state->getValues();
     $memberQty = $form_values['global']['member_quantity'];
@@ -1097,12 +1099,12 @@ class Registration extends FormBase {
     $event = $this->eventStorage->load(['eid' => $eid]);
     $return = $form_state->get('return');
     $config = ConregConfig::getConfig($eid);
-    $memberClasses = ConregOptions::memberClasses($eid, $config);
+    $memberClasses = $this->conregOptions->memberClasses($eid);
 
     $form_values = $form_state->getValues();
 
     $symbol = $config->get('payments.symbol');
-    $types = ConregOptions::memberTypes($eid, $config);
+    $types = $this->conregOptions->memberTypes($eid);
 
     // Load the member role for the event, if any.
     $add_role = $config->get('member_portal.add_role');

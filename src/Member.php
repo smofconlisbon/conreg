@@ -2,6 +2,7 @@
 
 namespace Drupal\conreg;
 
+use Drupal\conreg\Service\ConregOptions;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 
 /**
@@ -284,6 +285,21 @@ class Member extends \stdClass {
   }
 
   /**
+   * Get the ConReg options service.
+   *
+   * Member is a plain value object with no constructor (it's hydrated via
+   * newMember()/loadMember() and their siblings), so it can't take the
+   * service via constructor injection - this mirrors ConregConfig::getConfig(),
+   * the codebase's existing pattern for the same problem.
+   *
+   * @return \Drupal\conreg\Service\ConregOptions
+   *   The ConReg options service.
+   */
+  protected static function conregOptions(): ConregOptions {
+    return \Drupal::service('conreg.options');
+  }
+
+  /**
    * Format a field correctly.
    *
    * @param string $field
@@ -294,6 +310,7 @@ class Member extends \stdClass {
    */
   public function fieldDisplay(string $field): string {
     $config = ConregConfig::getConfig($this->eid);
+    $conregOptions = self::conregOptions();
 
     switch ($field) {
       case 'member_no':
@@ -305,11 +322,11 @@ class Member extends \stdClass {
         return $this->badge_type . sprintf("%0" . $digits . "d", $this->member_no);
 
       case 'member_type':
-        $types = ConregOptions::memberTypes($this->eid, $config);
+        $types = $conregOptions->memberTypes($this->eid);
         return isset($types->types[$this->member_type]) ? $types->types[$this->member_type]->name : $this->member_type;
 
       case 'days':
-        $days = ConregOptions::days($this->eid, $config);
+        $days = $conregOptions->days($this->eid);
         if (!empty($this->days)) {
           $dayDescriptions = [];
           foreach (explode('|', $this->days) as $day) {
@@ -320,19 +337,19 @@ class Member extends \stdClass {
         return '';
 
       case 'badge_type':
-        $badgeTypes = ConregOptions::badgeTypes($this->eid, $config);
+        $badgeTypes = $conregOptions->badgeTypes($this->eid);
         return $badgeTypes[$this->badge_type] ?? $this->badge_type;
 
       case 'communication_method':
-        $communicationsOptions = ConregOptions::communicationMethod($this->eid, $config);
+        $communicationsOptions = $conregOptions->communicationMethod($this->eid);
         return $communicationsOptions[$this->communication_method] ?? $this->communication_method;
 
       case 'display':
-        $displayOptions = ConregOptions::display();
+        $displayOptions = $conregOptions->display($this->eid);
         return $displayOptions[$this->display] ?? $this->display;
 
       case 'country':
-        $countryOptions = ConregOptions::memberCountries($this->eid, $config);
+        $countryOptions = $conregOptions->memberCountries($this->eid);
         return $countryOptions[$this->country] ?? $this->country;
 
       case 'join_date':

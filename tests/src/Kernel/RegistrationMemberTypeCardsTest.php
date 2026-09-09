@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\conreg\Kernel;
 
-use Drupal\conreg\ConregOptions;
 use Drupal\conreg\Form\Registration;
 use Drupal\conreg\Pricing\MemberPriceContribution;
 use Drupal\conreg\Pricing\PricingContext;
@@ -180,7 +179,7 @@ class RegistrationMemberTypeCardsTest extends KernelTestBase {
   public function testConregOptionsMemberTypesUsesNameNotDescriptionForLabelWithoutRemaining(): void {
     $this->createMemberTypesConfig();
 
-    $types = ConregOptions::memberTypes(1);
+    $types = \Drupal::service('conreg.options')->memberTypes(1);
 
     $this->assertSame('Adult', $types->publicOptions['A']);
     $this->assertSame('Adult', $types->firstOptions['A']);
@@ -202,7 +201,7 @@ class RegistrationMemberTypeCardsTest extends KernelTestBase {
       ->set('member.types.A.number_allowed', 10)
       ->save();
 
-    $types = ConregOptions::memberTypes(1);
+    $types = \Drupal::service('conreg.options')->memberTypes(1);
     $label = (string) $types->publicOptions['A'];
 
     $this->assertStringContainsString('Adult', $label);
@@ -314,7 +313,7 @@ class RegistrationMemberTypeCardsTest extends KernelTestBase {
    */
   public function testGetMemberPriceNoDaysUsesDefaultDaysAndFullPrice(): void {
     $this->createMemberTypesConfig();
-    $types = ConregOptions::memberTypes(1)->types;
+    $types = \Drupal::service('conreg.options')->memberTypes(1)->types;
 
     $result = $this->priceMember([], 1, $types, 'A');
 
@@ -330,7 +329,7 @@ class RegistrationMemberTypeCardsTest extends KernelTestBase {
    */
   public function testGetMemberPriceNoDaysTickedUsesDefaultDaysAndFullPrice(): void {
     $this->createMemberTypesConfig();
-    $types = ConregOptions::memberTypes(1)->types;
+    $types = \Drupal::service('conreg.options')->memberTypes(1)->types;
 
     $result = $this->priceMember([], 1, $types, 'C');
 
@@ -343,7 +342,7 @@ class RegistrationMemberTypeCardsTest extends KernelTestBase {
    */
   public function testGetMemberPriceSubsetOfDaysDiscountsPrice(): void {
     $this->createMemberTypesConfig();
-    $types = ConregOptions::memberTypes(1)->types;
+    $types = \Drupal::service('conreg.options')->memberTypes(1)->types;
     $formValues = [
       'members' => [
         'member1' => [
@@ -371,7 +370,7 @@ class RegistrationMemberTypeCardsTest extends KernelTestBase {
    */
   public function testGetMemberPriceWholeWeekendCheckboxDoesNotOverridePrice(): void {
     $this->createMemberTypesConfig();
-    $types = ConregOptions::memberTypes(1)->types;
+    $types = \Drupal::service('conreg.options')->memberTypes(1)->types;
     $formValues = [
       'members' => [
         'member1' => [
@@ -394,7 +393,7 @@ class RegistrationMemberTypeCardsTest extends KernelTestBase {
    */
   public function testGetMemberPriceDaysSummingToFullPriceDoesNotOverride(): void {
     $this->createMemberTypesConfig();
-    $types = ConregOptions::memberTypes(1)->types;
+    $types = \Drupal::service('conreg.options')->memberTypes(1)->types;
     $formValues = [
       'members' => [
         'member1' => [
@@ -417,7 +416,7 @@ class RegistrationMemberTypeCardsTest extends KernelTestBase {
    */
   public function testDayOptionsRenderedWhenSelectedTypeHasDayPricing(): void {
     $this->createMemberTypesConfig();
-    $types = ConregOptions::memberTypes(1)->types;
+    $types = \Drupal::service('conreg.options')->memberTypes(1)->types;
 
     $formState = new FormState();
     $formState->setValues(['members' => ['member1' => ['type' => 'C']]]);

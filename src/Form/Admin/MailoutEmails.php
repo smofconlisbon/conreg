@@ -2,8 +2,8 @@
 
 namespace Drupal\conreg\Form\Admin;
 
-use Drupal\conreg\ConregOptions;
 use Drupal\conreg\ConregTable;
+use Drupal\conreg\Service\ConregOptions;
 use Drupal\conreg\Service\MemberStorage;
 use Drupal\conreg\TableRole;
 use Drupal\Core\DependencyInjection\AutowireTrait;
@@ -28,10 +28,13 @@ class MailoutEmails extends FormBase {
    *   The member storage service.
    * @param \Drupal\Core\Language\LanguageManagerInterface $languageManager
    *   THe language manager service.
+   * @param \Drupal\conreg\Service\ConregOptions $conregOptions
+   *   The ConReg options service.
    */
   public function __construct(
     protected MemberStorage $memberStorage,
     protected LanguageManagerInterface $languageManager,
+    protected ConregOptions $conregOptions,
   ) {}
 
   /**
@@ -52,14 +55,12 @@ class MailoutEmails extends FormBase {
       return $this->exportMemberEmail($eid, $methods, $languages, $fields);
     }
 
-    $config = $this->config('conreg.settings.' . $eid);
-
     $form = [
       '#prefix' => '<div id="memberForm">',
       '#suffix' => '</div>',
     ];
 
-    $methodOptions = ConregOptions::communicationMethod($eid, $config, TRUE);
+    $methodOptions = $this->conregOptions->communicationMethod($eid, TRUE);
     $form['communication_method'] = [
       '#type' => 'checkboxes',
       '#title' => $this->t('Communications method'),
@@ -277,8 +278,7 @@ class MailoutEmails extends FormBase {
     // Fetch all entries for selected option or group.
     $mailoutMembers = $this->memberStorage->adminMailoutListLoad($eid, $methods, $languages);
 
-    $config = $this->config('conreg.settings.' . $eid);
-    $methodOptions = ConregOptions::communicationMethod($eid, $config, TRUE);
+    $methodOptions = $this->conregOptions->communicationMethod($eid, TRUE);
     $langOptions = $this->getLanguageOptions();
 
     $output = $headerRow . "\n";

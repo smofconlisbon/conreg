@@ -6,7 +6,6 @@ namespace Drupal\conreg\Service;
 
 use Drupal\conreg\Addons;
 use Drupal\conreg\ConregConfig;
-use Drupal\conreg\ConregOptions;
 use Drupal\Component\Datetime\TimeInterface;
 use Drupal\Core\Datetime\DateFormatterInterface;
 use Drupal\Core\Url;
@@ -34,6 +33,7 @@ class MemberPresenter {
     protected MemberStorage $memberStorage,
     protected TimeInterface $time,
     protected DateFormatterInterface $dateFormatter,
+    protected ConregOptions $conregOptions,
   ) {}
 
   /**
@@ -82,12 +82,12 @@ class MemberPresenter {
     $config = ConregConfig::getConfig($eid);
     $symbol = $config->get('payments.symbol');
     $digits = $config->get('member_no_digits');
-    $types = ConregOptions::memberTypes($eid, $config);
-    $days = ConregOptions::days($eid, $config);
-    $displayOptions = ConregOptions::display();
-    $communicationOptions = ConregOptions::communicationMethod($eid, $config);
-    $countryOptions = ConregOptions::memberCountries($eid, $config);
-    $yesNoOptions = ConregOptions::yesNo();
+    $types = $this->conregOptions->memberTypes($eid);
+    $days = $this->conregOptions->days($eid);
+    $displayOptions = $this->conregOptions->display($eid);
+    $communicationOptions = $this->conregOptions->communicationMethod($eid);
+    $countryOptions = $this->conregOptions->memberCountries($eid);
+    $yesNoOptions = $this->conregOptions->yesNo();
 
     // Loop once to get the correct payment total.
     $payAmount = 0;

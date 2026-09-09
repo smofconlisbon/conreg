@@ -3,9 +3,9 @@
 namespace Drupal\conreg\Form\Admin;
 
 use Drupal\Component\Utility\Html;
-use Drupal\conreg\ConregOptions;
 use Drupal\conreg\ConregTable;
 use Drupal\conreg\Member;
+use Drupal\conreg\Service\ConregOptions;
 use Drupal\conreg\Service\EventStorage;
 use Drupal\conreg\Service\MemberStorage;
 use Drupal\conreg\TableRole;
@@ -46,6 +46,8 @@ class AdminMembers extends FormBase {
    *   The cache tag invalidator service.
    * @param \Drupal\conreg\Service\EventStorage $eventStorage
    *   The event storage service.
+   * @param \Drupal\conreg\Service\ConregOptions $conregOptions
+   *   The ConReg options service.
    */
   public function __construct(
     protected MemberStorage $memberStorage,
@@ -55,6 +57,7 @@ class AdminMembers extends FormBase {
     #[Autowire('cache_tags.invalidator')]
     protected CacheTagsInvalidator $cacheTagInvalidator,
     protected EventStorage $eventStorage,
+    protected ConregOptions $conregOptions,
   ) {}
 
   /**
@@ -76,10 +79,10 @@ class AdminMembers extends FormBase {
     $form_values = $form_state->getValues();
 
     $config = $this->config('conreg.settings.' . $eid);
-    $types = ConregOptions::memberTypes($eid, $config);
-    $badgeTypes = ConregOptions::badgeTypes($eid, $config);
-    $days = ConregOptions::days($eid, $config);
-    $displayOptions = ConregOptions::display();
+    $types = $this->conregOptions->memberTypes($eid);
+    $badgeTypes = $this->conregOptions->badgeTypes($eid);
+    $days = $this->conregOptions->days($eid);
+    $displayOptions = $this->conregOptions->display($eid);
     $pageSize = $config->get('display.page_size');
 
     $pageOptions = [];

@@ -3,9 +3,9 @@
 namespace Drupal\conreg\Form\Admin;
 
 use Drupal\Component\Utility\EmailValidatorInterface;
-use Drupal\conreg\ConregOptions;
 use Drupal\conreg\Trait\EasyEmailTypeOptionsTrait;
 use Drupal\conreg\Trait\TokenTreeLinkTrait;
+use Drupal\conreg\Service\ConregOptions;
 use Drupal\conreg\Service\EventStorage;
 use Drupal\conreg\Service\StripeServiceInterface;
 use Drupal\Core\Cache\CacheBackendInterface;
@@ -44,6 +44,8 @@ class EventConfig extends ConfigFormBase {
    *   The email validator.
    * @param \Drupal\conreg\Service\StripeServiceInterface $stripeService
    *   The Stripe service, used to verify configured payment keys.
+   * @param \Drupal\conreg\Service\ConregOptions $conregOptions
+   *   The ConReg options service.
    * @param \Drupal\Core\Messenger\MessengerInterface $messenger
    *   The messenger.
    */
@@ -56,6 +58,7 @@ class EventConfig extends ConfigFormBase {
     protected EventStorage $eventStorage,
     protected EmailValidatorInterface $emailValidator,
     protected StripeServiceInterface $stripeService,
+    protected ConregOptions $conregOptions,
     MessengerInterface $messenger,
   ) {
     // MessengerTrait (via FormBase) already declares an untyped $messenger
@@ -100,11 +103,6 @@ class EventConfig extends ConfigFormBase {
 
     // Get config for event.
     $config = $this->configFactory()->getEditable('conreg.settings.' . $eid);
-    // 'conreg.settings.<eid>' isn't in getEditableConfigNames(), so this is
-    // always immutable; ConfigFormBaseTrait::config()'s declared return type
-    // just can't express that.
-    /** @var \Drupal\Core\Config\ImmutableConfig $displayOptionsConfig */
-    $displayOptionsConfig = $this->config('conreg.settings.' . $eid);
 
     $form = [
       '#title' => $this->t('@event_name Event Configuration', ['@event_name' => $event['event_name']]),
@@ -365,8 +363,8 @@ class EventConfig extends ConfigFormBase {
       '#type' => 'select',
       '#title' => $this->t('Default display option'),
       '#description' => $this->t('Select the default option for displaying members on public lists.'),
-      '#options' => ConregOptions::display($eid, $displayOptionsConfig),
-      '#default_value' => ConregOptions::displayDefault($eid, $displayOptionsConfig),
+      '#options' => $this->conregOptions->display($eid),
+      '#default_value' => $this->conregOptions->displayDefault($eid),
     ];
 
     /*
@@ -748,12 +746,7 @@ class EventConfig extends ConfigFormBase {
     ]);
 
     $eid = (int) $form_state->get('eid');
-    // 'conreg.settings.<eid>' isn't in getEditableConfigNames(), so this is
-    // always immutable; ConfigFormBaseTrait::config()'s declared return type
-    // just can't express that.
-    /** @var \Drupal\Core\Config\ImmutableConfig $config */
-    $config = $this->config('conreg.settings.' . $eid);
-    $memberClasses = ConregOptions::memberClasses($eid, $config);
+    $memberClasses = $this->conregOptions->memberClasses($eid);
     $memberClassIds = array_fill_keys(array_keys($memberClasses->classes), TRUE);
 
     $groupIds = $this->validateOptionGroups($optionGroups, $form_state);

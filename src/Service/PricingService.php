@@ -6,7 +6,6 @@ namespace Drupal\conreg\Service;
 
 use Drupal\conreg\Addons;
 use Drupal\conreg\ConregConfig;
-use Drupal\conreg\ConregOptions;
 use Drupal\conreg\Member;
 use Drupal\conreg\Payment;
 use Drupal\conreg\Pricing\MemberPriceResult;
@@ -36,6 +35,7 @@ final class PricingService implements PricingServiceInterface {
   public function __construct(
     protected MemberPricingRulePluginManager $memberRuleManager,
     protected PricingAdjustmentPluginManager $adjustmentManager,
+    protected ConregOptions $conregOptions,
     #[Autowire(service: 'logger.channel.conreg')]
     protected LoggerInterface $logger,
   ) {}
@@ -105,7 +105,7 @@ final class PricingService implements PricingServiceInterface {
 
     $eid = (int) reset($members)->eid;
     $config = ConregConfig::getConfig($eid);
-    $types = ConregOptions::memberTypes($eid, $config)->types;
+    $types = $this->conregOptions->memberTypes($eid)->types;
 
     $context = new PricingContext(
       $eid,

@@ -3,7 +3,7 @@
 namespace Drupal\conreg\Controller;
 
 use Drupal\conreg\ConregConfig;
-use Drupal\conreg\ConregOptions;
+use Drupal\conreg\Service\ConregOptions;
 use Drupal\conreg\Service\EventStorage;
 use Drupal\conreg\Service\MemberStorage;
 use Drupal\conreg\Trait\ShowBadgeNumberTrait;
@@ -34,12 +34,15 @@ class ConregController extends ControllerBase {
    *   The event storage service.
    * @param \Drupal\Core\Utility\Token $token
    *   The token service.
+   * @param \Drupal\conreg\Service\ConregOptions $conregOptions
+   *   The ConReg options service.
    */
   public function __construct(
     protected MemberStorage $memberStorage,
     protected RequestStack $requestStack,
     protected EventStorage $eventStorage,
     protected Token $token,
+    protected ConregOptions $conregOptions,
   ) {}
 
   /**
@@ -79,8 +82,8 @@ class ConregController extends ControllerBase {
     // its docblock (@return Config) is just stale.
     /** @var \Drupal\Core\Config\ImmutableConfig $config */
     $config = $this->config('conreg.settings.' . $eid);
-    $countryOptions = ConregOptions::memberCountries($eid, $config);
-    $types = ConregOptions::badgeTypes($eid, $config);
+    $countryOptions = $this->conregOptions->memberCountries($eid);
+    $types = $this->conregOptions->badgeTypes($eid);
     $digits = $config->get('member_no_digits');
 
     $showMemberList = $config->get('member_listing_page.show_members') ?? TRUE;
@@ -290,7 +293,7 @@ class ConregController extends ControllerBase {
       ];
     }
 
-    $types = ConregOptions::memberTypes($eid);
+    $types = $this->conregOptions->memberTypes($eid);
     $headers = [
       'type' => $this->t('Member Type'),
       'number' => $this->t('Number of members'),
@@ -334,7 +337,7 @@ class ConregController extends ControllerBase {
       '#suffix' => '</h3>',
     ];
 
-    $types = ConregOptions::badgeTypes($eid);
+    $types = $this->conregOptions->badgeTypes($eid);
     $headers = [
       'type' => $this->t('Badge Type'),
       'number' => $this->t('Number of members'),
@@ -378,7 +381,7 @@ class ConregController extends ControllerBase {
       '#suffix' => '</h3>',
     ];
 
-    $days = ConregOptions::days($eid);
+    $days = $this->conregOptions->days($eid);
 
     $dayTotals = [];
     foreach ($days as $key => $val) {
@@ -526,7 +529,7 @@ class ConregController extends ControllerBase {
       '#suffix' => '</h3>',
     ];
 
-    $types = ConregOptions::memberTypes($eid);
+    $types = $this->conregOptions->memberTypes($eid);
     $headers = [
       $this->t('Member Type'),
       $this->t('Amount Paid'),
@@ -638,13 +641,13 @@ class ConregController extends ControllerBase {
    */
   public function memberAdminMemberList(int $eid) {
     $config = ConregConfig::getConfig($eid);
-    $countryOptions = ConregOptions::memberCountries($eid, $config);
-    $types = ConregOptions::memberTypes($eid, $config);
-    $badgeTypes = ConregOptions::badgeTypes($eid, $config);
-    $days = ConregOptions::days($eid, $config);
-    $communicationsOptions = ConregOptions::communicationMethod($eid, $config);
-    $displayOptions = ConregOptions::display();
-    $yesNo = ConregOptions::yesNo();
+    $countryOptions = $this->conregOptions->memberCountries($eid);
+    $types = $this->conregOptions->memberTypes($eid);
+    $badgeTypes = $this->conregOptions->badgeTypes($eid);
+    $days = $this->conregOptions->days($eid);
+    $communicationsOptions = $this->conregOptions->communicationMethod($eid);
+    $displayOptions = $this->conregOptions->display($eid);
+    $yesNo = $this->conregOptions->yesNo();
 
     $content = [
       '#cache' => [

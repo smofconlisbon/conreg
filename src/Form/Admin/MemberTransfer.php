@@ -2,7 +2,7 @@
 
 namespace Drupal\conreg\Form\Admin;
 
-use Drupal\conreg\ConregOptions;
+use Drupal\conreg\Service\ConregOptions;
 use Drupal\conreg\Service\EventStorage;
 use Drupal\conreg\Service\MemberStorage;
 use Drupal\Core\DependencyInjection\AutowireTrait;
@@ -26,11 +26,14 @@ class MemberTransfer extends FormBase {
    *   Private user storage area.
    * @param \Drupal\conreg\Service\EventStorage $eventStorage
    *   The event storage service.
+   * @param \Drupal\conreg\Service\ConregOptions $conregOptions
+   *   The ConReg options service.
    */
   final public function __construct(
     protected MemberStorage $memberStorage,
     protected PrivateTempStoreFactory $tempStoreFactory,
     protected EventStorage $eventStorage,
+    protected ConregOptions $conregOptions,
   ) {}
 
   /**
@@ -130,7 +133,7 @@ class MemberTransfer extends FormBase {
       '#suffix' => '</div>',
     ];
 
-    $methods = ConregOptions::paymentMethod();
+    $methods = $this->conregOptions->paymentMethod();
     $member_method = ($methods[$member['payment_method']] ?? '');
     $form['member']['payment_method'] = [
       '#markup' => $this->t('Payment method: @payment_method', ['@payment_method' => $member_method]),

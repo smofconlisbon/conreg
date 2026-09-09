@@ -10,7 +10,7 @@ use Drupal\Core\Config\ImmutableConfig;
 class ConregConfig {
 
   /**
-   * Cet current event config.
+   * Get current event config.
    *
    * @param int $eid
    *   Event ID.
@@ -19,45 +19,7 @@ class ConregConfig {
    *   The config object.
    */
   public static function getConfig(int $eid): ImmutableConfig {
-
-    // Get event configuration from config.
-    $config = \Drupal::config('conreg.settings.' . $eid);
-    if (empty($config->get('payments.system'))) {
-      $config = \Drupal::config('conreg.settings');
-    }
-
-    return $config;
-  }
-
-  /**
-   * Get specified fieldset config.
-   *
-   * @param int $eid
-   *   The Event ID.
-   * @param int $fieldset
-   *   The Fieldset number.
-   *
-   * @return \Drupal\Core\Config\ImmutableConfig
-   *   The config object.
-   */
-  public static function getFieldsetConfig(int $eid, int|null $fieldset = 0): ImmutableConfig {
-
-    // If fieldset is not null or zero.
-    if (!empty($fieldset)) {
-      $configName = 'conreg.settings.' . $eid . '.fieldset.' . $fieldset;
-      $config = \Drupal::config($configName);
-      if (empty($config->get('fields.first_name_label'))) {
-        // No field settings have been stored, so use main config.
-        $config = self::getConfig($eid);
-      }
-    }
-    else {
-      // Using default fields settings from main event config.
-      $config = self::getConfig($eid);
-    }
-
-    return $config;
-
+    return \Drupal::config('conreg.settings.' . $eid);
   }
 
 }

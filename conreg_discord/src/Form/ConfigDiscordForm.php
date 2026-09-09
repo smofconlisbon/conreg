@@ -3,9 +3,9 @@
 namespace Drupal\conreg_discord\Form;
 
 use Drupal\conreg\ConregConfig;
-use Drupal\conreg\ConregOptions;
 use Drupal\conreg\Member;
 use Drupal\conreg\Service\ConregEmailSender;
+use Drupal\conreg\Service\ConregOptions;
 use Drupal\conreg\Service\EventStorage;
 use Drupal\conreg\Trait\EasyEmailTypeOptionsTrait;
 use Drupal\conreg_discord\Discord;
@@ -57,12 +57,15 @@ class ConfigDiscordForm extends ConfigFormBase {
    *   The event storage service.
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager
    *   The entity type manager.
+   * @param \Drupal\conreg\Service\ConregOptions $conregOptions
+   *   The ConReg options service.
    */
   public function __construct(
     protected Connection $connection,
     protected ConregEmailSender $emailSender,
     protected EventStorage $eventStorage,
     protected EntityTypeManagerInterface $entityTypeManager,
+    protected ConregOptions $conregOptions,
   ) {}
 
   /**
@@ -100,7 +103,7 @@ class ConfigDiscordForm extends ConfigFormBase {
     }
 
     $this->config = ConregConfig::getConfig($eid);
-    $types = ConregOptions::memberTypes($eid, $this->config);
+    $types = $this->conregOptions->memberTypes($eid);
 
     $form['#attached'] = [
       'library' => ['conreg/conreg_admin'],

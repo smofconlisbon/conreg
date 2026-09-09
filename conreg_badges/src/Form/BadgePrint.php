@@ -6,8 +6,8 @@ use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Component\Utility\Html;
 use Drupal\conreg\ConregConfig;
-use Drupal\conreg\ConregOptions;
 use Drupal\conreg\FieldOptionStorage;
+use Drupal\conreg\Service\ConregOptions;
 use Drupal\conreg\Service\MemberStorage;
 use Drupal\Core\DependencyInjection\AutowireTrait;
 
@@ -23,9 +23,12 @@ class BadgePrint extends FormBase {
    *
    * @param \Drupal\conreg\Service\MemberStorage $memberStorage
    *   The member storage service.
+   * @param \Drupal\conreg\Service\ConregOptions $conregOptions
+   *   The ConReg options service.
    */
   public function __construct(
     protected MemberStorage $memberStorage,
+    protected ConregOptions $conregOptions,
   ) {}
 
   /**
@@ -43,9 +46,9 @@ class BadgePrint extends FormBase {
     $form_state->set('eid', $eid);
 
     $config = ConregConfig::getConfig($eid);
-    $badgeTypes = ConregOptions::badgeTypes($eid, $config);
-    $days = ConregOptions::days($eid, $config);
-    $countryOptions = ConregOptions::memberCountries($eid, $config);
+    $badgeTypes = $this->conregOptions->badgeTypes($eid);
+    $days = $this->conregOptions->days($eid);
+    $countryOptions = $this->conregOptions->memberCountries($eid);
     $digits = $config->get('member_no_digits');
 
     // Get any existing form values for use in AJAX validation.

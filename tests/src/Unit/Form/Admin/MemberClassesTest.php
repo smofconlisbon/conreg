@@ -5,6 +5,7 @@ namespace Drupal\Tests\conreg\Unit\Form\Admin;
 use Drupal\Core\Cache\CacheTagsInvalidator;
 use Drupal\Core\Form\FormState;
 use Drupal\conreg\Form\Admin\MemberClasses;
+use Drupal\conreg\Service\ConregOptions;
 use Drupal\conreg\Service\EventStorage;
 use Drupal\Tests\UnitTestCase;
 use PHPUnit\Framework\Attributes\Group;
@@ -30,8 +31,9 @@ class MemberClassesTest extends UnitTestCase {
 
     $cacheInvalidator = $this->createMock(CacheTagsInvalidator::class);
     $eventStorage = $this->createMock(EventStorage::class);
+    $conregOptions = $this->createMock(ConregOptions::class);
 
-    $this->form = new MemberClasses($cacheInvalidator, $eventStorage);
+    $this->form = new MemberClasses($cacheInvalidator, $eventStorage, $conregOptions);
   }
 
   /**

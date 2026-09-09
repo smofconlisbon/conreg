@@ -3,6 +3,7 @@
 namespace Drupal\conreg;
 
 use Drupal\Component\Datetime\TimeInterface;
+use Drupal\conreg\Service\ConregOptions;
 use Drupal\conreg\Service\MemberStorage;
 use Drupal\conreg\Service\UpgradeStorage;
 
@@ -34,6 +35,8 @@ class UpgradeManager {
    *   The member storage service.
    * @param \Drupal\Component\Datetime\TimeInterface $time
    *   The time service.
+   * @param \Drupal\conreg\Service\ConregOptions $conregOptions
+   *   The ConReg options service.
    * @param int $eid
    *   Event ID, defaults to 1.
    */
@@ -41,6 +44,7 @@ class UpgradeManager {
     protected UpgradeStorage $upgradeStorage,
     protected MemberStorage $memberStorage,
     protected TimeInterface $time,
+    protected ConregOptions $conregOptions,
     public $eid = 1,
   ) {
     $this->upgrades = [];
@@ -127,6 +131,7 @@ class UpgradeManager {
           $this->upgradeStorage,
           $this->memberStorage,
           $this->time,
+          $this->conregOptions,
           $this->eid,
           $upgrade['mid'],
           NULL,

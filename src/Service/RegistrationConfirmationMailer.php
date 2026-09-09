@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Drupal\conreg\Service;
 
-use Drupal\conreg\ConregOptions;
 use Drupal\Core\Config\ConfigFactoryInterface;
 
 /**
@@ -19,6 +18,7 @@ class RegistrationConfirmationMailer {
   public function __construct(
     protected ConregEmailSender $emailSender,
     protected ConfigFactoryInterface $configFactory,
+    protected ConregOptions $conregOptions,
   ) {}
 
   /**
@@ -32,7 +32,7 @@ class RegistrationConfirmationMailer {
   public function send(array $member): void {
     $eid = (int) $member['eid'];
     $config = $this->configFactory->get('conreg.settings.' . $eid);
-    $types = ConregOptions::memberTypes($eid, $config);
+    $types = $this->conregOptions->memberTypes($eid);
 
     $typeOverride = $types->types[$member['member_type']]->confirmation->easy_email_type ?? '';
     $bundle = $typeOverride ?: $config->get('confirmation.easy_email_type');

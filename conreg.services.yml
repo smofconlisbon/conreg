@@ -7,6 +7,10 @@ services:
     class: Drupal\conreg\Service\CountryService
   Drupal\conreg\Service\CountryServiceInterface: '@conreg.country'
 
+  conreg.options:
+    class: Drupal\conreg\Service\ConregOptions
+  Drupal\conreg\Service\ConregOptions: '@conreg.options'
+
   conreg.stripe_service:
     class: Drupal\conreg\Service\StripeService
   Drupal\conreg\Service\StripeServiceInterface: '@conreg.stripe_service'

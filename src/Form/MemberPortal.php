@@ -3,12 +3,12 @@
 namespace Drupal\conreg\Form;
 
 use Drupal\Component\Datetime\TimeInterface;
-use Drupal\conreg\ConregOptions;
 use Drupal\conreg\ConregTable;
 use Drupal\conreg\Payment;
 use Drupal\conreg\PaymentLine;
 use Drupal\conreg\TableRole;
 use Drupal\conreg\Service\AddonStorage;
+use Drupal\conreg\Service\ConregOptions;
 use Drupal\conreg\Service\MemberStorage;
 use Drupal\conreg\Service\PaymentStorage;
 use Drupal\conreg\Service\UpgradeStorage;
@@ -40,6 +40,8 @@ class MemberPortal extends FormBase {
    *   The upgrade storage service.
    * @param \Drupal\Component\Datetime\TimeInterface $time
    *   The time service.
+   * @param \Drupal\conreg\Service\ConregOptions $conregOptions
+   *   The ConReg options service.
    */
   public function __construct(
     protected MemberStorage $memberStorage,
@@ -47,6 +49,7 @@ class MemberPortal extends FormBase {
     protected PaymentStorage $paymentStorage,
     protected UpgradeStorage $upgradeStorage,
     protected TimeInterface $time,
+    protected ConregOptions $conregOptions,
   ) {}
 
   /**
@@ -64,9 +67,9 @@ class MemberPortal extends FormBase {
     $form_state->set('eid', $eid);
 
     $config = $this->config('conreg.settings.' . $eid);
-    $types = ConregOptions::memberTypes($eid, $config);
-    $upgrades = ConregOptions::memberUpgrades($eid, $config);
-    $days = ConregOptions::days($eid, $config);
+    $types = $this->conregOptions->memberTypes($eid);
+    $upgrades = $this->conregOptions->memberUpgrades($eid);
+    $days = $this->conregOptions->days($eid);
 
     $email = $this->currentUser()->getEmail();
 
@@ -296,7 +299,7 @@ class MemberPortal extends FormBase {
    * If any member upgrades selected, save them so they can be charged.
    */
   public function saveUpgrades(int $eid, ?array $form_values, ?float &$upgrade_price, Payment &$payment): int {
-    $mgr = new UpgradeManager($this->upgradeStorage, $this->memberStorage, $this->time, $eid);
+    $mgr = new UpgradeManager($this->upgradeStorage, $this->memberStorage, $this->time, $this->conregOptions, $eid);
 
     // Get lead MID from .
     $lead_mid = $this->getUserLeadMid($eid);
@@ -305,7 +308,7 @@ class MemberPortal extends FormBase {
     $upgrades = $form_values['table'] ?? [];
     if (isset($upgrades) && is_array($upgrades)) {
       foreach ($upgrades as $mid => $memberRow) {
-        $upgrade = new Upgrade($this->upgradeStorage, $this->memberStorage, $this->time, $eid, $mid, $memberRow["member_type"], $lead_mid);
+        $upgrade = new Upgrade($this->upgradeStorage, $this->memberStorage, $this->time, $this->conregOptions, $eid, $mid, $memberRow["member_type"], $lead_mid);
         // Only save upgrade if price is not null.
         if (isset($upgrade->upgradePrice)) {
           $mgr->Add($upgrade);

@@ -6,7 +6,7 @@ use Drupal\Core\Cache\CacheTagsInvalidator;
 use Drupal\Core\DependencyInjection\AutowireTrait;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\conreg\ConregOptions;
+use Drupal\conreg\Service\ConregOptions;
 use Drupal\conreg\Service\EventStorage;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
@@ -24,11 +24,14 @@ class MemberClasses extends ConfigFormBase {
    *   The cache invalidator.
    * @param \Drupal\conreg\Service\EventStorage $eventStorage
    *   The event storage service.
+   * @param \Drupal\conreg\Service\ConregOptions $conregOptions
+   *   The ConReg options service.
    */
   public function __construct(
     #[Autowire('cache_tags.invalidator')]
     protected CacheTagsInvalidator $cacheInvalidator,
     protected EventStorage $eventStorage,
+    protected ConregOptions $conregOptions,
   ) {}
 
   /**
@@ -67,7 +70,7 @@ class MemberClasses extends ConfigFormBase {
 
     $memberClasses = $form_state->get('member_classes');
     if (!isset($memberClasses)) {
-      $memberClasses = ConregOptions::memberClasses($eid);
+      $memberClasses = $this->conregOptions->memberClasses($eid);
       $form_state->set('member_classes', $memberClasses);
     }
 
@@ -431,7 +434,7 @@ class MemberClasses extends ConfigFormBase {
 
     $vals = $form_state->getValues();
     $this->updateMemberClasses($memberClasses, $vals, $form_state);
-    ConregOptions::saveMemberClasses($eid, $memberClasses);
+    $this->conregOptions->saveMemberClasses($eid, $memberClasses);
 
     parent::submitForm($form, $form_state);
   }

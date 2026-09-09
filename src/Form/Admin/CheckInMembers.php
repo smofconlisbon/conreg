@@ -3,13 +3,13 @@
 namespace Drupal\conreg\Form\Admin;
 
 use Drupal\Component\Utility\Html;
-use Drupal\conreg\ConregOptions;
 use Drupal\conreg\ConregConfig;
 use Drupal\conreg\ConregTable;
 use Drupal\conreg\Payment;
 use Drupal\conreg\PaymentLine;
 use Drupal\conreg\Pricing\PricingContext;
 use Drupal\conreg\Pricing\PricingSubject;
+use Drupal\conreg\Service\ConregOptions;
 use Drupal\conreg\Service\EventStorage;
 use Drupal\conreg\Service\MemberStorage;
 use Drupal\conreg\Service\PaymentStorage;
@@ -46,6 +46,8 @@ class CheckInMembers extends FormBase {
    *   The pricing service.
    * @param \Drupal\conreg\Service\PrintJobManager $printJobManager
    *   The print job manager.
+   * @param \Drupal\conreg\Service\ConregOptions $conregOptions
+   *   The ConReg options service.
    */
   public function __construct(
     protected MemberStorage $memberStorage,
@@ -54,6 +56,7 @@ class CheckInMembers extends FormBase {
     protected LanguageManagerInterface $languageManager,
     protected PricingServiceInterface $pricingService,
     protected PrintJobManager $printJobManager,
+    protected ConregOptions $conregOptions,
   ) {}
 
   /**
@@ -114,9 +117,9 @@ class CheckInMembers extends FormBase {
 
     $config = $this->config('conreg.settings.' . $eid);
     $labelPrintingEnabled = $config->get('checkin.label_printing_enabled') ?? FALSE;
-    $types = ConregOptions::memberTypes($eid, $config);
-    $badgeTypes = ConregOptions::badgeTypes($eid, $config);
-    $days = ConregOptions::days($eid, $config);
+    $types = $this->conregOptions->memberTypes($eid);
+    $badgeTypes = $this->conregOptions->badgeTypes($eid);
+    $days = $this->conregOptions->days($eid);
 
     // If lead_mid passed in, form is returning from credit cart payment. Set up
     // for check in of paid member(s).
@@ -514,7 +517,7 @@ class CheckInMembers extends FormBase {
     $form['payment_method'] = [
       '#type' => 'select',
       '#title' => $this->t('Payment method'),
-      '#options' => ConregOptions::paymentMethod(),
+      '#options' => $this->conregOptions->paymentMethod(),
       '#default_value' => "Cash",
       '#required' => TRUE,
     ];
@@ -629,7 +632,7 @@ class CheckInMembers extends FormBase {
   public function addMember(array &$form, FormStateInterface $form_state) {
     $eid = $form_state->get('eid');
     $config = ConregConfig::getConfig($eid);
-    $types = ConregOptions::memberTypes($eid, $config);
+    $types = $this->conregOptions->memberTypes($eid);
     $form_values = $form_state->getValues();
     $language = $this->languageManager->getDefaultLanguage()->getId();
     // Assign random key for payment URL.

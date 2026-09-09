@@ -3,9 +3,9 @@
 namespace Drupal\conreg\Form;
 
 use Drupal\conreg\Addons;
-use Drupal\conreg\ConregOptions;
 use Drupal\conreg\FieldOptions;
 use Drupal\conreg\Member;
+use Drupal\conreg\Service\ConregOptions;
 use Drupal\conreg\Service\MemberStorage;
 use Drupal\Core\DependencyInjection\AutowireTrait;
 use Drupal\Core\Ajax\AjaxResponse;
@@ -28,10 +28,13 @@ class MemberEdit extends FormBase {
    *   The member storage service.
    * @param \Drupal\Core\Render\RendererInterface $renderer
    *   The renderer service.
+   * @param \Drupal\conreg\Service\ConregOptions $conregOptions
+   *   The ConReg options service.
    */
   public function __construct(
     protected MemberStorage $memberStorage,
     protected RendererInterface $renderer,
+    protected ConregOptions $conregOptions,
   ) {}
 
   /**
@@ -54,11 +57,11 @@ class MemberEdit extends FormBase {
     // Get event configuration from config.
     $config = $this->config('conreg.settings.' . $eid);
 
-    $types = ConregOptions::memberTypes($eid, $config);
-    $memberClasses = ConregOptions::memberClasses($eid, $config);
-    $days = ConregOptions::days($eid, $config);
-    [$addOnOptions] = ConregOptions::memberAddons($eid, $config);
-    $countryOptions = ConregOptions::memberCountries($eid, $config);
+    $types = $this->conregOptions->memberTypes($eid);
+    $memberClasses = $this->conregOptions->memberClasses($eid);
+    $days = $this->conregOptions->days($eid);
+    [$addOnOptions] = $this->conregOptions->memberAddons($eid);
+    $countryOptions = $this->conregOptions->memberCountries($eid);
     $defaultCountry = $config->get('reference.default_country');
 
     // Load the member record.
@@ -212,8 +215,8 @@ class MemberEdit extends FormBase {
         '#type' => 'select',
         '#title' => $curMemberClass->fields->display,
         '#description' => $this->t('Select how you would like to appear on the membership list.'),
-        '#options' => ConregOptions::display($eid, $config),
-        '#default_value' => ($member->display ?? '') ?: ConregOptions::displayDefault($eid, $config),
+        '#options' => $this->conregOptions->display($eid),
+        '#default_value' => ($member->display ?? '') ?: $this->conregOptions->displayDefault($eid),
         '#required' => TRUE,
       ];
     }
@@ -223,7 +226,7 @@ class MemberEdit extends FormBase {
         '#type' => 'select',
         '#title' => $curMemberClass->fields->communication_method,
         '#description' => $curMemberClass->fields->communication_method_description,
-        '#options' => ConregOptions::communicationMethod($eid, $config, FALSE),
+        '#options' => $this->conregOptions->communicationMethod($eid, FALSE),
         '#default_value' => ($member->communication_method ?? 'E'),
         '#required' => TRUE,
       ];

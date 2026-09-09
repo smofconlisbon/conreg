@@ -2,8 +2,6 @@
 
 namespace Drupal\conreg\Service;
 
-use Drupal\conreg\ConregConfig;
-use Drupal\conreg\ConregOptions;
 use Drupal\conreg\FieldOptions;
 use Drupal\Core\Datetime\DateFormatterInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
@@ -25,6 +23,7 @@ class MemberDetailsFormatter {
 
   public function __construct(
     protected DateFormatterInterface $dateFormatter,
+    protected ConregOptions $conregOptions,
   ) {}
 
   /**
@@ -89,9 +88,8 @@ class MemberDetailsFormatter {
       return ['html' => '', 'plain' => ''];
     }
 
-    $config = ConregConfig::getConfig($eid);
-    $types = ConregOptions::memberTypes($eid, $config);
-    $memberClasses = ConregOptions::memberClasses($eid, $config);
+    $types = $this->conregOptions->memberTypes($eid);
+    $memberClasses = $this->conregOptions->memberClasses($eid);
     $fieldOptions = FieldOptions::getFieldOptions($eid);
 
     $html = '';

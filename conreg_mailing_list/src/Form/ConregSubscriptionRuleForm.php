@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Drupal\conreg_mailing_list\Form;
 
-use Drupal\conreg\ConregOptions;
 use Drupal\conreg\FieldOptions;
+use Drupal\conreg\Service\ConregOptions;
 use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\conreg_mailing_list\Entity\ConregSubscriptionRule;
@@ -20,6 +20,7 @@ final class ConregSubscriptionRuleForm extends EntityForm {
 
   public function __construct(
     protected MailingListProviderPluginManager $providerManager,
+    protected ConregOptions $conregOptions,
   ) {}
 
   /**
@@ -99,7 +100,7 @@ final class ConregSubscriptionRuleForm extends EntityForm {
       ->swap('outerHTML')
       ->applyTo($form['provider']);
 
-    $methods = ['_any' => $this->t('Any')] + ConregOptions::communicationMethod($eid);
+    $methods = ['_any' => $this->t('Any')] + $this->conregOptions->communicationMethod($eid);
     $form['communication_method'] = [
       '#type' => 'select',
       '#title' => $this->t('Communications method'),

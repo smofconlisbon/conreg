@@ -3,8 +3,8 @@
 namespace Drupal\conreg\Form\Admin;
 
 use Drupal\Component\Utility\Html;
+use Drupal\conreg\Service\ConregOptions;
 use Drupal\conreg\Service\EventStorage;
-use Drupal\conreg\ConregOptions;
 use Drupal\conreg\ConregTable;
 use Drupal\conreg\TableRole;
 use Drupal\conreg\Trait\EasyEmailTypeOptionsTrait;
@@ -34,12 +34,15 @@ class MemberTypes extends ConfigFormBase {
    *   The event storage service.
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager
    *   The entity type manager.
+   * @param \Drupal\conreg\Service\ConregOptions $conregOptions
+   *   The ConReg options service.
    */
   public function __construct(
     #[Autowire('cache_tags.invalidator')]
     protected CacheTagsInvalidator $cacheInvalidator,
     protected EventStorage $eventStorage,
     protected EntityTypeManagerInterface $entityTypeManager,
+    protected ConregOptions $conregOptions,
   ) {}
 
   /**
@@ -79,7 +82,7 @@ class MemberTypes extends ConfigFormBase {
     // Get working member types from form, or saved types if first load.
     $memberTypes = $form_state->get('member_types');
     if (!isset($memberTypes)) {
-      $memberTypes = ConregOptions::memberTypes($eid);
+      $memberTypes = $this->conregOptions->memberTypes($eid);
       $form_state->set('member_types', $memberTypes);
     }
 
@@ -93,9 +96,9 @@ class MemberTypes extends ConfigFormBase {
       return $this->buildDeleteForm($form, $form_state, $deleteMemberTypeID, $memberTypes);
     }
 
-    $badgeTypes = ConregOptions::badgeTypes($eid);
-    $memberClasses = ConregOptions::memberClasses($eid);
-    $days = ConregOptions::days($eid);
+    $badgeTypes = $this->conregOptions->badgeTypes($eid);
+    $memberClasses = $this->conregOptions->memberClasses($eid);
+    $days = $this->conregOptions->days($eid);
 
     $form = [
       '#title' => $this->t('@event_name Member Types', ['@event_name' => $event['event_name']]),
@@ -374,7 +377,7 @@ class MemberTypes extends ConfigFormBase {
 
     $vals = $form_state->getValues();
     $this->updateMemberTypes($memberTypes, $vals, $eid);
-    ConregOptions::saveMemberTypes($eid, $memberTypes);
+    $this->conregOptions->saveMemberTypes($eid, $memberTypes);
 
     $this->cacheInvalidator->invalidateTags(['event:' . $eid . ':type']);
 
