@@ -104,22 +104,23 @@ class PlanZ {
   /**
    * Constructs a new Member object.
    *
-   * @param \Drupal\Core\Config\ImmutableConfig $config
-   *   The configuration object containing PlanZ settings.
+   * @param \Drupal\Core\Config\ImmutableConfig|null $config
+   *   The configuration object containing PlanZ settings. If omitted, every
+   *   property falls back to its own default below.
    */
   public function __construct(ImmutableConfig|NULL $config = NULL) {
-    $this->target = $config->get('target') ?: 'default';
-    $this->badgeIdSource = BadgeIdSource::from($config->get('badge_id_source') ?: 'mno');
-    $this->prefix = $config->get('prefix') ?: '';
-    $this->digits = $config->get('digits') ?: 4;
-    $this->generatePassword = $config->get('generate_password') ?: FALSE;
-    $this->roles = $config->get('roles') ?: [];
-    $this->interestedDefault = $config->get('interested_default') ?: FALSE;
-    $this->planZUrl = $config->get('url') ?: '';
-    $this->optionFields = $config->get('option_fields') ?? [];
-    $this->autoEnabled = $config->get('auto.enabled') ?: FALSE;
-    $this->autoWhenConfirmed = $config->get('auto.when_confirmed') ?: FALSE;
-    $this->emailEasyEmailType = $config->get('email.easy_email_type') ?: '';
+    $this->target = $config?->get('target') ?: 'default';
+    $this->badgeIdSource = BadgeIdSource::from($config?->get('badge_id_source') ?: 'mno');
+    $this->prefix = $config?->get('prefix') ?: '';
+    $this->digits = $config?->get('digits') ?: 4;
+    $this->generatePassword = $config?->get('generate_password') ?: FALSE;
+    $this->roles = $config?->get('roles') ?: [];
+    $this->interestedDefault = $config?->get('interested_default') ?: FALSE;
+    $this->planZUrl = $config?->get('url') ?: '';
+    $this->optionFields = $config?->get('option_fields') ?? [];
+    $this->autoEnabled = $config?->get('auto.enabled') ?: FALSE;
+    $this->autoWhenConfirmed = $config?->get('auto.when_confirmed') ?: FALSE;
+    $this->emailEasyEmailType = $config?->get('email.easy_email_type') ?: '';
   }
 
   /**
