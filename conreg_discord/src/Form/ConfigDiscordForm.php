@@ -92,7 +92,8 @@ class ConfigDiscordForm extends ConfigFormBase {
     $form_state->set('eid', $eid);
 
     // Fetch event name from Event table.
-    if (count($event = $this->eventStorage->load(['eid' => $eid])) < 3) {
+    $event = $this->eventStorage->load(['eid' => $eid]);
+    if (!$event || count($event) < 3) {
       // Event not in database. Display error.
       $form['conreg_event'] = [
         '#markup' => $this->t('Event not found. Please contact site admin.'),

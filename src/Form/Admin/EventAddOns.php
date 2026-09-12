@@ -49,7 +49,8 @@ class EventAddOns extends ConfigFormBase {
     $form_state->set('eid', $eid);
 
     // Fetch event name from Event table.
-    if (count($event = $this->eventStorage->load(['eid' => $eid])) < 3) {
+    $event = $this->eventStorage->load(['eid' => $eid]);
+    if (!$event || count($event) < 3) {
       // Event not in database. Display error.
       $form['conreg_event'] = [
         '#markup' => $this->t('Event not found. Please contact site admin.'),
@@ -80,22 +81,15 @@ class EventAddOns extends ConfigFormBase {
       '#title' => $this->t('Add-on name'),
     ];
 
-    /*
-     * Placeholder for options for each add-on.
-     */
+    // Placeholder for options for each add-on.
     $form['addons'] = [
       '#tree' => TRUE,
     ];
 
-    /*
-     * Loop through each add-on and add to form.
-     */
-
+    // Loop through each add-on and add to form.
     foreach ($config->get('add-ons') ?? [] as $addOnId => $addOnVals) {
 
-      /*
-       * Fields for add on choices and options.
-       */
+      // Fields for add on choices and options.
       $form['addons'][$addOnId] = [
         '#type' => 'details',
         '#title' => $addOnId,
