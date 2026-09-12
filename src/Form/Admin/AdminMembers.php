@@ -473,6 +473,9 @@ class AdminMembers extends FormBase {
     $max_member = $this->memberStorage->loadMaxMemberNo($eid);
     foreach ($form_values["table"] as $mid => $memberLine) {
       $member = Member::loadMember($mid);
+      if (is_null($member)) {
+        continue;
+      }
       if (($memberLine["is_approved"] != $member->is_approved) ||
           ($memberLine["is_approved"] && $memberLine["member_no"] != $member->member_no)) {
         $member->is_approved = $memberLine["is_approved"];

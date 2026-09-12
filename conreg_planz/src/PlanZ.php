@@ -209,7 +209,7 @@ class PlanZ {
     // Look up member to get email.
     $member = Member::loadMember($user->mid);
 
-    if (empty($member->email)) {
+    if (is_null($member) || empty($member->email)) {
       return FALSE;
     }
 

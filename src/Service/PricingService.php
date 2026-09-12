@@ -99,8 +99,17 @@ final class PricingService implements PricingServiceInterface {
     $members = [];
     foreach ($memberLines as $line) {
       if (!isset($members[$line->mid])) {
-        $members[$line->mid] = Member::loadMember((int) $line->mid);
+        $member = Member::loadMember((int) $line->mid);
+        // A member whose record no longer exists can't be priced; leave
+        // them out of the group entirely, the same as an unresolvable
+        // member type below.
+        if ($member !== NULL) {
+          $members[$line->mid] = $member;
+        }
       }
+    }
+    if (!$members) {
+      return new PricingRecomputeResult($payment, FALSE);
     }
 
     $eid = (int) reset($members)->eid;

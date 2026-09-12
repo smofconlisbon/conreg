@@ -99,6 +99,19 @@ class Checkout extends FormBase {
   }
 
   /**
+   * If payment not found, build a page with the error.
+   *
+   * @return array
+   *   The render array with the message.
+   */
+  public function invalidCredentials(): array {
+    $form['message'] = [
+      '#markup' => $this->t('Invalid payment credentials. Please return to <a href="@url">registration page</a> and complete membership details.', ["@url" => "/members/register"]),
+    ];
+    return $form;
+  }
+
+  /**
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state, $payid = NULL, $key = NULL, $return = '') {
@@ -110,10 +123,7 @@ class Checkout extends FormBase {
       $payment = Payment::load($payid);
     }
     else {
-      $form['message'] = [
-        '#markup' => $this->t('Invalid payment credentials. Please return to <a href="@url">registration page</a> and complete membership details.', ["@url" => "/members/register"]),
-      ];
-      return $form;
+      return $this->invalidCredentials();
     }
 
     // Get event ID to fetch Stripe keys. If payment has MID, get event from
@@ -122,9 +132,15 @@ class Checkout extends FormBase {
     if (isset($payment) && isset($payment->paymentLines[0]) && !empty($payment->paymentLines[0]->mid)) {
       $mid = $payment->paymentLines[0]->mid;
       $member = Member::loadMember($mid);
+      if (is_null($member)) {
+        return $this->invalidCredentials();
+      }
       $this->eid = $member->eid;
       if (empty(trim($member->email)) && $mid != $member->lead_mid) {
         $lead_member = Member::loadMember($member->lead_mid);
+        if (is_null($lead_member)) {
+          return $this->invalidCredentials();
+        }
         $email = $lead_member->email;
       }
       else {

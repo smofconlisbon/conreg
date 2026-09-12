@@ -90,6 +90,11 @@ class AirTable {
     $fields->id = $airtable_id;
     $fields->fields = new \stdClass();
     $member = Member::loadMember($mid);
+    if (is_null($member)) {
+      // Member no longer exists; return the bare record (still positioned
+      // correctly for the caller's $mids index) with no fields populated.
+      return $fields;
+    }
     foreach ($config->get('airtable.mappings') as $field => $mapped) {
       if (!empty($mapped)) {
         $fields->fields->$mapped = $member->fieldDisplay($field);

@@ -481,6 +481,9 @@ class FanTable extends FormBase {
     foreach ($form_values['unpaid'] as $mid => $member) {
       if (isset($member['is_selected']) && $member['is_selected']) {
         $member = Member::loadMember($mid);
+        if (is_null($member)) {
+          continue;
+        }
         $payment->add(new PaymentLine($this->paymentStorage, $mid, 'member',
           $this->t("Member registration to @event_name for @first_name @last_name",
           [

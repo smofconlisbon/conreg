@@ -126,6 +126,9 @@ class PlanZUser {
   private function checkExistingUser(int $mid): bool {
     // Get member details.
     $member = Member::loadMember($mid);
+    if (is_null($member)) {
+      return FALSE;
+    }
 
     // Get the PlanZ connection to get the Participant table.
     $planZCon = $this->planz->getConnection();

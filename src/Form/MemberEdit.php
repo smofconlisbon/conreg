@@ -24,7 +24,7 @@ class MemberEdit extends FormBase {
   /**
    * Construct the form.
    *
-   * @param \Drupal\conreg\MemberStorage $memberStorage
+   * @param \Drupal\conreg\Service\MemberStorage $memberStorage
    *   The member storage service.
    * @param \Drupal\Core\Render\RendererInterface $renderer
    *   The renderer service.

@@ -23,9 +23,9 @@ class AdminMemberEdit extends FormBase {
   /**
    * Constructor for admin member edit form.
    *
-   * @param \Drupal\conreg\MemberStorage $memberStorage
+   * @param \Drupal\conreg\Service\MemberStorage $memberStorage
    *   The member storage service.
-   * @param \Drupal\Core\TempStore\PrivateTempStore $tempStoreFactory
+   * @param \Drupal\Core\TempStore\PrivateTempStoreFactory $tempStoreFactory
    *   Temporary store for user session data.
    * @param \Drupal\Component\Datetime\TimeInterface $time
    *   The time interface.

@@ -60,11 +60,14 @@ class Member extends \stdClass {
    * @param int $mid
    *   Member ID to load.
    *
-   * @return Member
+   * @return Member|null
    *   Loaded member object.
    */
-  public static function loadMember(int $mid): Member {
+  public static function loadMember(int $mid): ?Member {
     $member = self::newMember(\Drupal::service('conreg.member.storage')->load(['mid' => $mid]));
+    if (is_null($member)) {
+      return NULL;
+    }
 
     // Add member options to member object.
     $member->options = MemberOption::loadAllMemberOptions($mid);
