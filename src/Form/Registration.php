@@ -826,11 +826,14 @@ class Registration extends FormBase {
     $selectedClassChanged = $form_state->get('selected_class_changed');
     if ($selectedClassChanged) {
       // Get the triggering element.
-      $trigger = $form_state->getTriggeringElement()['#name'];
-      if (preg_match("/^members\[member(\d+)\]\[(\w+)\]/", $trigger, $matches)) {
-        // If member type changed, return the whole form.
-        if ($matches[2] == 'type') {
-          return $form;
+      $element = $form_state->getTriggeringElement();
+      if (!is_null($element)) {
+        $trigger = $element['#name'];
+        if (preg_match("/^members\[member(\d+)\]\[(\w+)\]/", $trigger, $matches)) {
+          // If member type changed, return the whole form.
+          if ($matches[2] == 'type') {
+            return $form;
+          }
         }
       }
     }
@@ -925,7 +928,11 @@ class Registration extends FormBase {
    */
   public function updateMemberOptionFields(array $form, FormStateInterface $form_state): array {
     // Get the triggering element.
-    $trigger = $form_state->getTriggeringElement()['#name'];
+    $element = $form_state->getTriggeringElement();
+    if (is_null($element)) {
+      return [];
+    }
+    $trigger = $element['#name'];
     // Get array of items to return, keyed by triggering element.
     $optionCallbacks = $form_state->get('option_callbacks');
     $callback = $optionCallbacks[$trigger];
@@ -1097,6 +1104,11 @@ class Registration extends FormBase {
   public function submitForm(array &$form, FormStateInterface $form_state): void {
     $eid = $form_state->get('eid');
     $event = $this->eventStorage->load(['eid' => $eid]);
+    if (!$event) {
+      // Should never happen, but if event does not exist, we cannot save.
+      $this->messenger()->addError($this->t('Event not found. Please contact site admin.'));
+      return;
+    }
     $return = $form_state->get('return');
     $config = ConregConfig::getConfig($eid);
     $memberClasses = $this->conregOptions->memberClasses($eid);
@@ -1255,6 +1267,11 @@ class Registration extends FormBase {
 
       // Create and save member.
       $member = Member::newMember($entry);
+      if (!$member) {
+        // Abort if no member created (should never happen).
+        $this->messenger()->addError($this->t('Failed to save member. Please try again or contact site admin.'));
+        return;
+      }
       $member->setOptions($optionVals);
       $result = $member->saveMember();
 

@@ -165,6 +165,10 @@ class Checkout extends FormBase {
 
     // Stripe messages processed, so we need to load the payment again.
     $payment = Payment::load($payid);
+    if (is_null($payment)) {
+      // Should never happen, but if payment not valid, show warning.
+      return $this->invalidCredentials();
+    }
 
     // Check if payment date populated. If so, payment is complete.
     if ($payment->paidDate) {
@@ -262,6 +266,10 @@ class Checkout extends FormBase {
    */
   public function showThankYouPage(array $form, int $eid, ImmutableConfig $config, Payment $payment) {
     $event = $this->eventStorage->load(['eid' => $eid]);
+    if (!$event) {
+      // Event should be valid, but if not, we should display warning.
+      return $this->invalidCredentials();
+    }
     $drupalTokenData = [
       'event' => [
         'eid' => $eid,
@@ -376,7 +384,9 @@ class Checkout extends FormBase {
           $mgr = new UpgradeManager($this->upgradeStorage, $this->memberStorage, $this->time, $this->conregOptions, $member->eid);
           if ($mgr->loadUpgrades($member->mid, 0)) {
             $payment = Payment::loadBySessionId($session->id);
-            $mgr->completeUpgrades($payment->paymentAmount, $payment->paymentMethod, $payment->paymentRef);
+            if (!is_null($payment)) {
+              $mgr->completeUpgrades($payment->paymentAmount, $payment->paymentMethod, $payment->paymentRef);
+            }
           }
         }
         break;

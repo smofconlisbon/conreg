@@ -4,6 +4,15 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\conreg\Kernel;
 
+use Drupal\conreg\Form\Admin\EventAddOns;
+use Drupal\conreg\Form\Admin\EventConfig;
+use Drupal\conreg\Form\Admin\MemberClasses;
+use Drupal\conreg\Form\Admin\MemberTypes;
+use Drupal\conreg\Form\CheckMember;
+use Drupal\conreg_airtable\ConfigAirTableForm;
+use Drupal\conreg_clickup\ConregConfigClickUpOptionsForm;
+use Drupal\conreg_discord\Form\ConfigDiscordForm;
+use Drupal\conreg_planz\Form\ConfigPlanZForm;
 use Drupal\Core\Form\FormState;
 use Drupal\KernelTests\KernelTestBase;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -12,7 +21,7 @@ use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
 /**
- * Regression coverage for #3596625: count() called on a falsable value.
+ * Regression coverage for #3596625: count() called on a value allowing false.
  *
  * `EventStorage::load()` is declared `: array|false` and returns FALSE
  * (via `fetchAssoc()`) when the requested `eid` has no matching row. Nine
@@ -30,15 +39,15 @@ use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
  * circuits before `count()` ever sees FALSE. That's the fix to replicate
  * in each of the nine classes below.
  */
-#[CoversClass(\Drupal\conreg\Form\CheckMember::class)]
-#[CoversClass(\Drupal\conreg\Form\Admin\EventConfig::class)]
-#[CoversClass(\Drupal\conreg\Form\Admin\EventAddOns::class)]
-#[CoversClass(\Drupal\conreg\Form\Admin\MemberTypes::class)]
-#[CoversClass(\Drupal\conreg\Form\Admin\MemberClasses::class)]
-#[CoversClass(\Drupal\conreg_airtable\ConfigAirTableForm::class)]
-#[CoversClass(\Drupal\conreg_clickup\ConregConfigClickUpOptionsForm::class)]
-#[CoversClass(\Drupal\conreg_discord\Form\ConfigDiscordForm::class)]
-#[CoversClass(\Drupal\conreg_planz\Form\ConfigPlanZForm::class)]
+#[CoversClass(CheckMember::class)]
+#[CoversClass(EventConfig::class)]
+#[CoversClass(EventAddOns::class)]
+#[CoversClass(MemberTypes::class)]
+#[CoversClass(MemberClasses::class)]
+#[CoversClass(ConfigAirTableForm::class)]
+#[CoversClass(ConregConfigClickUpOptionsForm::class)]
+#[CoversClass(ConfigDiscordForm::class)]
+#[CoversClass(ConfigPlanZForm::class)]
 #[Group('conreg')]
 #[RunTestsInSeparateProcesses]
 class EventNotFoundBuildFormTest extends KernelTestBase {
@@ -86,15 +95,15 @@ class EventNotFoundBuildFormTest extends KernelTestBase {
    */
   public static function providerFormClasses(): array {
     return [
-      'CheckMember' => [\Drupal\conreg\Form\CheckMember::class],
-      'EventConfig' => [\Drupal\conreg\Form\Admin\EventConfig::class],
-      'EventAddOns' => [\Drupal\conreg\Form\Admin\EventAddOns::class],
-      'MemberTypes' => [\Drupal\conreg\Form\Admin\MemberTypes::class],
-      'MemberClasses' => [\Drupal\conreg\Form\Admin\MemberClasses::class],
-      'ConfigAirTableForm' => [\Drupal\conreg_airtable\ConfigAirTableForm::class],
-      'ConregConfigClickUpOptionsForm' => [\Drupal\conreg_clickup\ConregConfigClickUpOptionsForm::class],
-      'ConfigDiscordForm' => [\Drupal\conreg_discord\Form\ConfigDiscordForm::class],
-      'ConfigPlanZForm' => [\Drupal\conreg_planz\Form\ConfigPlanZForm::class],
+      'CheckMember' => [CheckMember::class],
+      'EventConfig' => [EventConfig::class],
+      'EventAddOns' => [EventAddOns::class],
+      'MemberTypes' => [MemberTypes::class],
+      'MemberClasses' => [MemberClasses::class],
+      'ConfigAirTableForm' => [ConfigAirTableForm::class],
+      'ConregConfigClickUpOptionsForm' => [ConregConfigClickUpOptionsForm::class],
+      'ConfigDiscordForm' => [ConfigDiscordForm::class],
+      'ConfigPlanZForm' => [ConfigPlanZForm::class],
     ];
   }
 
@@ -110,7 +119,7 @@ class EventNotFoundBuildFormTest extends KernelTestBase {
     $form_obj = $this->container->get('class_resolver')->getInstanceFromDefinition($formClass);
     $form_state = new FormState();
 
-    // eid 999999 has no matching row in conreg_events.
+    // Event ID 999999 has no matching row in conreg_events.
     $form = $form_obj->buildForm([], $form_state, 999999);
 
     $this->assertIsArray($form);
