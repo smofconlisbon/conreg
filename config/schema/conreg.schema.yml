@@ -419,6 +419,16 @@ conreg.settings.*:
           type: integer
         badge_name_editable:
           type: integer
+    member_portal:
+      type: mapping
+      label: 'Settings for the member portal'
+      mapping:
+        add_role:
+          type: string
+          label: 'Optional role to add to user when logging into member portal'
+        show_days_column:
+          type: boolean
+          label: 'Show the days column in the member portal member list'
     reference:
       type: mapping
       label: 'Reference values to use'

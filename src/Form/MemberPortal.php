@@ -70,6 +70,7 @@ class MemberPortal extends FormBase {
     $types = $this->conregOptions->memberTypes($eid);
     $upgrades = $this->conregOptions->memberUpgrades($eid);
     $days = $this->conregOptions->days($eid);
+    $showDaysColumn = $config->get('member_portal.show_days_column') ?? TRUE;
 
     $email = $this->currentUser()->getEmail();
 
@@ -88,10 +89,12 @@ class MemberPortal extends FormBase {
       'email' => ['data' => $this->t('Email'), 'field' => 'm.email'],
       'badge_name' => ['data' => $this->t('Badge name'), 'field' => 'm.badge_name'],
       'member_type' => ['data' => $this->t('Member type'), 'class' => [RESPONSIVE_PRIORITY_LOW]],
-      'days' => ['data' => $this->t('Days'), 'class' => [RESPONSIVE_PRIORITY_LOW]],
-      'is_paid' => $this->t('Paid'),
-      'link' => $this->t('Edit'),
     ];
+    if ($showDaysColumn) {
+      $headers['days'] = ['data' => $this->t('Days'), 'class' => [RESPONSIVE_PRIORITY_LOW]];
+    }
+    $headers['is_paid'] = $this->t('Paid');
+    $headers['link'] = $this->t('Edit');
 
     $entries = $this->memberStorage->adminMemberPortalListLoad($eid, $email, TRUE);
 
@@ -141,19 +144,21 @@ class MemberPortal extends FormBase {
           ];
         }
 
-        if (!empty($entry['days'])) {
-          $dayDescriptions = [];
-          foreach (explode('|', $entry['days']) as $day) {
-            $dayDescriptions[] = $days[$day] ?? $day;
+        if ($showDaysColumn) {
+          if (!empty($entry['days'])) {
+            $dayDescriptions = [];
+            foreach (explode('|', $entry['days']) as $day) {
+              $dayDescriptions[] = $days[$day] ?? $day;
+            }
+            $memberDays = implode(', ', $dayDescriptions);
           }
-          $memberDays = implode(', ', $dayDescriptions);
+          else {
+            $memberDays = '';
+          }
+          $row['days'] = [
+            '#markup' => Html::escape($memberDays),
+          ];
         }
-        else {
-          $memberDays = '';
-        }
-        $row['days'] = [
-          '#markup' => Html::escape($memberDays),
-        ];
         $row['is_paid'] = [
           '#markup' => $is_paid ? $this->t('Yes') : $this->t('No'),
         ];

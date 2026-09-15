@@ -705,6 +705,22 @@ class EventConfig extends ConfigFormBase {
       '#default_value' => $config->get('member_check.unknown_easy_email_type'),
     ];
 
+    /* Member Portal Settings. */
+
+    $form['conreg_member_portal'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Member Portal'),
+      '#tree' => TRUE,
+      '#group' => 'admin',
+    ];
+
+    $form['conreg_member_portal']['show_days_column'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Show days column'),
+      '#description' => $this->t('Show the days attending column in the member portal member list.'),
+      '#default_value' => $config->get('member_portal.show_days_column') ?? TRUE,
+    ];
+
     /* Member Self Service Edit Settings. */
 
     $form['conreg_member_edit'] = [
@@ -1102,6 +1118,7 @@ class EventConfig extends ConfigFormBase {
     $config->set('member_check.confirm_easy_email_type', $vals['conreg_member_check']['confirm_easy_email_type']);
     $config->set('member_check.unknown_easy_email_type', $vals['conreg_member_check']['unknown_easy_email_type']);
     $config->set('member_portal.add_role', $vals['conreg_member_edit']['add_role']);
+    $config->set('member_portal.show_days_column', $vals['conreg_member_portal']['show_days_column']);
     $config->set('member_edit.intro_text', $vals['conreg_member_edit']['member_edit_intro']['value']);
     $config->set('member_edit.intro_format', $vals['conreg_member_edit']['member_edit_intro']['format']);
     $config->set('member_edit.email_editable', $vals['conreg_member_edit']['email']);
