@@ -1,0 +1,6 @@
+langcode: en
+id: large_address
+label: 'Large Address (36 x 89mm)'
+width_mm: 36
+height_mm: 89
+rotate_degrees: 90

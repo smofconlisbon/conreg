@@ -43,6 +43,10 @@ services:
     class: Drupal\conreg\Service\PrintJobManager
   Drupal\conreg\Service\PrintJobManager: '@conreg.print_job.manager'
 
+  conreg.label_renderer:
+    class: Drupal\conreg\Service\LabelRenderer
+  Drupal\conreg\Service\LabelRenderer: '@conreg.label_renderer'
+
   conreg.email.sender:
     class: Drupal\conreg\Service\ConregEmailSender
   Drupal\conreg\Service\ConregEmailSender: '@conreg.email.sender'
@@ -84,6 +88,9 @@ services:
 
   Drupal\conreg\Hook\ConregHooks:
     class: Drupal\conreg\Hook\ConregHooks
+
+  Drupal\conreg\Hook\CronHooks:
+    class: Drupal\conreg\Hook\CronHooks
 
   Drupal\conreg\Hook\ConregEasyEmailFieldHooks:
     class: Drupal\conreg\Hook\ConregEasyEmailFieldHooks

@@ -45,8 +45,12 @@ class PrintJob extends ContentEntityBase {
 
     $fields['mid'] = BaseFieldDefinition::create('integer')
       ->setLabel(t('Member ID'))
-      ->setDescription(t('The member this label is for.'))
-      ->setRequired(TRUE);
+      ->setDescription(t('The member this label is for. Left unset for test-print jobs, which have no real member.'));
+
+    $fields['is_test'] = BaseFieldDefinition::create('boolean')
+      ->setLabel(t('Test print'))
+      ->setDescription(t('Set for jobs created by the Label Printing Settings page\'s "Test print" button, so they can be told apart from real check-in jobs.'))
+      ->setDefaultValue(FALSE);
 
     $fields['member_name'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Member name'))
@@ -60,6 +64,11 @@ class PrintJob extends ContentEntityBase {
 
     $fields['days_attending'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Days attending'))
+      ->setSetting('max_length', 64);
+
+    $fields['badge_type'] = BaseFieldDefinition::create('string')
+      ->setLabel(t('Badge type'))
+      ->setDescription(t("The member's badge type, snapshotted at job creation time."))
       ->setSetting('max_length', 64);
 
     $fields['printer'] = BaseFieldDefinition::create('entity_reference')
@@ -81,6 +90,10 @@ class PrintJob extends ContentEntityBase {
     $fields['message'] = BaseFieldDefinition::create('string_long')
       ->setLabel(t('Result message'))
       ->setDescription(t('Human-readable result reported back by the print agent.'));
+
+    $fields['image_data'] = BaseFieldDefinition::create('string_long')
+      ->setLabel(t('Rendered label image'))
+      ->setDescription(t('Base64-encoded PNG of the rendered (unrotated) label, snapshotted at job creation time - the print agent only rotates and prints it, never renders.'));
 
     $fields['created'] = BaseFieldDefinition::create('created')
       ->setLabel(t('Created'));

@@ -1,0 +1,50 @@
+Provenance for NotoEmoji-Regular.ttf
+=====================================
+
+Why this file exists: LabelRenderer needs a monochrome (outline, not
+color/bitmap) emoji font so ImagickLabelCanvas can draw a real glyph
+for emoji in badge names, rather than the "?" placeholder GD falls
+back to. No monochrome emoji font is packaged as a system dependency
+in common distro repos - the one that is, Noto Color Emoji, is a
+color/bitmap format neither GD nor Imagick can use for text rendering
+at all (confirmed by testing: both fail to load it). This file was
+therefore bundled directly with the module instead of relying on a
+system package - see docs/getting-started/requirements.md.
+
+Source
+------
+Font family: Noto Emoji (Regular), by Google, from the same
+googlefonts/noto-emoji project as the color version's upstream:
+  https://github.com/googlefonts/noto-emoji
+
+Downloaded via the Google Fonts CSS/CDN API, not a GitHub release
+asset - the project's GitHub repo (as of this fetch) only ships color
+variants (COLRv1/CBDT) under fonts/, not this plain monochrome build;
+the CDN is Google Fonts' own distribution of the same upstream family:
+
+  1. Resolved the CDN URL:
+     curl -s "https://fonts.googleapis.com/css2?family=Noto+Emoji"
+     -> https://fonts.gstatic.com/s/notoemoji/v64/bMrnmSyK7YY-MEu6aWjPDs-ar6uWaGWuob-r0jwv.ttf
+  2. Downloaded that URL directly.
+
+Fetched: 2026-09-14
+
+Verification
+------------
+SHA-256: 988621dc5c9a75eb6144f28faae30317a8e3421b68b28740747b3d739e2326b8
+fontconfig identifies it as: family "Noto Emoji", fullname "Noto Emoji Regular"
+
+If this ever needs re-fetching (a font update, or the checksum above
+stops matching what's in git for some reason), repeat the same two
+`curl` steps - the "v64" in the resolved URL is Google Fonts' own
+version marker for this family and will change if/when they ship an
+update. Verify the new file's fontconfig identity still reports
+family "Noto Emoji" before replacing this one, and update both the
+version marker and checksum in this file.
+
+License
+-------
+SIL Open Font License 1.1 - see NotoEmoji-LICENSE.txt in this
+directory.
+
+cspell:ignore googlefonts cbdt fontconfig

@@ -10,7 +10,8 @@
 | Member admin | `conreg_admin_members*`, `conreg_admin_checkin`, `conreg_admin_fantable` |
 | Reports/email | `conreg_admin_member_list`, `conreg_admin_member_options`, `conreg_admin_member_addons`, `conreg_admin_mailout_*`, `conreg_admin_member_summary`, `conreg_admin_child_member_ages`, `conreg_admin_bulk_email*` |
 | Badge upload | `conreg_badge_upload` |
-| Print job API | `conreg.print_job_next` (`GET /api/print-jobs/{eid}/next`), `conreg.print_job_result` (`POST /api/print-jobs/{eid}/{id}/result`) - shared-key authenticated, not Drupal-permission gated; see `site-building/label-printing.md` |
+| Print job API | `conreg.print_job_next` (`GET /api/print-jobs/{eid}/next`), `conreg.print_job_result` (`POST /api/print-jobs/{eid}/{id}/result`), `conreg.print_job_settings` (`GET /api/print-jobs/{eid}/settings`) - shared-key authenticated, not Drupal-permission gated; see `site-building/label-printing.md` |
+| Label printing admin (global) | `conreg_label_printing_settings` (`/admin/config/conreg/label-printing`), `entity.conreg_label_size.{collection,add_form,edit_form,delete_form}`, `entity.conreg_printer.{collection,add_form,edit_form,delete_form}`, `conreg_label_preview` (`POST .../preview`) and `conreg_label_test_print` (`POST .../test-print`, queues a real `conreg_print_job` from the previewed image) - both session-authenticated, not the print job API's shared key - all global, not per-event; see `site-building/label-printing.md` |
 
 ## Submodule routes
 

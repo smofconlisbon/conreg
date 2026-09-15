@@ -1,0 +1,6 @@
+langcode: en
+id: standard_address
+label: 'Standard Address (28 x 89mm)'
+width_mm: 28
+height_mm: 89
+rotate_degrees: 90

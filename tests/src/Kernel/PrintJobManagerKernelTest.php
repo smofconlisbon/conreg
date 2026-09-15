@@ -128,6 +128,7 @@ class PrintJobManagerKernelTest extends KernelTestBase {
     $job = $manager->createJob($mid, 'bilbo_baggins');
 
     $this->assertSame('A0042', $job->get('member_number')->value);
+    $this->assertSame('A', $job->get('badge_type')->value);
   }
 
   /**

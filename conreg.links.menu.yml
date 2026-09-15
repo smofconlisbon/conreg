@@ -41,3 +41,11 @@ conreg.events:
 conreg.event_links:
   deriver: \Drupal\conreg\Plugin\Derivative\EventsMenuDeriver
   menu_name: admin
+
+conreg.label_printing_settings:
+  title: 'Label Printing Settings'
+  description: 'Configure badge label printing: label size, field layout, and printers.'
+  route_name: conreg_label_printing_settings
+  menu_name: admin
+  parent: conreg.overview
+  weight: -100

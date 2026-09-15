@@ -15,4 +15,4 @@ variables:
   _CSPELL_IGNORE_PATHS:
     "js/html2canvas.min.js"
   _CSPELL_WORDS:
-    "addonid,badgename,baggins,datefrom,dateto,dont,dymo,fantable,firstname,fontawesome,geoplugin,invitebot,lastname,lineid,mailout,mailouts,mcheck,memberno,mymodule,optid,payid,paysessionid,picklist,regform,resends,spacebar,stickered,upgid,tshirt,Bloggs,overclaim,reselects,Worldcon"
+    "addonid,badgename,baggins,datefrom,dateto,dejavu,dont,dymo,fantable,firstname,fontawesome,geoplugin,invitebot,lastname,letterforms,lineid,mailout,mailouts,mcheck,memberno,mymodule,optid,pango,payid,paysessionid,picklist,positionable,regform,resends,spacebar,stickered,unrotated,upgid,tshirt,Bloggs,overclaim,reselects,Worldcon"

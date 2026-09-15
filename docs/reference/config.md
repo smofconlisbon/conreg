@@ -7,6 +7,8 @@
 | `conreg.settings.{eid}` | Event-scoped runtime configuration |
 | `conreg.clickup` | Global ClickUp OAuth/token settings |
 | `conreg_mailerlite.settings` | Global MailerLite API key, shared by all events (schema `conreg_mailerlite/config/schema/conreg_mailerlite.schema.yml`) |
+| `conreg.label_printing.settings` | Global badge label printing settings (label size, copies, name_lines, suppress_printing, field_positions, retention_days) - not per-event; see `site-building/label-printing.md` |
+| `conreg.conreg_label_size.*` | Label size config entities (global, e.g. `standard_address`, `large_address`) - see `site-building/label-printing.md` |
 | `easy_email.easy_email_type.*` | Email templates (config entities, one per bundle) - not nested under `conreg.settings.{eid}`; see `site-building/email-templates.md` |
 
 ## Schema-defined groups (`config/schema/conreg.schema.yml`)

@@ -5,6 +5,7 @@ namespace Drupal\conreg\Service;
 use Drupal\conreg\ConregConfig;
 use Drupal\conreg\Entity\PrintJob;
 use Drupal\conreg\Trait\ShowBadgeNumberTrait;
+use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 
 /**
@@ -18,6 +19,8 @@ class PrintJobManager {
     protected EntityTypeManagerInterface $entityTypeManager,
     protected MemberStorage $memberStorage,
     protected ConregOptions $conregOptions,
+    protected ConfigFactoryInterface $configFactory,
+    protected LabelRenderer $labelRenderer,
   ) {}
 
   /**
@@ -66,16 +69,107 @@ class PrintJobManager {
       $daysAttending = implode(', ', $dayDescriptions);
     }
 
+    $fields = [
+      'badge_name' => $member['badge_name'],
+      'member_number' => $this->showBadgeNumber($member, $config),
+      'days_attending' => $daysAttending,
+      'badge_type' => trim($member['badge_type'] ?? ''),
+    ];
+
     $jobStorage = $this->entityTypeManager->getStorage('conreg_print_job');
     /** @var \Drupal\conreg\Entity\PrintJob $job */
     $job = $jobStorage->create([
       'eid' => $eid,
       'mid' => $mid,
-      'member_name' => $member['badge_name'],
-      'member_number' => $this->showBadgeNumber($member, $config),
-      'days_attending' => $daysAttending,
+      'member_name' => $fields['badge_name'],
+      'member_number' => $fields['member_number'],
+      'days_attending' => $fields['days_attending'],
+      'badge_type' => $fields['badge_type'],
       'printer' => $printer->id(),
       'status' => 'pending',
+      'image_data' => $this->renderLabelImage($fields),
+    ]);
+    $job->save();
+
+    return $job;
+  }
+
+  /**
+   * Renders the label image for a job's field snapshot.
+   *
+   * Rendering happens once, here, at job-creation time - matching this
+   * method's existing "snapshot now, stays correct even if things
+   * change later" philosophy, and avoiding re-rendering on every poll
+   * or retry of the same job. Returns NULL (rather than throwing) when
+   * no label size is configured yet, so check-in isn't blocked by
+   * incomplete Label Printing Settings configuration.
+   */
+  protected function renderLabelImage(array $fields): ?string {
+    $config = $this->configFactory->get('conreg.label_printing.settings');
+    $labelSizeId = $config->get('label_size');
+    if (!$labelSizeId) {
+      return NULL;
+    }
+
+    /** @var \Drupal\conreg\Entity\LabelSize|null $labelSize */
+    $labelSize = $this->entityTypeManager->getStorage('conreg_label_size')->load($labelSizeId);
+    if (!$labelSize) {
+      return NULL;
+    }
+
+    $png = $this->labelRenderer->render(
+      $fields,
+      $labelSize,
+      $config->get('field_positions') ?: [],
+      (int) ($config->get('name_lines') ?: 2),
+    );
+
+    return base64_encode($png);
+  }
+
+  /**
+   * Queues a "test print" job from an already-rendered preview image.
+   *
+   * Used by the Label Printing Settings page's "Test print" button,
+   * which sends exactly what was just shown in Preview - nothing is
+   * re-rendered here, so what you previewed is exactly what prints.
+   * No real member is involved, so `mid` is left unset and `is_test`
+   * marks the row so it can be told apart from real check-in jobs.
+   *
+   * @param array $fields
+   *   The sample field values the preview was generated from (stored
+   *   on the job for reference; not used to render anything here).
+   * @param int $printerId
+   *   The `conreg_printer` entity ID to queue the job against.
+   * @param string $imageDataBase64
+   *   The already-rendered (unrotated) label PNG, base64-encoded.
+   *
+   * @return \Drupal\conreg\Entity\PrintJob
+   *   The newly created, pending test print job.
+   *
+   * @throws \InvalidArgumentException
+   *   If the printer cannot be found.
+   */
+  public function createTestJob(array $fields, int $printerId, string $imageDataBase64): PrintJob {
+    $printerStorage = $this->entityTypeManager->getStorage('conreg_printer');
+    /** @var \Drupal\conreg\Entity\Printer|null $printer */
+    $printer = $printerStorage->load($printerId);
+    if (!$printer) {
+      throw new \InvalidArgumentException("Unknown printer ID: $printerId");
+    }
+
+    $jobStorage = $this->entityTypeManager->getStorage('conreg_print_job');
+    /** @var \Drupal\conreg\Entity\PrintJob $job */
+    $job = $jobStorage->create([
+      'eid' => (int) $printer->get('eid')->value,
+      'is_test' => TRUE,
+      'member_name' => $fields['badge_name'] ?? '',
+      'member_number' => $fields['member_number'] ?? '',
+      'days_attending' => $fields['days_attending'] ?? '',
+      'badge_type' => $fields['badge_type'] ?? '',
+      'printer' => $printer->id(),
+      'status' => 'pending',
+      'image_data' => $imageDataBase64,
     ]);
     $job->save();
 

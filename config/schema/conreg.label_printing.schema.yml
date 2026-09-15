@@ -1,0 +1,35 @@
+conreg.label_printing.settings:
+  type: config_object
+  label: 'Label printing settings'
+  mapping:
+    label_size:
+      type: string
+      label: 'Selected label size (conreg_label_size entity ID)'
+    copies:
+      type: integer
+      label: 'Number of copies to print'
+    name_lines:
+      type: integer
+      label: 'Number of lines to allow for the badge name'
+    suppress_printing:
+      type: boolean
+      label: 'Suppress printing (render and store labels but do not print them)'
+    retention_days:
+      type: integer
+      label: 'Delete print jobs older than this many days'
+    field_positions:
+      type: mapping
+      label: 'Field positions'
+      mapping:
+        badge_name:
+          type: string
+          label: 'Badge name position'
+        member_number:
+          type: string
+          label: 'Member number position'
+        days_attending:
+          type: string
+          label: 'Days attending position'
+        badge_type:
+          type: string
+          label: 'Badge type position'

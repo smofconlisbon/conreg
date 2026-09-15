@@ -1,0 +1,22 @@
+conreg.conreg_label_size.*:
+  type: config_entity
+  label: 'Label size'
+  mapping:
+    id:
+      type: string
+      label: 'Machine name'
+    label:
+      type: label
+      label: 'Label'
+    uuid:
+      type: string
+      label: 'UUID'
+    width_mm:
+      type: integer
+      label: 'Width (mm)'
+    height_mm:
+      type: integer
+      label: 'Height (mm)'
+    rotate_degrees:
+      type: integer
+      label: 'Rotation (degrees)'

@@ -90,6 +90,11 @@ class PrintJobController extends ControllerBase {
       return new JsonResponse(['error' => 'Unknown printer for this event.'], 404);
     }
 
+    // A poll is itself the heartbeat signal, so this is recorded
+    // whether or not a job is actually found below.
+    $printer->set('last_seen', $this->time->getRequestTime());
+    $printer->save();
+
     $jobId = $this->claimNextJob($eid, (int) $printer->id());
     if (!$jobId) {
       return new JsonResponse(NULL, 204);
@@ -104,6 +109,48 @@ class PrintJobController extends ControllerBase {
       'member_name' => $job->get('member_name')->value,
       'member_number' => $job->get('member_number')->value,
       'days_attending' => $job->get('days_attending')->value,
+      'badge_type' => $job->get('badge_type')->value,
+      'image' => $job->get('image_data')->value,
+    ]);
+  }
+
+  /**
+   * Returns the print-time settings a print agent needs to apply.
+   *
+   * Label content, field positions, and label dimensions are all
+   * rendered by ConReg itself now (see LabelRenderer) and never leave
+   * this system - only what's still a genuine print-time concern for
+   * the agent (page size/rotation for the physical media, how many
+   * copies, and whether printing is suppressed) is returned here.
+   *
+   * Settings are global (not per-event), but authorization stays
+   * event-scoped like the other endpoints, since that's the auth model
+   * print agents already have.
+   */
+  public function settings(Request $request, int $eid): JsonResponse {
+    if (!$this->isAuthorized($request, $eid)) {
+      return new JsonResponse(['error' => 'Missing or invalid API key.'], 401);
+    }
+
+    $config = $this->config('conreg.label_printing.settings');
+
+    $pageSize = NULL;
+    $rotateDegrees = 90;
+    $labelSizeId = $config->get('label_size');
+    if ($labelSizeId) {
+      /** @var \Drupal\conreg\Entity\LabelSize|null $labelSize */
+      $labelSize = $this->entityTypeManager()->getStorage('conreg_label_size')->load($labelSizeId);
+      if ($labelSize) {
+        $pageSize = $labelSize->getCupsPageSize();
+        $rotateDegrees = $labelSize->getRotateDegrees();
+      }
+    }
+
+    return new JsonResponse([
+      'page_size' => $pageSize,
+      'rotate_degrees' => $rotateDegrees,
+      'copies' => (int) ($config->get('copies') ?: 1),
+      'suppress_printing' => (bool) $config->get('suppress_printing'),
     ]);
   }
 

@@ -5,6 +5,7 @@
  * Install file for Conreg. Install database schema.
  */
 
+// cspell:ignore unconfigured
 use Drupal\Core\Extension\Requirement\RequirementSeverity;
 use Drupal\Core\Database\Database;
 use Drupal\Core\Field\BaseFieldDefinition;
@@ -1328,4 +1329,140 @@ function conreg_update_9016() {
 
   \Drupal::entityDefinitionUpdateManager()
     ->installFieldStorageDefinition('machine_name', 'conreg_printer', 'conreg', $storage_definition);
+}
+
+/**
+ * Adds the badge_type field to the conreg_print_job entity type.
+ */
+function conreg_update_9017() {
+  $storage_definition = BaseFieldDefinition::create('string')
+    ->setLabel(t('Badge type'))
+    ->setDescription(t("The member's badge type, snapshotted at job creation time."))
+    ->setSetting('max_length', 64);
+
+  \Drupal::entityDefinitionUpdateManager()
+    ->installFieldStorageDefinition('badge_type', 'conreg_print_job', 'conreg', $storage_definition);
+}
+
+/**
+ * Seeds the default label sizes and label printing settings.
+ *
+ * Config/install only auto-imports on a fresh module install, so sites
+ * that already had conreg enabled before badge label printing settings
+ * were added would otherwise be left with an empty label size list and
+ * an unconfigured settings endpoint.
+ */
+function conreg_update_9018() {
+  $labelSizeStorage = \Drupal::entityTypeManager()->getStorage('conreg_label_size');
+
+  $sizes = [
+    'standard_address' => [
+      'label' => 'Standard Address (28 x 89mm)',
+      'width_mm' => 28,
+      'height_mm' => 89,
+      'rotate_degrees' => 90,
+    ],
+    'large_address' => [
+      'label' => 'Large Address (36 x 89mm)',
+      'width_mm' => 36,
+      'height_mm' => 89,
+      'rotate_degrees' => 90,
+    ],
+  ];
+
+  $created = [];
+  foreach ($sizes as $id => $values) {
+    if ($labelSizeStorage->load($id)) {
+      continue;
+    }
+    $labelSizeStorage->create(['id' => $id] + $values)->save();
+    $created[] = $id;
+  }
+
+  $config = \Drupal::configFactory()->getEditable('conreg.label_printing.settings');
+  if ($config->isNew()) {
+    $config
+      ->set('label_size', 'standard_address')
+      ->set('copies', 1)
+      ->set('name_lines', 2)
+      ->set('suppress_printing', FALSE)
+      ->set('field_positions', [
+        'badge_name' => 'middle',
+        'member_number' => 'bottom_left',
+        'days_attending' => 'bottom_right',
+        'badge_type' => 'none',
+      ])
+      ->save();
+  }
+
+  return t('Created default label sizes: @sizes.', [
+    '@sizes' => implode(', ', $created) ?: '(none - already present)',
+  ]);
+}
+
+/**
+ * Adds the image_data field to the conreg_print_job entity type.
+ *
+ * Rendering moved from the print agent into ConReg itself, so every
+ * job now snapshots its own rendered (unrotated) label image at
+ * creation time - see \Drupal\conreg\Service\LabelRenderer.
+ */
+function conreg_update_9019() {
+  $storage_definition = BaseFieldDefinition::create('string_long')
+    ->setLabel(t('Rendered label image'))
+    ->setDescription(t('Base64-encoded PNG of the rendered (unrotated) label, snapshotted at job creation time.'));
+
+  \Drupal::entityDefinitionUpdateManager()
+    ->installFieldStorageDefinition('image_data', 'conreg_print_job', 'conreg', $storage_definition);
+}
+
+/**
+ * Adds the last_seen field to the conreg_printer entity type.
+ *
+ * Lets the admin UI show whether a printer's agent is actually online.
+ */
+function conreg_update_9020() {
+  $storage_definition = BaseFieldDefinition::create('timestamp')
+    ->setLabel(t('Last seen'))
+    ->setDescription(t("When this printer's agent last successfully polled for jobs - the poll itself is the heartbeat signal."));
+
+  \Drupal::entityDefinitionUpdateManager()
+    ->installFieldStorageDefinition('last_seen', 'conreg_printer', 'conreg', $storage_definition);
+}
+
+/**
+ * Backfills the retention_days default onto existing label printing settings.
+ *
+ * Config/install only auto-imports on a fresh module install, so a site
+ * that already had conreg.label_printing.settings (from update 9018)
+ * before this setting was added would otherwise have it missing until
+ * someone happened to resave the settings form. Reading code already
+ * falls back to 30 when it's absent, but the active config should
+ * reflect that explicitly rather than relying on incidental self-healing.
+ */
+function conreg_update_9021() {
+  $config = \Drupal::configFactory()->getEditable('conreg.label_printing.settings');
+  if (!$config->isNew() && $config->get('retention_days') === NULL) {
+    $config->set('retention_days', 30)->save();
+  }
+}
+
+/**
+ * Adds the is_test field to the conreg_print_job entity type.
+ *
+ * Marks jobs created by the Label Printing Settings page's "Test
+ * print" button (which have no real member, unlike a check-in job) so
+ * they can be told apart later. The mid field's "required" constraint
+ * was also relaxed for the same reason - it's a validation-only
+ * change, not a schema one (the column was already nullable), so it
+ * needs no field storage update here.
+ */
+function conreg_update_9022() {
+  $storage_definition = BaseFieldDefinition::create('boolean')
+    ->setLabel(t('Test print'))
+    ->setDescription(t('Set for jobs created by the Label Printing Settings page\'s "Test print" button, so they can be told apart from real check-in jobs.'))
+    ->setDefaultValue(FALSE);
+
+  \Drupal::entityDefinitionUpdateManager()
+    ->installFieldStorageDefinition('is_test', 'conreg_print_job', 'conreg', $storage_definition);
 }

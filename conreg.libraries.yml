@@ -49,6 +49,18 @@ conreg_login:
   js:
     js/conreg_login.js: {}
 
+conreg_label_preview:
+  version: 1.x
+  css:
+    theme:
+      css/conreg_label_preview.css: {}
+  js:
+    js/conreg_label_preview.js: {}
+  dependencies:
+    - core/drupal
+    - core/drupalSettings
+    - core/once
+
 conreg_badges:
   version: 1.x
   css:

@@ -4,6 +4,7 @@ namespace Drupal\Tests\conreg\Kernel;
 
 use Drupal\Component\Datetime\TimeInterface;
 use Drupal\conreg\Controller\PrintJobController;
+use Drupal\conreg\Entity\LabelSize;
 use Drupal\conreg\Entity\PrintJob;
 use Drupal\conreg\Entity\Printer;
 use Drupal\key\Entity\Key;
@@ -91,6 +92,7 @@ class PrintJobControllerKernelTest extends KernelTestBase {
       'member_name' => 'Jane Doe',
       'member_number' => 'M-4021',
       'days_attending' => 'Fri-Sun',
+      'badge_type' => 'Adult',
       'printer' => $printerId,
       'status' => 'pending',
     ]);
@@ -133,10 +135,51 @@ class PrintJobControllerKernelTest extends KernelTestBase {
     $this->assertSame('Older Job', $data['member_name']);
     $this->assertSame('M-4021', $data['member_number']);
     $this->assertSame('Fri-Sun', $data['days_attending']);
+    $this->assertSame('Adult', $data['badge_type']);
+    $this->assertArrayHasKey('image', $data);
 
     $this->container->get('entity_type.manager')->getStorage('conreg_print_job')->resetCache();
     $reloaded = PrintJob::load($older->id());
     $this->assertSame('claimed', $reloaded->get('status')->value);
+  }
+
+  /**
+   * Test that next() returns a job's rendered image, base64-decodable.
+   */
+  public function testNextIncludesRenderedImage(): void {
+    $printer = $this->createPrinter(1, 'Bilbo Baggins');
+    // A 1x1 white PNG - only the round trip through the API matters
+    // here, not what LabelRenderer itself produces (see
+    // LabelRendererKernelTest for that).
+    $pngBytes = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=');
+    $this->createJob(1, (int) $printer->id(), ['image_data' => base64_encode($pngBytes)]);
+
+    $request = $this->authenticatedRequest('/api/print-jobs/1/next', 'GET', ['printer' => 'bilbo_baggins']);
+    $response = $this->callController()->next($request, 1);
+
+    $data = json_decode($response->getContent(), TRUE);
+    $this->assertNotEmpty($data['image']);
+    $decoded = base64_decode($data['image'], TRUE);
+    $this->assertNotFalse($decoded);
+    $this->assertNotFalse(imagecreatefromstring($decoded));
+  }
+
+  /**
+   * Test that a successful poll updates the printer's last_seen.
+   *
+   * The poll itself is the heartbeat signal, regardless of whether a
+   * job was actually found.
+   */
+  public function testNextUpdatesPrinterLastSeen(): void {
+    $printer = $this->createPrinter(1, 'Bilbo Baggins');
+    $this->assertNull($printer->get('last_seen')->value);
+
+    $request = $this->authenticatedRequest('/api/print-jobs/1/next', 'GET', ['printer' => 'bilbo_baggins']);
+    $this->callController()->next($request, 1);
+
+    $this->container->get('entity_type.manager')->getStorage('conreg_printer')->resetCache();
+    $reloaded = Printer::load($printer->id());
+    $this->assertSame(self::CURRENT_TIME, (int) $reloaded->get('last_seen')->value);
   }
 
   /**
@@ -403,6 +446,80 @@ class PrintJobControllerKernelTest extends KernelTestBase {
     );
 
     $response = $this->callController()->result($request, 1, (int) $job->id());
+
+    $this->assertSame(401, $response->getStatusCode());
+  }
+
+  /**
+   * Test the settings endpoint returns the configured global settings.
+   */
+  public function testSettingsReturnsConfiguredValues(): void {
+    LabelSize::create([
+      'id' => 'large_test',
+      'label' => 'Large test size',
+      'width_mm' => 36,
+      'height_mm' => 89,
+      'rotate_degrees' => 90,
+    ])->save();
+
+    $this->container->get('config.factory')
+      ->getEditable('conreg.label_printing.settings')
+      ->set('label_size', 'large_test')
+      ->set('copies', 2)
+      ->set('name_lines', 3)
+      ->set('suppress_printing', TRUE)
+      ->set('field_positions', [
+        'badge_name' => 'middle',
+        'member_number' => 'bottom_left',
+        'days_attending' => 'bottom_right',
+        'badge_type' => 'top_center',
+      ])
+      ->save();
+
+    $request = $this->authenticatedRequest('/api/print-jobs/1/settings', 'GET');
+    $response = $this->callController()->settings($request, 1);
+
+    $this->assertSame(200, $response->getStatusCode());
+    $data = json_decode($response->getContent(), TRUE);
+    // Label content/positions/dimensions are rendered by ConReg itself
+    // now and never leave it - only genuine print-time concerns
+    // (page size/rotation for the physical media, copies, suppression)
+    // are returned here.
+    $this->assertSame('w102h252', $data['page_size']);
+    $this->assertSame(90, $data['rotate_degrees']);
+    $this->assertSame(2, $data['copies']);
+    $this->assertTrue($data['suppress_printing']);
+    $this->assertArrayNotHasKey('label_size', $data);
+    $this->assertArrayNotHasKey('name_lines', $data);
+    $this->assertArrayNotHasKey('field_positions', $data);
+  }
+
+  /**
+   * Test the missing Authorization header is rejected on settings().
+   */
+  public function testSettingsRejectsMissingAuthorizationHeader(): void {
+    $request = Request::create('/api/print-jobs/1/settings', 'GET');
+    $response = $this->callController()->settings($request, 1);
+
+    $this->assertSame(401, $response->getStatusCode());
+  }
+
+  /**
+   * Test an incorrect Authorization header is rejected on settings().
+   */
+  public function testSettingsRejectsWrongApiKey(): void {
+    $request = $this->authenticatedRequest('/api/print-jobs/1/settings', 'GET', [], '', ['HTTP_AUTHORIZATION' => 'Bearer wrong-token']);
+    $response = $this->callController()->settings($request, 1);
+
+    $this->assertSame(401, $response->getStatusCode());
+  }
+
+  /**
+   * Test that an event with no configured key refuses the settings request.
+   */
+  public function testSettingsRejectsAllRequestsWhenNoKeyConfiguredForEvent(): void {
+    $request = $this->authenticatedRequest('/api/print-jobs/3/settings', 'GET');
+    $response = $this->callController()->settings($request, 3);
 
     $this->assertSame(401, $response->getStatusCode());
   }

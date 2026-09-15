@@ -2,8 +2,11 @@
 
 namespace Drupal\conreg\Entity;
 
+use Drupal\conreg\Form\Admin\PrinterForm;
+use Drupal\conreg\PrinterListBuilder;
 use Drupal\Core\Entity\Attribute\ContentEntityType;
 use Drupal\Core\Entity\ContentEntityBase;
+use Drupal\Core\Entity\ContentEntityDeleteForm;
 use Drupal\Core\Entity\EntityChangedTrait;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
@@ -24,6 +27,20 @@ use Drupal\Core\StringTranslation\TranslatableMarkup;
     'id' => 'id',
     'uuid' => 'uuid',
     'label' => 'name',
+  ],
+  handlers: [
+    'list_builder' => PrinterListBuilder::class,
+    'form' => [
+      'add' => PrinterForm::class,
+      'edit' => PrinterForm::class,
+      'delete' => ContentEntityDeleteForm::class,
+    ],
+  ],
+  links: [
+    'collection' => '/admin/config/conreg/label-printing/printers',
+    'add-form' => '/admin/config/conreg/label-printing/printers/add',
+    'edit-form' => '/admin/config/conreg/label-printing/printers/{conreg_printer}/edit',
+    'delete-form' => '/admin/config/conreg/label-printing/printers/{conreg_printer}/delete',
   ],
   admin_permission: 'manage convention members',
 )]
@@ -53,6 +70,10 @@ class Printer extends ContentEntityBase {
       ->setLabel(t('Event ID'))
       ->setDescription(t('The event this printer is available for.'))
       ->setRequired(TRUE);
+
+    $fields['last_seen'] = BaseFieldDefinition::create('timestamp')
+      ->setLabel(t('Last seen'))
+      ->setDescription(t("When this printer's agent last successfully polled for jobs - the poll itself is the heartbeat signal."));
 
     $fields['created'] = BaseFieldDefinition::create('created')
       ->setLabel(t('Created'));

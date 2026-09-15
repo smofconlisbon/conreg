@@ -27,3 +27,21 @@ conreg.config_addons:
   route_name: conreg_config_addons
   base_route: conreg_config
   weight: 4
+
+conreg.label_printing_settings:
+  title: Settings
+  route_name: conreg_label_printing_settings
+  base_route: conreg_label_printing_settings
+  weight: 1
+
+conreg.label_printing_sizes:
+  title: Label Sizes
+  route_name: entity.conreg_label_size.collection
+  base_route: conreg_label_printing_settings
+  weight: 2
+
+conreg.label_printing_printers:
+  title: Printers
+  route_name: entity.conreg_printer.collection
+  base_route: conreg_label_printing_settings
+  weight: 3

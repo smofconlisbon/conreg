@@ -461,3 +461,106 @@ conreg.print_job_result:
     id: ^[0-9]+$
   options:
     no_cache: true
+
+conreg.print_job_settings:
+  path: '/api/print-jobs/{eid}/settings'
+  defaults:
+    _controller: '\Drupal\conreg\Controller\PrintJobController::settings'
+  methods: [GET]
+  requirements:
+    # Real access control lives in PrintJobController::isAuthorized(),
+    # checked against a shared per-event API key (see checkin.print_api_key).
+    # The settings themselves are global (not per-event), but gating
+    # stays event-scoped since that's the auth model agents already have.
+    _access: 'TRUE'
+    eid: ^[0-9]+$
+  options:
+    no_cache: true
+
+conreg_label_preview:
+  path: 'admin/config/conreg/label-printing/preview'
+  defaults:
+    _controller: '\Drupal\conreg\Controller\LabelPreviewController::preview'
+  methods: [POST]
+  requirements:
+    _permission: 'configure convention registration'
+
+conreg_label_test_print:
+  path: 'admin/config/conreg/label-printing/test-print'
+  defaults:
+    _controller: '\Drupal\conreg\Controller\LabelPreviewController::testPrint'
+  methods: [POST]
+  requirements:
+    _permission: 'configure convention registration'
+
+conreg_label_printing_settings:
+  path: 'admin/config/conreg/label-printing'
+  defaults:
+    _title: 'Label Printing Settings'
+    _form: '\Drupal\conreg\Form\Admin\LabelPrintingSettings'
+  requirements:
+    _permission: 'configure convention registration'
+
+entity.conreg_label_size.collection:
+  path: 'admin/config/conreg/label-printing/sizes'
+  defaults:
+    _entity_list: 'conreg_label_size'
+    _title: 'Label sizes'
+  requirements:
+    _permission: 'configure convention registration'
+
+entity.conreg_label_size.add_form:
+  path: 'admin/config/conreg/label-printing/sizes/add'
+  defaults:
+    _entity_form: 'conreg_label_size.add'
+    _title: 'Add a label size'
+  requirements:
+    _permission: 'configure convention registration'
+
+entity.conreg_label_size.edit_form:
+  path: 'admin/config/conreg/label-printing/sizes/{conreg_label_size}/edit'
+  defaults:
+    _entity_form: 'conreg_label_size.edit'
+    _title: 'Edit a label size'
+  requirements:
+    _permission: 'configure convention registration'
+
+entity.conreg_label_size.delete_form:
+  path: 'admin/config/conreg/label-printing/sizes/{conreg_label_size}/delete'
+  defaults:
+    _entity_form: 'conreg_label_size.delete'
+    _title: 'Delete a label size'
+  requirements:
+    _permission: 'configure convention registration'
+
+entity.conreg_printer.collection:
+  path: 'admin/config/conreg/label-printing/printers'
+  defaults:
+    _entity_list: 'conreg_printer'
+    _title: 'Printers'
+  requirements:
+    _permission: 'manage convention members'
+
+entity.conreg_printer.add_form:
+  path: 'admin/config/conreg/label-printing/printers/add'
+  defaults:
+    _entity_form: 'conreg_printer.add'
+    _title: 'Add a printer'
+  requirements:
+    _permission: 'manage convention members'
+
+entity.conreg_printer.edit_form:
+  path: 'admin/config/conreg/label-printing/printers/{conreg_printer}/edit'
+  defaults:
+    _entity_form: 'conreg_printer.edit'
+    _title: 'Edit a printer'
+  requirements:
+    _permission: 'manage convention members'
+
+entity.conreg_printer.delete_form:
+  path: 'admin/config/conreg/label-printing/printers/{conreg_printer}/delete'
+  defaults:
+    _entity_form: 'conreg_printer.delete'
+    _title: 'Delete a printer'
+  requirements:
+    _permission: 'manage convention members'

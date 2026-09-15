@@ -1,0 +1,32 @@
+/**
+ * @file
+ * Lays "Preview", the printer select, and "Test print" out on one row
+ * on the Label Printing Settings page, instead of each stacking onto
+ * its own line as Drupal's default form-item markup would.
+ */
+
+.conreg-label-preview-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1em;
+  margin-bottom: 1em;
+}
+
+.conreg-label-preview-controls .form-item {
+  margin: 0;
+}
+
+/**
+ * An outline (not a border, so it doesn't touch/obscure the label's
+ * own edge pixels) around the rendered preview, since a white label on
+ * the page's white background otherwise leaves its actual edges - and
+ * so how much blank margin the layout has - unclear.
+ */
+#conreg-label-preview-image {
+  display: block;
+  max-width: 100%;
+  margin-top: 1em;
+  outline: 3px dotted #787878;
+  outline-offset: 2px;
+}
