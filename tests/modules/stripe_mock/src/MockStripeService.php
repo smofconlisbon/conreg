@@ -1,0 +1,81 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Drupal\stripe_mock;
+
+use Drupal\conreg\Service\StripeServiceInterface;
+
+/**
+ * Mock Stripe service for FunctionalJavascript tests.
+ *
+ * Always reports the same fixed checkout session id as both created and
+ * completed, so Checkout::processStripeMessages() marks the payment paid
+ * the next time it runs after the session is created. Also requests the
+ * local mock checkout page (see useMockCheckoutPage()), since a test
+ * browser cannot complete a real Stripe-hosted checkout.
+ */
+class MockStripeService implements StripeServiceInterface {
+
+  /**
+   * The fake checkout session id used throughout the mocked flow.
+   */
+  const SESSION_ID = 'cs_test_123';
+
+  /**
+   * The fake Stripe payment intent id used throughout the mocked flow.
+   */
+  const PAYMENT_INTENT_ID = 'pi_123456';
+
+  /**
+   * {@inheritDoc}
+   */
+  public function setApiKey(int $eid): void {}
+
+  /**
+   * {@inheritDoc}
+   */
+  public function createCheckoutSession(array $sessionData) {
+    return (object) ['id' => self::SESSION_ID];
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  public function getEvents(string $eventType, int $sinceTimestamp) {
+    return (object) [
+      'data' => [
+        (object) [
+          'data' => (object) [
+            'object' => (object) [
+              'id' => self::SESSION_ID,
+              'payment_intent' => self::PAYMENT_INTENT_ID,
+            ],
+          ],
+        ],
+      ],
+    ];
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  public function resolveKey(?string $keyId): string {
+    return 'pk_test_mock';
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  public function verifyKeys(string $publicKeyId, string $secretKeyId, ?string $expectedMode = NULL): array {
+    return ['valid' => TRUE, 'message' => 'mocked'];
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  public function useMockCheckoutPage(): bool {
+    return TRUE;
+  }
+
+}

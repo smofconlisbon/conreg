@@ -124,11 +124,11 @@ class MemberPresenter {
       $members[$index]['is_paid'] = $yesNoOptions[$val['is_paid']]->render();
       $members[$index]['is_deleted'] = $yesNoOptions[$val['is_deleted']]->render();
       $members[$index]['display'] = $displayOptions[$val['display']] ?? '';
-      $members[$index]['member_price'] = $symbol . $val['member_price'];
-      $members[$index]['member_total'] = $symbol . $val['member_total'];
-      $members[$index]['payment_amount'] = $symbol . $payAmount;
+      $members[$index]['member_price'] = $symbol . number_format((float) $val['member_price'], 2);
+      $members[$index]['member_total'] = $symbol . number_format((float) $val['member_total'], 2);
+      $members[$index]['payment_amount'] = $symbol . number_format((float) $payAmount, 2);
       if (!empty($val['add_on_price'])) {
-        $members[$index]['add_on_price'] = $symbol . $val['add_on_price'];
+        $members[$index]['add_on_price'] = $symbol . number_format((float) $val['add_on_price'], 2);
       }
       $members[$index]['raw_member_type'] = $members[$index]['member_type'];
       $members[$index]['member_type'] = (isset($types->types[$val['member_type']]) ? $types->types[$val['member_type']]->name : $val['member_type']);

@@ -108,6 +108,13 @@ class StripeService implements StripeServiceInterface {
   /**
    * {@inheritdoc}
    */
+  public function useMockCheckoutPage(): bool {
+    return FALSE;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function verifyKeys(string $publicKeyId, string $secretKeyId, ?string $expectedMode = NULL): array {
     $publicKey = $this->resolveKey($publicKeyId);
     $secretKey = $this->resolveKey($secretKeyId);

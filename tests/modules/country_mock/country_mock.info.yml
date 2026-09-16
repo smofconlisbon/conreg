@@ -1,0 +1,5 @@
+name: Country Service Mock
+type: module
+description: 'Support module providing mock country service for conreg tests.'
+core_version_requirement: ^11.2 || ^12
+package: Testing

@@ -304,7 +304,7 @@ class EmailTokenContextTest extends KernelTestBase {
       ['easy_email' => $email],
     );
 
-    $this->assertSame('Your total: €50. Group total: €95.', $result);
+    $this->assertSame('Your total: €50.00. Group total: €95.00.', $result);
   }
 
   /**

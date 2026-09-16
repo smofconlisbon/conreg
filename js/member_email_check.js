@@ -327,6 +327,12 @@
               const thisEmailField = element
                 .closest('.member-wrapper')
                 ?.querySelector('.edit-members-email');
+
+              // Members other than the first don't have an email field.
+              if (!thisEmailField) {
+                return;
+              }
+
               const memberType = element.value;
               const allowDuplicates = memberType ? drupalSettings.conreg.allowDuplicates[memberType] : true;
               // Carry out local validation within the form.

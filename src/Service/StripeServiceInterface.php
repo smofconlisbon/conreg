@@ -85,4 +85,19 @@ interface StripeServiceInterface {
    */
   public function verifyKeys(string $publicKeyId, string $secretKeyId, ?string $expectedMode = NULL): array;
 
+  /**
+   * Whether Checkout should show a local mock checkout page instead.
+   *
+   * The real Stripe-hosted checkout page can only be driven by an actual
+   * browser talking to Stripe, so a test double for this service returns
+   * TRUE here to make Checkout::buildForm() render a minimal mock payment
+   * page (showing the amount due and a "Pay now" button that submits back
+   * to the success URL), instead of attaching the JS that hands the
+   * browser off to Stripe.
+   *
+   * @return bool
+   *   FALSE for the real service; a test double may return TRUE.
+   */
+  public function useMockCheckoutPage(): bool;
+
 }

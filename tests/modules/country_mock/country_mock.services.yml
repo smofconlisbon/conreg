@@ -1,0 +1,5 @@
+services:
+  mock.conreg.country:
+    public: false
+    class: Drupal\country_mock\MockCountryService
+    decorates: conreg.country

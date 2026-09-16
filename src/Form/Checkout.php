@@ -9,6 +9,7 @@ use Drupal\conreg\Service\EventStorage;
 use Drupal\conreg\Member;
 use Drupal\conreg\Payment;
 use Drupal\conreg\PaymentLine;
+use Drupal\Component\Utility\Html;
 use Drupal\conreg\Service\MemberPresenter;
 use Drupal\conreg\Service\MemberStorage;
 use Drupal\conreg\Service\PaymentStorage;
@@ -24,6 +25,7 @@ use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\BubbleableMetadata;
+use Drupal\Core\Render\Markup;
 use Drupal\Core\Url;
 use Drupal\Core\Utility\Token;
 
@@ -228,7 +230,34 @@ class Checkout extends FormBase {
       $payment->sessionId = $session->id;
       $payment->save();
 
-      $from['#title'] = $this->t("Transferring to Stripe");
+      // A test double for the Stripe service can request a local mock
+      // checkout page instead of the client-side hand-off below, since that
+      // requires an actual browser talking to Stripe's hosted checkout
+      // page. The mock page shows the amount due and a "Pay now" button
+      // that submits straight back to the success URL - the next pass
+      // through this route will find the (also mocked) completed session
+      // and show the thank-you page, exactly as it would after a real
+      // Stripe redirect. This gives tests a page-then-button-click flow to
+      // drive, similar to the real Stripe-hosted checkout.
+      if ($this->stripeService->useMockCheckoutPage()) {
+        $form['#title'] = $this->t('Mock Stripe Checkout');
+        $form['mock_checkout'] = [
+          '#markup' => Markup::create(
+            '<div class="mock-stripe-checkout">'
+            . '<p id="mock-stripe-total">' . $this->t('Total: @symbol@amount', [
+              '@symbol' => $config->get('payments.symbol'),
+              '@amount' => number_format($total, 2),
+            ]) . '</p>'
+            . '<form method="get" action="' . Html::escape($success) . '">'
+            . '<button type="submit" id="mock-pay-now">' . $this->t('Pay now') . '</button>'
+            . '</form>'
+            . '</div>'
+          ),
+        ];
+        return $form;
+      }
+
+      $form['#title'] = $this->t("Transferring to Stripe");
 
       // Attach the Javascript library and set up parameters.
       $form['#attached'] = [

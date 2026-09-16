@@ -176,3 +176,5 @@ member:
       defaultDays: W
 reference:
   default_country: IE
+  geoplugin: 1
+  no_country_label: 'Prefer not to say'

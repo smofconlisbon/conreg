@@ -1,0 +1,5 @@
+services:
+  mock.conreg.stripe:
+    public: false
+    class: Drupal\stripe_mock\MockStripeService
+    decorates: conreg.stripe_service
