@@ -7,7 +7,6 @@ namespace Drupal\conreg\Service;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\key\KeyRepositoryInterface;
 use Stripe\Checkout\Session;
-use Stripe\Collection;
 use Stripe\Exception\ExceptionInterface;
 use Stripe\StripeClient;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
@@ -86,23 +85,15 @@ class StripeService implements StripeServiceInterface {
   }
 
   /**
-   * Retrieves Stripe events of a specific type.
-   *
-   * @param string $eventType
-   *   The type of event to retrieve.
-   * @param int $sinceTimestamp
-   *   The timestamp to retrieve events since.
-   *
-   * @return \Stripe\Collection
-   *   The collection of Stripe events.
+   * {@inheritdoc}
    */
-  public function getEvents(string $eventType, int $sinceTimestamp): Collection {
-    return $this->client->events->all([
-      'type' => $eventType,
-      'created' => [
-        'gte' => $sinceTimestamp,
-      ],
-    ]);
+  public function retrieveSession(string $sessionId): ?object {
+    try {
+      return $this->client->checkout->sessions->retrieve($sessionId);
+    }
+    catch (ExceptionInterface) {
+      return NULL;
+    }
   }
 
   /**

@@ -10,10 +10,11 @@ use Drupal\conreg\Service\StripeServiceInterface;
  * Mock Stripe service for FunctionalJavascript tests.
  *
  * Always reports the same fixed checkout session id as both created and
- * completed, so Checkout::processStripeMessages() marks the payment paid
- * the next time it runs after the session is created. Also requests the
- * local mock checkout page (see useMockCheckoutPage()), since a test
- * browser cannot complete a real Stripe-hosted checkout.
+ * completed, so Checkout::buildForm() marks the payment paid the next time
+ * it checks the session after it's created (i.e. once the test presses the
+ * mock checkout page's "Pay now" button and returns to the checkout route).
+ * Also requests the local mock checkout page (see useMockCheckoutPage()),
+ * since a test browser cannot complete a real Stripe-hosted checkout.
  */
 class MockStripeService implements StripeServiceInterface {
 
@@ -42,18 +43,15 @@ class MockStripeService implements StripeServiceInterface {
   /**
    * {@inheritDoc}
    */
-  public function getEvents(string $eventType, int $sinceTimestamp) {
+  public function retrieveSession(string $sessionId): ?object {
+    if ($sessionId !== self::SESSION_ID) {
+      return NULL;
+    }
     return (object) [
-      'data' => [
-        (object) [
-          'data' => (object) [
-            'object' => (object) [
-              'id' => self::SESSION_ID,
-              'payment_intent' => self::PAYMENT_INTENT_ID,
-            ],
-          ],
-        ],
-      ],
+      'id' => self::SESSION_ID,
+      'status' => 'complete',
+      'payment_status' => 'paid',
+      'payment_intent' => self::PAYMENT_INTENT_ID,
     ];
   }
 

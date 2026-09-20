@@ -61,4 +61,15 @@ reselects them on the Payment System tab.
 ## UI flow
 
 - Registration submits members and payment records.
-- Checkout route processes payment session and completion.
+- Checkout route processes payment session and completion - see
+  `docs/architecture/registration-flow.md` for the session-check/reuse
+  sequence.
+- There is no Stripe webhook: a payment is normally marked complete when
+  the member's browser returns to the checkout route, and a cron-driven
+  reconciliation sweep (`PaymentReconciliationCronHooks`) catches the case
+  where it doesn't (closed tab, network drop, etc.) by re-checking
+  Stripe directly for unpaid payments up to a week old. This was a
+  deliberate choice to keep Stripe configuration simple; it does mean a
+  member whose browser never returns won't show as paid until the next
+  cron run, so cron needs to be running regularly for that safety net to
+  work.

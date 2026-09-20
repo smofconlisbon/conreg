@@ -234,4 +234,54 @@ class PaymentStorage {
     return $select->countQuery()->execute()->fetchField() > 0;
   }
 
+  /**
+   * Load the Stripe session IDs recorded against a payment.
+   *
+   * @param int $payId
+   *   The payment ID.
+   *
+   * @return string[]
+   *   Session IDs, most recently created first.
+   */
+  public function loadSessionIds(int $payId): array {
+    $select = $this->connection->select('conreg_payment_sessions', 'S');
+    $select->addField('S', 'session_id');
+    $select->condition('S.payid', $payId);
+    $select->orderBy('S.paysessionid', 'DESC');
+    return $select->execute()->fetchCol();
+  }
+
+  /**
+   * Load unpaid payments old enough to check, but not yet abandoned.
+   *
+   * Used by the cron reconciliation sweep to catch payments where the
+   * member's browser never returned to the checkout route after paying
+   * (closed tab, network drop, etc.), so nothing else has re-checked Stripe
+   * for them since.
+   *
+   * @param int $olderThan
+   *   Only include payments created before this timestamp, so a checkout
+   *   still legitimately in progress isn't checked mid-flow.
+   * @param int $newerThan
+   *   Only include payments created after this timestamp - beyond this,
+   *   a payment is treated as an abandoned registration, not worth
+   *   polling Stripe for indefinitely.
+   * @param int $limit
+   *   Maximum number of payments to return, to bound Stripe API calls per
+   *   cron run.
+   *
+   * @return array
+   *   The matching payment records, oldest first.
+   */
+  public function loadPendingPayments(int $olderThan, int $newerThan, int $limit): array {
+    $select = $this->connection->select('conreg_payments', 'payments');
+    $select->fields('payments');
+    $select->condition('paid_date', 0);
+    $select->condition('created_date', $olderThan, '<');
+    $select->condition('created_date', $newerThan, '>');
+    $select->orderBy('created_date', 'ASC');
+    $select->range(0, $limit);
+    return $select->execute()->fetchAll(FetchAs::Associative);
+  }
+
 }

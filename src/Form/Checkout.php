@@ -2,26 +2,17 @@
 
 namespace Drupal\conreg\Form;
 
-use Drupal\Component\Datetime\TimeInterface;
-use Drupal\conreg\Addons;
-use Drupal\conreg\ConregConfig;
 use Drupal\conreg\Service\EventStorage;
-use Drupal\conreg\Member;
 use Drupal\conreg\Payment;
-use Drupal\conreg\PaymentLine;
 use Drupal\Component\Utility\Html;
 use Drupal\conreg\Service\MemberPresenter;
-use Drupal\conreg\Service\MemberStorage;
+use Drupal\conreg\Service\PaymentCompletionService;
 use Drupal\conreg\Service\PaymentStorage;
-use Drupal\conreg\Service\ConregOptions;
 use Drupal\conreg\Service\PricingServiceInterface;
-use Drupal\conreg\Service\RegistrationConfirmationMailer;
 use Drupal\conreg\Service\StripeServiceInterface;
-use Drupal\conreg\Service\UpgradeStorage;
-use Drupal\conreg\UpgradeManager;
+use Drupal\conreg\Member;
 use Drupal\Core\Config\ImmutableConfig;
 use Drupal\Core\DependencyInjection\AutowireTrait;
-use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\BubbleableMetadata;
@@ -53,44 +44,30 @@ class Checkout extends FormBase {
   /**
    * Constructs a new Checkout form.
    *
-   * @param \Drupal\conreg\Service\MemberStorage $memberStorage
-   *   The member storage service.
-   * @param \Drupal\conreg\Service\RegistrationConfirmationMailer $confirmationMailer
-   *   Sends the registration confirmation email and admin copies.
    * @param \Drupal\conreg\Service\StripeServiceInterface $stripeService
    *   The Stripe service.
    * @param \Drupal\conreg\Service\EventStorage $eventStorage
    *   The event storage service.
-   * @param \Drupal\conreg\Service\UpgradeStorage $upgradeStorage
-   *   The upgrade storage service.
    * @param \Drupal\conreg\Service\PaymentStorage $paymentStorage
    *   The payment storage service.
-   * @param \Drupal\Component\Datetime\TimeInterface $time
-   *   The time service.
-   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager
-   *   The entity type manager.
+   * @param \Drupal\conreg\Service\PaymentCompletionService $paymentCompletion
+   *   Marks a payment (and its members/upgrades) complete once Stripe
+   *   confirms its session was paid.
    * @param \Drupal\conreg\Service\MemberPresenter $memberPresenter
    *   The member presenter service.
    * @param \Drupal\Core\Utility\Token $token
    *   The token service.
    * @param \Drupal\conreg\Service\PricingServiceInterface $pricingService
    *   The pricing service.
-   * @param \Drupal\conreg\Service\ConregOptions $conregOptions
-   *   The ConReg options service.
    */
   public function __construct(
-    protected MemberStorage $memberStorage,
-    protected RegistrationConfirmationMailer $confirmationMailer,
     protected StripeServiceInterface $stripeService,
     protected EventStorage $eventStorage,
-    protected UpgradeStorage $upgradeStorage,
     protected PaymentStorage $paymentStorage,
-    protected TimeInterface $time,
-    protected EntityTypeManagerInterface $entityTypeManager,
+    protected PaymentCompletionService $paymentCompletion,
     protected MemberPresenter $memberPresenter,
     protected Token $token,
     protected PricingServiceInterface $pricingService,
-    protected ConregOptions $conregOptions,
   ) {}
 
   /**
@@ -163,13 +140,27 @@ class Checkout extends FormBase {
     // Set Stripe secret key from event settings.
     $this->stripeService->setApiKey($this->eid);
 
-    $this->processStripeMessages($config);
-
-    // Stripe messages processed, so we need to load the payment again.
-    $payment = Payment::load($payid);
-    if (is_null($payment)) {
-      // Should never happen, but if payment not valid, show warning.
-      return $this->invalidCredentials();
+    // If a Stripe session already exists for this payment (e.g. the member
+    // is returning from Stripe's hosted checkout), check its status
+    // directly rather than scanning Stripe's global events list - that
+    // avoids depending on a shared, paginated, time-windowed feed, and lets
+    // an still-open session be reused below instead of creating a second
+    // one for the same payment.
+    $existingSession = NULL;
+    if (empty($payment->paidDate)) {
+      $sessionIds = $this->paymentStorage->loadSessionIds($payment->payId);
+      if (!empty($sessionIds)) {
+        $existingSession = $this->stripeService->retrieveSession($sessionIds[0]);
+        if ($existingSession && $this->paymentCompletion->isSessionPaid($existingSession)) {
+          $this->paymentCompletion->markSessionComplete($payment, $existingSession, $this->eid, $this->autoApprove);
+          $payment = Payment::load($payid);
+          if (is_null($payment)) {
+            // Should never happen, but if payment not valid, show warning.
+            return $this->invalidCredentials();
+          }
+          $existingSession = NULL;
+        }
+      }
     }
 
     // Check if payment date populated. If so, payment is complete.
@@ -200,7 +191,7 @@ class Checkout extends FormBase {
         ];
       }
       else {
-        $this->processWithoutPayment($line);
+        $this->paymentCompletion->processWithoutPayment($line, $this->eid, $this->autoApprove);
       }
       $total += $line->amount;
     }
@@ -216,19 +207,37 @@ class Checkout extends FormBase {
 
       $types = empty($config->get('payments.types')) ? ['card'] : explode('|', $config->get('payments.types'));
 
-      // Set up Stripe Session.
-      $session = $this->stripeService->createCheckoutSession([
-        'payment_method_types' => $types,
-        'mode' => 'payment',
-        'customer_email' => $email,
-        'line_items' => $items,
-        'success_url' => $success,
-        'cancel_url' => $cancel,
-      ]);
+      // Reuse a still-open session for this exact amount, rather than
+      // always minting a new one - otherwise a double-click, a page
+      // refresh during the "Transferring to Stripe" wait, or reopening the
+      // payment link in a second tab would each create a separate live
+      // Stripe session for the same payment, risking the member paying
+      // more than once. If the recomputed total has changed since that
+      // session was created (e.g. an admin edited pricing-relevant
+      // details in between), fall through and create a fresh one instead.
+      $session = NULL;
+      if ($existingSession && $this->paymentCompletion->isSessionOpen($existingSession)) {
+        $expectedAmountTotal = (int) round($total * 100);
+        if ((int) ($existingSession->amount_total ?? -1) === $expectedAmountTotal) {
+          $session = $existingSession;
+        }
+      }
 
-      // Update the payment with the session ID.
-      $payment->sessionId = $session->id;
-      $payment->save();
+      if (is_null($session)) {
+        // Set up Stripe Session.
+        $session = $this->stripeService->createCheckoutSession([
+          'payment_method_types' => $types,
+          'mode' => 'payment',
+          'customer_email' => $email,
+          'line_items' => $items,
+          'success_url' => $success,
+          'cancel_url' => $cancel,
+        ]);
+
+        // Update the payment with the session ID.
+        $payment->sessionId = $session->id;
+        $payment->save();
+      }
 
       // A test double for the Stripe service can request a local mock
       // checkout page instead of the client-side hand-off below, since that
@@ -330,132 +339,6 @@ class Checkout extends FormBase {
     $bubbleable_metadata->applyTo($form);
 
     return $form;
-  }
-
-  /**
-   * Function to process payments coming back from Stripe.
-   */
-  private function processStripeMessages($config) {
-    // Check events on Stripe.
-    $events = $this->stripeService->getEvents(
-      'checkout.session.completed',
-      time() - 24 * 60 * 60
-    );
-
-    // Loop through received events and mark payments complete.
-    foreach ($events->data as $event) {
-      $session = ((object) $event)->data->object;
-      // Update the payment record.
-      $payment = Payment::loadBySessionId($session->id);
-      if (!is_null($payment)) {
-        // Only update payment if not already paid.
-        if (empty($payment->paidDate)) {
-          $payment->paidDate = time();
-          $payment->paymentMethod = "Stripe";
-          $payment->paymentRef = $session->payment_intent;
-          $payment->save();
-        }
-
-        Addons::markPaid($payment->getId(), $session->payment_intent);
-
-        // Process the payment lines.
-        foreach ($payment->paymentLines as $line) {
-          $this->processPaymentLine($line, $session);
-        }
-      }
-    }
-  }
-
-  /**
-   * Process a line of payment information from Stripe.
-   */
-  private function processPaymentLine(PaymentLine $line, object $session) {
-    $config = ConregConfig::getConfig($this->eid);
-    switch ($line->type) {
-      case "member":
-        // Only update member if not already paid.
-        $member = Member::loadMember($line->mid);
-        if (is_object($member) && !$member->is_paid && !$member->is_deleted) {
-          $member->is_paid = 1;
-          if ($this->autoApprove) {
-            $member->is_approved = 1;
-            $max_member = $this->memberStorage->loadMaxMemberNo($this->eid);
-            $max_member++;
-            $member->member_no = $max_member;
-          }
-          $member->payment_id = $session->payment_intent;
-          $member->payment_method = 'Stripe';
-          $member->saveMember();
-
-          // If email address populated, send confirmation email.
-          if (!empty($member->email)) {
-            $this->sendConfirmationEmail((array) $member);
-          }
-
-          // Check if event has a role to add to user account.
-          $add_role = $config->get('member_portal.add_role');
-          if ($add_role) {
-            $accounts = $this->entityTypeManager->getStorage('user')->loadByProperties(['mail' => $member->email]);
-            $account = $accounts ? reset($accounts) : NULL;
-            // Check if user has role already.
-            if ($account && !$account->hasRole($add_role)) {
-              // They don't, so we need to add it.
-              $account->addRole($add_role);
-              $account->save();
-            }
-          }
-        }
-        break;
-
-      case "upgrade":
-        $member = Member::loadMember($line->mid);
-        if (isset($member) && is_object($member) && !$member->is_deleted) {
-          $mgr = new UpgradeManager($this->upgradeStorage, $this->memberStorage, $this->time, $this->conregOptions, $member->eid);
-          if ($mgr->loadUpgrades($member->mid, 0)) {
-            $payment = Payment::loadBySessionId($session->id);
-            if (!is_null($payment)) {
-              $mgr->completeUpgrades($payment->paymentAmount, $payment->paymentMethod, $payment->paymentRef);
-            }
-          }
-        }
-        break;
-    }
-  }
-
-  /**
-   * If no charge for payment line, just marked paid.
-   */
-  private function processWithoutPayment(PaymentLine $line) {
-    switch ($line->type) {
-      case "member":
-        // Only update member if not already paid.
-        $member = Member::loadMember($line->mid);
-        if (is_object($member) && !$member->is_paid && !$member->is_deleted) {
-          $member->is_paid = 1;
-          if ($this->autoApprove) {
-            $member->is_approved = 1;
-            $max_member = $this->memberStorage->loadMaxMemberNo($this->eid);
-            $max_member++;
-            $member->member_no = $max_member;
-          }
-          $member->payment_id = 'N/A';
-          $member->payment_method = 'Free';
-          $member->saveMember();
-
-          // If email address populated, send confirmation email.
-          if (!empty($member->email)) {
-            $this->sendConfirmationEmail((array) $member);
-          }
-        }
-        break;
-    }
-  }
-
-  /**
-   * Send the email to confirm completion.
-   */
-  private function sendConfirmationEmail(array $member) {
-    $this->confirmationMailer->send($member);
   }
 
   /**

@@ -7,6 +7,11 @@
 
 (function ($) {
 
+  // Kept short (rather than 0) just long enough for the "You will be
+  // transferred to Stripe" message to register before the page navigates
+  // away. A long wait here mainly invited members to double-click, refresh,
+  // or navigate back during the delay, which could create a second Stripe
+  // Checkout Session for the same payment.
   setTimeout(function()
   {
     var stripe = Stripe(drupalSettings.conreg.checkout.public_key);
@@ -20,6 +25,6 @@
       // error, display the localized error message to your customer
       // using `result.error.message`.
     });
-  }, 5000);
+  }, 1500);
 
 })(jQuery);

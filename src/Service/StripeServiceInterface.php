@@ -32,17 +32,20 @@ interface StripeServiceInterface {
   public function createCheckoutSession(array $sessionData);
 
   /**
-   * Retrieves Stripe events of a specific type.
+   * Retrieves the current state of a specific Stripe Checkout Session.
    *
-   * @param string $eventType
-   *   The type of event to retrieve.
-   * @param int $sinceTimestamp
-   *   The timestamp to retrieve events since.
+   * Used instead of scanning Stripe's global events list, so a payment's
+   * status is checked directly rather than depending on that payment's
+   * event surfacing in a shared, paginated, time-windowed feed.
    *
-   * @return \Stripe\Collection
-   *   The collection of Stripe events.
+   * @param string $sessionId
+   *   The Stripe Checkout Session ID to look up.
+   *
+   * @return \Stripe\Checkout\Session|null
+   *   The session, or NULL if it could not be retrieved (not found, or an
+   *   API error) - callers should treat NULL like "not paid yet".
    */
-  public function getEvents(string $eventType, int $sinceTimestamp);
+  public function retrieveSession(string $sessionId): ?object;
 
   /**
    * Resolves a Stripe Key ID (from config) to its actual key value.

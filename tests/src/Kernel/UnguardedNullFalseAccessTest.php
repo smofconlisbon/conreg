@@ -8,6 +8,7 @@ use Drupal\conreg\Form\Checkout;
 use Drupal\conreg\Form\Registration;
 use Drupal\conreg\Payment;
 use Drupal\conreg\PaymentLine;
+use Drupal\conreg\Service\PaymentCompletionService;
 use Drupal\conreg\Service\PaymentStorage;
 use Drupal\conreg\Service\StripeServiceInterface;
 use Drupal\Core\Ajax\AjaxResponse;
@@ -48,6 +49,7 @@ use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
  */
 #[CoversClass(Checkout::class)]
 #[CoversClass(Registration::class)]
+#[CoversClass(PaymentCompletionService::class)]
 #[Group('conreg')]
 #[RunTestsInSeparateProcesses]
 class UnguardedNullFalseAccessTest extends KernelTestBase {
@@ -138,31 +140,40 @@ class UnguardedNullFalseAccessTest extends KernelTestBase {
    * Regression test for an unguarded reload in buildForm().
    *
    * `buildForm()` loads the payment once to resolve the event/member, then
-   * - after talking to Stripe via `processStripeMessages()` - reloads it a
-   * second time ("Stripe messages processed, so we need to load the
-   * payment again"). If the payment has since disappeared,
-   * `Payment::load()` returns NULL, and it used to be passed unchecked to
-   * `PricingService::recomputeForPayment(Payment $payment)`, which requires
-   * a real `Payment` object.
+   * - after finding its Stripe session paid and marking it complete -
+   * reloads it a second time. If the payment has since disappeared,
+   * `Payment::load()` returns NULL, and it used to be possible to pass that
+   * unchecked into `PricingService::recomputeForPayment(Payment $payment)`,
+   * which requires a real `Payment` object.
    *
    * A mocked Stripe service simulates that disappearance as a side effect
-   * of the `getEvents()` call that sits between the two loads.
+   * of the `retrieveSession()` call that sits between the two loads.
    */
   public function testBuildFormThrowsWhenPaymentDisappearsDuringStripeSync(): void {
     Database::getConnection()->insert('conreg_payments')
       ->fields(['payid' => 1, 'random_key' => 42])
       ->execute();
+    Database::getConnection()->insert('conreg_payment_sessions')
+      ->fields(['payid' => 1, 'session_id' => 'sess_test'])
+      ->execute();
+    // A payment line so markSessionComplete() has something to iterate.
+    Database::getConnection()->insert('conreg_payment_lines')
+      ->fields(['payid' => 1, 'mid' => 1, 'payment_type' => 'member', 'line_desc' => 'Test', 'amount' => 10.0])
+      ->execute();
 
     $stripeService = $this->createMock(StripeServiceInterface::class);
-    $stripeService->method('getEvents')->willReturnCallback(function () {
+    $stripeService->method('retrieveSession')->willReturnCallback(function () {
       // Simulate the payment vanishing between the first Payment::load()
-      // in buildForm() and the reload that follows Stripe sync.
+      // in buildForm() and the reload that follows marking it paid.
       Database::getConnection()->delete('conreg_payments')
         ->condition('payid', 1)
         ->execute();
-      $events = new \stdClass();
-      $events->data = [];
-      return $events;
+      return (object) [
+        'id' => 'sess_test',
+        'status' => 'complete',
+        'payment_status' => 'paid',
+        'payment_intent' => 'pi_test',
+      ];
     });
     $this->container->set('conreg.stripe_service', $stripeService);
 
@@ -194,15 +205,16 @@ class UnguardedNullFalseAccessTest extends KernelTestBase {
   /**
    * Regression test for an unguarded reload in processPaymentLine().
    *
-   * The "member" case in `processStripeMessages()` checks
+   * `PaymentCompletionService::markSessionComplete()` checks
    * `if (!is_null($payment))` before using a `Payment::loadBySessionId()`
-   * result. The "upgrade" case in `processPaymentLine()` calls the same
-   * method but used to skip that check, passing the (possibly NULL)
-   * result's properties straight into `UpgradeManager::completeUpgrades()`.
+   * result for the payment itself. The "upgrade" case in
+   * `processPaymentLine()` calls the same method but used to skip that
+   * check, passing the (possibly NULL) result's properties straight into
+   * `UpgradeManager::completeUpgrades()`.
    *
-   * Invoked directly via reflection since both methods are private and
-   * reaching this branch through the public `buildForm()` entry point
-   * would require simulating a second Stripe race on top of the first.
+   * Invoked directly on the (public) service method, since reaching this
+   * branch through the public `Checkout::buildForm()` entry point would
+   * require simulating a second Stripe race on top of the first.
    */
   public function testProcessPaymentLineThrowsForUpgradeWithMissingPayment(): void {
     Database::getConnection()->insert('conreg_members')
@@ -224,19 +236,16 @@ class UnguardedNullFalseAccessTest extends KernelTestBase {
       ->fields(['eid' => 1, 'mid' => 1, 'lead_mid' => 1, 'is_paid' => 0])
       ->execute();
 
-    $checkout = $this->createCheckoutForm();
-    (new \ReflectionProperty(Checkout::class, 'eid'))->setValue($checkout, 1);
+    $paymentCompletion = $this->container->get(PaymentCompletionService::class);
 
     $line = new PaymentLine($this->container->get(PaymentStorage::class), 1, 'upgrade', 'Upgrade', 10.0);
     // No matching row in conreg_payment_sessions, so
     // Payment::loadBySessionId() returns NULL for this session.
     $session = (object) ['id' => 'sess_does_not_exist'];
 
-    $method = new \ReflectionMethod(Checkout::class, 'processPaymentLine');
-
     // Must return quietly instead of crashing when the payment can't be
     // found for this session.
-    $method->invoke($checkout, $line, $session);
+    $paymentCompletion->processPaymentLine($line, $session, 1, FALSE);
     $this->addToAssertionCount(1);
   }
 

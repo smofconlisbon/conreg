@@ -35,6 +35,10 @@ services:
     class: Drupal\conreg\Service\PaymentStorage
   Drupal\conreg\Service\PaymentStorage: '@conreg.payment.storage'
 
+  conreg.payment_completion:
+    class: Drupal\conreg\Service\PaymentCompletionService
+  Drupal\conreg\Service\PaymentCompletionService: '@conreg.payment_completion'
+
   conreg.upgrade.storage:
     class: Drupal\conreg\Service\UpgradeStorage
   Drupal\conreg\Service\UpgradeStorage: '@conreg.upgrade.storage'
@@ -91,6 +95,9 @@ services:
 
   Drupal\conreg\Hook\CronHooks:
     class: Drupal\conreg\Hook\CronHooks
+
+  Drupal\conreg\Hook\PaymentReconciliationCronHooks:
+    class: Drupal\conreg\Hook\PaymentReconciliationCronHooks
 
   Drupal\conreg\Hook\ConregEasyEmailFieldHooks:
     class: Drupal\conreg\Hook\ConregEasyEmailFieldHooks
