@@ -4,6 +4,7 @@ namespace Drupal\conreg\Service;
 
 use Drupal\conreg\ConregConfig;
 use Drupal\conreg\Entity\PrintJob;
+use Drupal\conreg\Entity\Printer;
 use Drupal\conreg\Trait\ShowBadgeNumberTrait;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
@@ -43,6 +44,60 @@ class PrintJobManager {
    *   If the member or printer cannot be found.
    */
   public function createJob(int $mid, string $printerMachineName): PrintJob {
+    [$member, $eid, $printer] = $this->resolveJobTargets($mid, $printerMachineName);
+    $fields = $this->buildFields($member, $eid);
+
+    return $this->saveJob($mid, $eid, $printer, $fields, $this->renderLabelImage($fields));
+  }
+
+  /**
+   * Creates a pending print job, reusing an already-rendered label image.
+   *
+   * Same as createJob(), except the image isn't rendered here - a
+   * caller that already rendered a preview for this exact member right
+   * before confirming (e.g. ReprintLabelForm, which shows the label in
+   * its modal before the user clicks "Print") passes those same bytes
+   * through, rather than paying for a second full render of identical
+   * data.
+   *
+   * @param int $mid
+   *   The member ID to print a label for.
+   * @param string $printerMachineName
+   *   The target printer's machine name, e.g. "bilbo_baggins".
+   * @param string $imageDataBase64
+   *   Already-rendered (base64-encoded) PNG bytes for this member's
+   *   current data - not re-verified against the member here, so
+   *   callers must ensure nothing changed between rendering it and
+   *   calling this.
+   *
+   * @return \Drupal\conreg\Entity\PrintJob
+   *   The newly created, pending print job.
+   *
+   * @throws \InvalidArgumentException
+   *   If the member or printer cannot be found.
+   */
+  public function createJobWithRenderedImage(int $mid, string $printerMachineName, string $imageDataBase64): PrintJob {
+    [$member, $eid, $printer] = $this->resolveJobTargets($mid, $printerMachineName);
+    $fields = $this->buildFields($member, $eid);
+
+    return $this->saveJob($mid, $eid, $printer, $fields, $imageDataBase64);
+  }
+
+  /**
+   * Loads and validates the member/printer a new job will be created for.
+   *
+   * Shared by createJob() and createJobWithRenderedImage() so both fail
+   * the same way (and in the same order - member first, then printer,
+   * before either does anything as expensive as rendering) for an
+   * unknown member or printer.
+   *
+   * @return array{0: array, 1: int, 2: \Drupal\conreg\Entity\Printer}
+   *   The loaded member record, their event ID, and the resolved printer.
+   *
+   * @throws \InvalidArgumentException
+   *   If the member or printer cannot be found.
+   */
+  protected function resolveJobTargets(int $mid, string $printerMachineName): array {
     $member = $this->memberStorage->load(['mid' => $mid]);
     if (!$member) {
       throw new \InvalidArgumentException("Unknown member ID: $mid");
@@ -57,6 +112,38 @@ class PrintJobManager {
       throw new \InvalidArgumentException("Unknown printer \"$printerMachineName\" for event $eid.");
     }
 
+    return [$member, $eid, $printer];
+  }
+
+  /**
+   * Saves a new pending print job.
+   */
+  protected function saveJob(int $mid, int $eid, Printer $printer, array $fields, ?string $imageDataBase64): PrintJob {
+    $jobStorage = $this->entityTypeManager->getStorage('conreg_print_job');
+    /** @var \Drupal\conreg\Entity\PrintJob $job */
+    $job = $jobStorage->create([
+      'eid' => $eid,
+      'mid' => $mid,
+      'member_name' => $fields['badge_name'],
+      'member_number' => $fields['member_number'],
+      'days_attending' => $fields['days_attending'],
+      'badge_type' => $fields['badge_type'],
+      'printer' => $printer->id(),
+      'status' => 'pending',
+      'image_data' => $imageDataBase64,
+    ]);
+    $job->save();
+
+    return $job;
+  }
+
+  /**
+   * Builds the label field values (badge_name/member_number/etc.) for a member.
+   *
+   * Shared by createJob() and renderPreviewImage(), so a preview always
+   * reflects exactly the same field values a real print job would use.
+   */
+  protected function buildFields(array $member, int $eid): array {
     $config = ConregConfig::getConfig($eid);
 
     $daysAttending = '';
@@ -69,29 +156,57 @@ class PrintJobManager {
       $daysAttending = implode(', ', $dayDescriptions);
     }
 
-    $fields = [
+    return [
       'badge_name' => $member['badge_name'],
       'member_number' => $this->showBadgeNumber($member, $config),
       'days_attending' => $daysAttending,
       'badge_type' => trim($member['badge_type'] ?? ''),
     ];
+  }
 
-    $jobStorage = $this->entityTypeManager->getStorage('conreg_print_job');
-    /** @var \Drupal\conreg\Entity\PrintJob $job */
-    $job = $jobStorage->create([
-      'eid' => $eid,
-      'mid' => $mid,
-      'member_name' => $fields['badge_name'],
-      'member_number' => $fields['member_number'],
-      'days_attending' => $fields['days_attending'],
-      'badge_type' => $fields['badge_type'],
-      'printer' => $printer->id(),
-      'status' => 'pending',
-      'image_data' => $this->renderLabelImage($fields),
-    ]);
-    $job->save();
+  /**
+   * Renders an on-demand label preview PNG for a member's current data.
+   *
+   * Nothing is persisted - unlike createJob(), this is purely for
+   * display (e.g. a "Preview label" action on Member Check-In), reusing
+   * the exact same field-building and rendering path so what's shown is
+   * exactly what would print.
+   *
+   * @param int $mid
+   *   The member ID to preview a label for.
+   *
+   * @return string|null
+   *   Base64-encoded PNG bytes, or NULL if the member doesn't exist or
+   *   no label size is configured yet.
+   */
+  public function renderPreviewImage(int $mid): ?string {
+    $member = $this->memberStorage->load(['mid' => $mid]);
+    if (!$member) {
+      return NULL;
+    }
 
-    return $job;
+    return $this->renderPreviewImageForMember($member);
+  }
+
+  /**
+   * Renders an on-demand label preview PNG for an already-loaded member.
+   *
+   * Same rendering as renderPreviewImage(), for a caller that already
+   * has the member record in hand (e.g. CheckInMembers::
+   * buildConfirmForm(), looping over members it just loaded and updated)
+   * and would otherwise reload and re-render it a second time for
+   * nothing.
+   *
+   * @param array $member
+   *   A member record as returned by MemberStorage::load().
+   *
+   * @return string|null
+   *   Base64-encoded PNG bytes, or NULL if no label size is configured.
+   */
+  public function renderPreviewImageForMember(array $member): ?string {
+    $fields = $this->buildFields($member, (int) $member['eid']);
+
+    return $this->renderLabelImage($fields);
   }
 
   /**

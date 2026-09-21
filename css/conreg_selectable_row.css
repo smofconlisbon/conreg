@@ -1,0 +1,12 @@
+/**
+ * @file
+ * Styling for conreg_selectable_row.js's click-to-toggle table rows.
+ */
+
+.conreg-table-row--selectable {
+  cursor: pointer;
+}
+
+.conreg-table-row--selected {
+  background-color: #f0f7ff;
+}

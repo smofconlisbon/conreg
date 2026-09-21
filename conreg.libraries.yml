@@ -95,6 +95,16 @@ conreg_select_all:
     - core/drupal.form
     - core/jquery
 
+conreg_selectable_row:
+  version: 1.x
+  css:
+    theme:
+      css/conreg_selectable_row.css: {}
+  js:
+    js/conreg_selectable_row.js: {}
+  dependencies:
+    - core/once
+
 conreg_disable_on_click:
   version: 1.x
   js:

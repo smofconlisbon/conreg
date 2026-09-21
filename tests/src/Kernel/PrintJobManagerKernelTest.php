@@ -2,8 +2,10 @@
 
 namespace Drupal\Tests\conreg\Kernel;
 
+use Drupal\conreg\Entity\LabelSize;
 use Drupal\conreg\Entity\PrintJob;
 use Drupal\conreg\Entity\Printer;
+use Drupal\conreg\Service\MemberStorage;
 use Drupal\conreg\Service\PrintJobManager;
 use Drupal\Core\Database\Database;
 use Drupal\KernelTests\KernelTestBase;
@@ -172,6 +174,76 @@ class PrintJobManagerKernelTest extends KernelTestBase {
   }
 
   /**
+   * Test that createJobWithRenderedImage() stores the given bytes as-is.
+   *
+   * Confirmed by passing bytes that couldn't possibly have come out of
+   * the real rendering pipeline (a real render always starts with the
+   * PNG magic header) - proving the method never renders anything
+   * itself, unlike createJob().
+   */
+  public function testCreateJobWithRenderedImageUsesProvidedImageBytes(): void {
+    $mid = $this->createTestMember();
+    $this->createPrinter(1, 'Bilbo Baggins');
+
+    $manager = $this->container->get(PrintJobManager::class);
+    $job = $manager->createJobWithRenderedImage($mid, 'bilbo_baggins', 'not-a-real-png');
+
+    $this->assertSame('not-a-real-png', $job->get('image_data')->value);
+    $this->assertSame('Jane Doe', $job->get('member_name')->value);
+    $this->assertSame('pending', $job->get('status')->value);
+  }
+
+  /**
+   * Test that an unknown member ID is rejected, same as createJob().
+   */
+  public function testCreateJobWithRenderedImageThrowsForUnknownMember(): void {
+    $this->createPrinter(1, 'Bilbo Baggins');
+
+    $manager = $this->container->get(PrintJobManager::class);
+
+    $this->expectException(\InvalidArgumentException::class);
+    $manager->createJobWithRenderedImage(999, 'bilbo_baggins', 'image-bytes');
+  }
+
+  /**
+   * Test that an unknown printer is rejected, same as createJob().
+   */
+  public function testCreateJobWithRenderedImageThrowsForUnknownPrinter(): void {
+    $mid = $this->createTestMember();
+
+    $manager = $this->container->get(PrintJobManager::class);
+
+    $this->expectException(\InvalidArgumentException::class);
+    $manager->createJobWithRenderedImage($mid, 'no_such_printer', 'image-bytes');
+  }
+
+  /**
+   * Test that previewing an already-loaded member matches renderPreviewImage().
+   */
+  public function testRenderPreviewImageForMemberMatchesRenderPreviewImage(): void {
+    LabelSize::create([
+      'id' => 'for_member_test_size',
+      'label' => 'For-member test size',
+      'width_mm' => 28,
+      'height_mm' => 89,
+      'rotate_degrees' => 90,
+    ])->save();
+    $this->config('conreg.label_printing.settings')
+      ->set('label_size', 'for_member_test_size')
+      ->save();
+
+    $mid = $this->createTestMember();
+
+    $manager = $this->container->get(PrintJobManager::class);
+    $member = $this->container->get(MemberStorage::class)->load(['mid' => $mid]);
+
+    $this->assertSame(
+      $manager->renderPreviewImage($mid),
+      $manager->renderPreviewImageForMember($member),
+    );
+  }
+
+  /**
    * Test that only the requested event's printers are returned.
    */
   public function testGetPrintersForEventReturnsOnlyThatEventsPrinters(): void {
@@ -193,6 +265,69 @@ class PrintJobManagerKernelTest extends KernelTestBase {
   public function testGetPrintersForEventReturnsEmptyArrayWhenNoneConfigured(): void {
     $manager = $this->container->get(PrintJobManager::class);
     $this->assertSame([], $manager->getPrintersForEvent(1));
+  }
+
+  /**
+   * Test that previewing an unknown member returns NULL, not an error.
+   */
+  public function testRenderPreviewImageReturnsNullForUnknownMember(): void {
+    $manager = $this->container->get(PrintJobManager::class);
+    $this->assertNull($manager->renderPreviewImage(999));
+  }
+
+  /**
+   * Test that previewing with no label size configured returns NULL.
+   *
+   * The module's default config already ships a label_size (see
+   * config/install/conreg.label_printing.settings.yml), so this clears
+   * it explicitly to exercise createJob()'s "check-in isn't blocked by
+   * incomplete Label Printing Settings configuration" behavior (see
+   * renderLabelImage()).
+   */
+  public function testRenderPreviewImageReturnsNullWhenNoLabelSizeConfigured(): void {
+    $this->config('conreg.label_printing.settings')->set('label_size', '')->save();
+
+    $mid = $this->createTestMember();
+
+    $manager = $this->container->get(PrintJobManager::class);
+    $this->assertNull($manager->renderPreviewImage($mid));
+  }
+
+  /**
+   * Test that a preview renders a decodable PNG from the member's own data.
+   *
+   * Uses the same field-building path as createJob() (see
+   * testCreateJobFormatsMemberNumberWithBadgeType), so this also
+   * confirms a preview reflects exactly what a real print job would.
+   */
+  public function testRenderPreviewImageRendersDecodablePngFromMemberData(): void {
+    LabelSize::create([
+      'id' => 'preview_test_size',
+      'label' => 'Preview test size',
+      'width_mm' => 28,
+      'height_mm' => 89,
+      'rotate_degrees' => 90,
+    ])->save();
+    $this->config('conreg.label_printing.settings')
+      ->set('label_size', 'preview_test_size')
+      ->set('name_lines', 2)
+      ->set('field_positions', [
+        'badge_name' => 'middle',
+        'member_number' => 'bottom_left',
+        'days_attending' => 'bottom_right',
+        'badge_type' => 'none',
+      ])
+      ->save();
+
+    $mid = $this->createTestMember(['member_no' => 42, 'badge_type' => 'A']);
+
+    $manager = $this->container->get(PrintJobManager::class);
+    $imageBase64 = $manager->renderPreviewImage($mid);
+
+    $this->assertNotNull($imageBase64);
+    $decoded = base64_decode($imageBase64, TRUE);
+    $this->assertNotFalse($decoded);
+    $this->assertSame("\x89PNG\r\n\x1a\n", substr($decoded, 0, 8));
   }
 
 }

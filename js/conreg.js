@@ -227,6 +227,28 @@
     label.classList.toggle('form-required', show);
   }
 
+  // Pressing Enter in a lone text field implicitly submits the form (a
+  // full page reload) by default, bypassing #ajax entirely - Drupal's
+  // ajax.js binds its actual request-triggering listener to "mousedown"
+  // specifically (see core/misc/ajax.js), not "click". Preventing the
+  // native submit and dispatching a synthetic "mousedown" on the paired
+  // #ajax button routes Enter through the same AJAX path a real click
+  // uses.
+  //
+  // Generic - not tied to Member Check-In - any AJAX search field can
+  // opt in by giving its wrapper the "conreg-ajax-search" class, the
+  // field itself "conreg-ajax-search-field", and the button
+  // "conreg-ajax-search-button" (see the wiring below).
+  function triggerAjaxButtonOnEnter(field, button) {
+    field.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter') {
+        return;
+      }
+      event.preventDefault();
+      button.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+    });
+  }
+
   Drupal.behaviors.conreg = {
     attach(context) {
       // Restore focus if we have stored focus info (handles AJAX refresh).
@@ -235,6 +257,13 @@
           restoreFocus();
         });
       }
+
+      once('conreg-ajax-search-field', '.conreg-ajax-search-field', context).forEach((field) => {
+        const button = field.closest('.conreg-ajax-search')?.querySelector('.conreg-ajax-search-button');
+        if (button) {
+          triggerAjaxButtonOnEnter(field, button);
+        }
+      });
 
       // Member type card click handler.
       // Clicking anywhere on the card selects the radio and triggers AJAX.

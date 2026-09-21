@@ -9,6 +9,7 @@
 use Drupal\Core\Extension\Requirement\RequirementSeverity;
 use Drupal\Core\Database\Database;
 use Drupal\Core\Field\BaseFieldDefinition;
+use Drupal\user\Entity\Role;
 
 /**
  * Implements hook_requirements().
@@ -1465,4 +1466,22 @@ function conreg_update_9022() {
 
   \Drupal::entityDefinitionUpdateManager()
     ->installFieldStorageDefinition('is_test', 'conreg_print_job', 'conreg', $storage_definition);
+}
+
+/**
+ * Grants "reprint convention member badge label" alongside "undo check-in".
+ *
+ * "Reprint label" used to be gated on "undo convention member
+ * check-in" (there was no separate permission). Now that it has its
+ * own "reprint convention member badge label" permission, any role
+ * that already had the undo permission needs this one granted too, or
+ * sites upgrading would silently lose the ability to reprint labels
+ * that worked before this update.
+ */
+function conreg_update_9023() {
+  foreach (Role::loadMultiple() as $role) {
+    if ($role->hasPermission('undo convention member check-in') && !$role->hasPermission('reprint convention member badge label')) {
+      $role->grantPermission('reprint convention member badge label')->save();
+    }
+  }
 }

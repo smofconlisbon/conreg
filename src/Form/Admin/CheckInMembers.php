@@ -2,6 +2,7 @@
 
 namespace Drupal\conreg\Form\Admin;
 
+use Drupal\Component\Serialization\Json;
 use Drupal\Component\Utility\Html;
 use Drupal\conreg\ConregConfig;
 use Drupal\conreg\ConregTable;
@@ -16,6 +17,7 @@ use Drupal\conreg\Service\PaymentStorage;
 use Drupal\conreg\Service\PricingServiceInterface;
 use Drupal\conreg\Service\PrintJobManager;
 use Drupal\conreg\TableRole;
+use Drupal\conreg\Trait\PrinterSessionTrait;
 use Drupal\conreg\Trait\ShowBadgeNumberTrait;
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Config\ImmutableConfig;
@@ -23,13 +25,14 @@ use Drupal\Core\DependencyInjection\AutowireTrait;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Language\LanguageManagerInterface;
+use Drupal\Core\Url;
 
 /**
  * Simple form to add an entry, with all the interesting fields.
  */
 class CheckInMembers extends FormBase {
 
-  use AutowireTrait, ShowBadgeNumberTrait;
+  use AutowireTrait, ShowBadgeNumberTrait, PrinterSessionTrait;
 
   /**
    * Construct the form.
@@ -64,37 +67,56 @@ class CheckInMembers extends FormBase {
    */
   public function checkInSummary(int $eid, array &$content) {
     $descriptions = [
-      0 => 'Not Checked In',
-      1 => 'Checked In',
+      0 => $this->t('Not checked in'),
+      1 => $this->t('Checked in'),
     ];
-    $rows = [];
-    $headers = [
-      $this->t('Status'),
-      $this->t('Number of members'),
-    ];
+    $counts = [];
     $total = 0;
     foreach ($this->memberStorage->adminMemberCheckInSummaryLoad($eid) as $entry) {
-      // Replace type code with description.
-      $status = trim($entry['is_checked_in']);
-      if (isset($descriptions[$status])) {
-        $entry['is_checked_in'] = $descriptions[$status];
-      }
-      // Sanitize each entry.
-      $rows[] = array_map('Drupal\Component\Utility\Html::escape', (array) $entry);
-      $total += $entry['num'];
+      $status = (int) trim($entry['is_checked_in']);
+      $counts[$status] = (int) $entry['num'];
+      $total += (int) $entry['num'];
     }
-    // Add a row for the total.
-    $footer = ConregTable::totalFooterRow([$this->t('Total'), $total]);
+
     $content['check_in_summary'] = [
-      '#type' => 'table',
-      '#header' => $headers,
-      '#attributes' => ConregTable::attributes('member-checkin-summary', TableRole::ListTable),
-      '#rows' => $rows,
-      '#footer' => $footer,
-      '#empty' => $this->t('No entries available.'),
+      '#type' => 'container',
+      '#attributes' => ['class' => ['conreg-checkin-summary']],
     ];
 
+    $content['check_in_summary']['label'] = [
+      '#type' => 'html_tag',
+      '#tag' => 'span',
+      '#value' => $this->t('Status'),
+      '#attributes' => ['class' => ['conreg-checkin-summary__label']],
+    ];
+
+    foreach ($descriptions as $status => $label) {
+      $content['check_in_summary']['status_' . $status] = $this->buildCheckInSummaryItem($label, $counts[$status] ?? 0);
+    }
+    $content['check_in_summary']['total'] = $this->buildCheckInSummaryItem($this->t('Total'), $total);
+
     return $content;
+  }
+
+  /**
+   * Builds one "Label: <count>" item for the check-in summary bar.
+   */
+  protected function buildCheckInSummaryItem($label, int $count): array {
+    return [
+      '#type' => 'container',
+      '#attributes' => ['class' => ['conreg-checkin-summary__item']],
+      'label' => [
+        '#type' => 'html_tag',
+        '#tag' => 'span',
+        '#value' => $label . ': ',
+      ],
+      'count' => [
+        '#type' => 'html_tag',
+        '#tag' => 'span',
+        '#value' => $count,
+        '#attributes' => ['class' => ['conreg-checkin-summary__count']],
+      ],
+    ];
   }
 
   /**
@@ -152,13 +174,25 @@ class CheckInMembers extends FormBase {
       }
     }
 
-    $search = trim($form_values['search'] ?? '');
+    // Falls back to a ?search= query parameter on a fresh (non-AJAX) page
+    // load - UndoCheckInForm's redirect back here carries the search that
+    // was active before "Undo check-in" was clicked, so confirming it
+    // doesn't lose the results the user was looking at. Ignored once the
+    // form has real submitted values (a search AJAX request doesn't touch
+    // the URL, so $form_values['search'] and the query parameter never
+    // both apply at once).
+    $search = trim($form_values['search'] ?? $this->getRequest()->query->get('search', ''));
 
     $form = [
       '#title' => $this->t('@event_name Member Checkin', ['@event_name' => $event['event_name']]),
       '#attached' => [
         'library' => [
           'conreg/conreg_form',
+          'conreg/conreg_select_all',
+          'conreg/conreg_selectable_row',
+          // Powers the "Badge name" action link's modal dialog (opened via
+          // its use-ajax/data-dialog-type attributes - no custom JS).
+          'core/drupal.dialog.ajax',
         ],
       ],
       '#prefix' => '<div id="memberForm">',
@@ -168,6 +202,7 @@ class CheckInMembers extends FormBase {
     $this->checkInSummary($eid, $form);
 
     $headers = [
+      'is_checked_in' => $this->t('Check-in'),
       'badge_no' => [
         'data' => $this->t('Member no'),
         'field' => 'm.member_no',
@@ -195,22 +230,49 @@ class CheckInMembers extends FormBase {
       'badge_type' => ['data' => $this->t('Badge type')],
       'comment' => ['data' => $this->t('Comment')],
       'is_paid' => $this->t('Paid'),
-      'select' => $this->t('Select'),
-      /*t('Action'),*/
+      'action' => $this->t('Action'),
     ];
 
-    $form['search'] = [
+    $form['search_wrapper'] = [
+      '#type' => 'container',
+      // 'conreg-checkin-actions' is this page's shared "row of actions"
+      // flex layout, also used by $form['checkin_actions'] below -
+      // 'conreg-ajax-search' is the generic pairing conreg.js's
+      // triggerAjaxButtonOnEnter() looks for, kept separate so it isn't
+      // tied to this page's specific layout class.
+      '#attributes' => ['class' => ['conreg-checkin-actions', 'conreg-ajax-search']],
+    ];
+
+    $form['search_wrapper']['search'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Custom search term'),
       '#default_value' => $search,
+      '#attributes' => ['class' => ['conreg-ajax-search-field']],
     ];
 
-    $form['search_button'] = [
+    $form['search_wrapper']['search_button'] = [
       '#type' => 'button',
       '#value' => $this->t('Search'),
-      '#attributes' => ['id' => "searchBtn"],
+      // A class only, no 'id' here (deliberately - it was "searchBtn"
+      // before this fix). #ajax below stores its settings keyed by this
+      // element's auto-generated #id and expects the rendered HTML id to
+      // match; overriding just #attributes['id'] changes what's rendered
+      // without touching #id, so the two go out of sync and Drupal's AJAX
+      // JS can never find the element to bind to - it then silently does
+      // nothing, leaving the click to fall through to a plain native form
+      // submission (a full page reload). Letting Drupal assign the id
+      // keeps both in sync; the class is just a stable hook for our own
+      // CSS/JS.
+      '#attributes' => ['class' => ['conreg-ajax-search-button']],
       '#validate' => [],
       '#submit' => ['::search'],
+      // Without this, Drupal renders the button as type="submit" (the
+      // element's own default - see Button::getInfo()), so pressing it
+      // submits and reloads the page like a normal form submission before
+      // #ajax below gets a chance to intercept it. Setting this to FALSE
+      // renders type="button" instead, so #ajax is the only thing that
+      // happens on click.
+      '#submit_button' => FALSE,
       '#ajax' => [
         'wrapper' => 'memberForm',
         'callback' => [$this, 'updateDisplayCallback'],
@@ -234,6 +296,22 @@ class CheckInMembers extends FormBase {
         // Sanitize each entry.
         $is_paid = $entry['is_paid'];
         $row = [];
+        if ($entry['is_checked_in']) {
+          $row['is_checked_in'] = [
+            '#markup' => $this->t('Checked in'),
+            '#wrapper_attributes' => ['class' => ['conreg-checkin-status-cell']],
+          ];
+        }
+        else {
+          $row['is_checked_in'] = [
+            '#type' => 'checkbox',
+            '#title' => $this->t('Select'),
+            '#title_display' => 'invisible',
+            '#default_value' => $entry['is_checked_in'],
+            '#attributes' => ['class' => ['checkbox-selectable', 'conreg-checkin-checkbox']],
+            '#wrapper_attributes' => ['class' => ['conreg-checkin-status-cell']],
+          ];
+        }
         $row['badge_no'] = [
           '#markup' => Html::escape($this->showBadgeNumber($entry, $config)),
         ];
@@ -248,6 +326,7 @@ class CheckInMembers extends FormBase {
         ];
         $row['badge_name'] = [
           '#markup' => Html::escape($entry['badge_name']),
+          '#wrapper_attributes' => ['id' => 'conreg-badge-name-cell-' . $mid],
         ];
         $row['registered_by'] = [
           '#markup' => Html::escape($entry['registered_by']),
@@ -279,22 +358,100 @@ class CheckInMembers extends FormBase {
         $row['is_paid'] = [
           '#markup' => $is_paid ? $this->t('Yes') : $this->t('No'),
         ];
+
         if ($entry['is_checked_in']) {
-          $row["is_checked_in"] = [
-            '#markup' => $this->t('Checked in'),
-          ];
+          // Both actions here are supervisor-only, but on separate
+          // permissions: "Undo check-in" reverts an already-confirmed
+          // check-in (mutates registration/payment state), while
+          // "Reprint label" just queues another badge label print (e.g.
+          // for a lost badge) rather than the one-per-check-in the main
+          // form otherwise enforces (consumes label stock, no data
+          // change) - a site may want to grant one without the other.
+          $links = [];
+          if ($this->currentUser()->hasPermission('undo convention member check-in')) {
+            $links['undo_check_in'] = [
+              'title' => $this->t('Undo check-in'),
+              // Carries the active search along so UndoCheckInForm's
+              // post-confirm redirect can restore it (see $search
+              // above) instead of landing back on an empty search box.
+              'url' => Url::fromRoute('conreg_admin_checkin_undo', ['eid' => $eid, 'mid' => $mid], ['query' => ['search' => $search]]),
+              'attributes' => [
+                'class' => ['use-ajax'],
+                'data-dialog-type' => 'modal',
+                'data-dialog-options' => Json::encode(['width' => 400]),
+              ],
+            ];
+          }
+          if ($labelPrintingEnabled && $this->currentUser()->hasPermission('reprint convention member badge label')) {
+            $links['reprint_label'] = [
+              'title' => $this->t('Reprint label'),
+              // Carries the active search along so ReprintLabelForm's
+              // post-confirm redirect can restore it, same as
+              // undo_check_in above.
+              'url' => Url::fromRoute('conreg_admin_checkin_reprint_label', ['eid' => $eid, 'mid' => $mid], ['query' => ['search' => $search]]),
+              'attributes' => [
+                'class' => ['use-ajax'],
+                'data-dialog-type' => 'modal',
+                'data-dialog-options' => Json::encode(['width' => 500]),
+              ],
+            ];
+          }
+          $row['action'] = $links ? ['#type' => 'dropbutton', '#links' => $links] : [];
         }
         else {
-          $row["is_checked_in"] = [
-            '#type' => 'checkbox',
-            '#title' => $this->t('Select'),
-            '#default_value' => $entry['is_checked_in'],
+          // Plain links, not form elements - core/drupal.dialog.ajax
+          // (attached below) opens each in a modal automatically via the
+          // use-ajax/data-dialog-type attributes, with no custom JS and
+          // none of the "#ajax on a form element repeated once per row"
+          // problems a hand-built per-row control would run into (see
+          // CheckInBadgeNameForm and CheckInLabelPreviewController,
+          // which do the actual work behind each option).
+          $row['action'] = [
+            '#type' => 'dropbutton',
+            '#links' => [
+              'badge_name' => [
+                'title' => $this->t('Badge name'),
+                'url' => Url::fromRoute('conreg_admin_checkin_badge_name', ['eid' => $eid, 'mid' => $mid]),
+                'attributes' => [
+                  'class' => ['use-ajax'],
+                  'data-dialog-type' => 'modal',
+                  'data-dialog-options' => Json::encode(['width' => 400]),
+                ],
+              ],
+              'preview_label' => [
+                'title' => $this->t('Preview label'),
+                'url' => Url::fromRoute('conreg_admin_checkin_label_preview', ['eid' => $eid, 'mid' => $mid]),
+                'attributes' => [
+                  'class' => ['use-ajax'],
+                  'data-dialog-type' => 'modal',
+                  'data-dialog-options' => Json::encode(['width' => 500]),
+                ],
+              ],
+            ],
           ];
         }
 
         $form['table'][$mid] = $row;
+
+        if (!$entry['is_checked_in']) {
+          // Generic class - conreg_selectable_row.js's click-anywhere-on-
+          // the-row-to-toggle-the-checkbox behavior isn't check-in-specific,
+          // so any table's rows can opt into it the same way.
+          $form['table'][$mid]['#attributes']['class'][] = 'conreg-table-row--selectable';
+        }
       }
     }
+
+    $form['select_all_wrapper'] = [
+      '#type' => 'container',
+      '#attributes' => ['class' => ['conreg-checkin-select-all']],
+    ];
+
+    $form['select_all_wrapper']['select_all'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Select all'),
+      '#attributes' => ['class' => ['select-all']],
+    ];
 
     $form['checkin_actions'] = [
       '#type' => 'container',
@@ -303,7 +460,7 @@ class CheckInMembers extends FormBase {
 
     $form['checkin_actions']['submit'] = [
       '#type' => 'submit',
-      '#value' => $this->t('Check-in Selected'),
+      '#value' => $this->t('Check-in selected'),
       '#submit' => [[$this, 'checkInSubmit']],
       '#attributes' => ['id' => "submitBtn"],
     ];
@@ -327,7 +484,7 @@ class CheckInMembers extends FormBase {
 
       $form['checkin_actions']['submit_print'] = [
         '#type' => 'submit',
-        '#value' => $this->t('Check In and Print Labels'),
+        '#value' => $this->t('Check-in and print labels'),
         '#validate' => [[$this, 'validatePrinterSelected']],
         '#submit' => [[$this, 'checkInAndPrintSubmit']],
         '#disabled' => !$printerOptions,
@@ -342,6 +499,18 @@ class CheckInMembers extends FormBase {
         ];
       }
     }
+
+    $form['unpaid_divider'] = [
+      '#type' => 'html_tag',
+      '#tag' => 'hr',
+      '#attributes' => ['class' => ['conreg-checkin-divider']],
+    ];
+
+    $form['unpaid_heading'] = [
+      '#type' => 'html_tag',
+      '#tag' => 'h3',
+      '#value' => $this->t('Unpaid members and walk-ins'),
+    ];
 
     $headers = [
       'first_name' => [
@@ -553,6 +722,14 @@ class CheckInMembers extends FormBase {
   public function buildConfirmForm(int $eid, array $toPay, ?string $printerDisplayName = NULL) {
     $config = $this->config('conreg.settings.' . $eid);
     $form = [];
+    // The "Check-in selected"/"Check-in and print labels" buttons that
+    // reach this have no #ajax, so this becomes a genuine full-page
+    // rebuild (not a partial AJAX replace of #memberForm) - buildForm()
+    // returns straight from this method without ever reaching its own
+    // '#attached' declaration below, so the .conreg-checkin-confirm-list
+    // styling (and any other conreg.css rule) would otherwise never load
+    // for this step.
+    $form['#attached']['library'][] = 'conreg/conreg_form';
     $form['intro'] = [
       '#type' => 'markup',
       '#markup' => $this->t('Please confirm badges for:'),
@@ -568,6 +745,7 @@ class CheckInMembers extends FormBase {
       ];
     }
     $maxMemberNo = $this->memberStorage->loadMaxMemberNo($eid);
+    $items = [];
     foreach ($toPay as $mid) {
       if ($member = $this->memberStorage->load(['mid' => $mid])) {
         $update = ['mid' => $mid];
@@ -585,19 +763,49 @@ class CheckInMembers extends FormBase {
           $update['member_no'] = $member_no;
         }
         $this->memberStorage->update($update);
-        $form['member' . $mid] = [
-          '#type' => 'markup',
-          '#markup' => $this->t('Badge number @memberno for @first @last',
-          [
-            '@memberno' => $this->showBadgeNumber($member, $config),
-            '@first' => $member['first_name'],
-            '@last' => $member['last_name'],
-          ]),
-          '#prefix' => '<div>',
-          '#suffix' => '</div>',
+
+        $item = [
+          'text' => [
+            '#markup' => $this->t('Badge number <strong>@memberno</strong> for <strong>@first @last</strong>',
+            [
+              '@memberno' => $this->showBadgeNumber($member, $config),
+              '@first' => $member['first_name'],
+              '@last' => $member['last_name'],
+            ]),
+          ],
         ];
+
+        // Only when printing (not a plain check-in) - shows exactly what
+        // will print, using the same rendering path the "Preview
+        // label"/"Reprint label" modals use (renderPreviewImageForMember()
+        // rather than renderPreviewImage($mid) - $member is already
+        // loaded and updated above, so there's no need to reload and
+        // re-render it from scratch for every member in this loop).
+        if ($printerDisplayName) {
+          $imageBase64 = $this->printJobManager->renderPreviewImageForMember($member);
+          if ($imageBase64 !== NULL) {
+            $item['preview'] = [
+              '#type' => 'html_tag',
+              '#tag' => 'img',
+              '#attributes' => [
+                'src' => 'data:image/png;base64,' . $imageBase64,
+                'alt' => $this->t('Label preview'),
+                'class' => ['conreg-label-preview-image', 'conreg-checkin-confirm-preview'],
+              ],
+            ];
+          }
+        }
+
+        $items[] = $item;
       }
     }
+
+    $form['members'] = [
+      '#theme' => 'item_list',
+      '#list_type' => 'ul',
+      '#attributes' => ['class' => ['conreg-checkin-confirm-list']],
+      '#items' => $items,
+    ];
     $form['confirm'] = [
       '#type' => 'submit',
       '#value' => $this->t('Confirm Check-In'),
@@ -685,13 +893,27 @@ class CheckInMembers extends FormBase {
   }
 
   /**
+   * Returns the submitted check-in table rows, keyed by member ID.
+   *
+   * Normally an array built from $form['table']'s per-member checkboxes,
+   * but a browser can resubmit a stale POST body (e.g. via the "confirm
+   * form resubmission" refresh prompt) that predates the current form
+   * structure, in which case this key may be missing or the wrong type
+   * entirely. Falling back to an empty array here treats that the same as
+   * "no members selected" instead of raising a foreach() warning.
+   */
+  protected function getSubmittedTableRows(array $form_values): array {
+    return is_array($form_values['table'] ?? NULL) ? $form_values['table'] : [];
+  }
+
+  /**
    * Callback for submit button.
    */
   public function checkInSubmit(array &$form, FormStateInterface $form_state) {
     $form_values = $form_state->getValues();
 
     $toPay = [];
-    foreach ($form_values["table"] as $mid => $member) {
+    foreach ($this->getSubmittedTableRows($form_values) as $mid => $member) {
       if (isset($member["is_checked_in"]) && $member["is_checked_in"]) {
         $toPay[] = $mid;
       }
@@ -699,6 +921,13 @@ class CheckInMembers extends FormBase {
     if (count($toPay)) {
       $form_state->set("action", "checkIn");
       $form_state->set("toPay", $toPay);
+      // A plain check-in, not check-in-and-print - clears any printer
+      // left over from a previous "Check-in and print labels" attempt in
+      // the same form-rebuild lifecycle (e.g. selected, then Cancelled,
+      // then a different set of members checked in without printing),
+      // so buildConfirmForm() doesn't show a stale label preview.
+      $form_state->set("printerMachineName", NULL);
+      $form_state->set("printerDisplayName", NULL);
     }
     $form_state->setRebuild();
   }
@@ -719,7 +948,7 @@ class CheckInMembers extends FormBase {
     $form_values = $form_state->getValues();
 
     $toPay = [];
-    foreach ($form_values["table"] as $mid => $member) {
+    foreach ($this->getSubmittedTableRows($form_values) as $mid => $member) {
       if (isset($member["is_checked_in"]) && $member["is_checked_in"]) {
         $toPay[] = $mid;
       }
@@ -733,39 +962,6 @@ class CheckInMembers extends FormBase {
       $this->rememberPrinter((int) $form_state->get('eid'), $printerMachineName);
     }
     $form_state->setRebuild();
-  }
-
-  /**
-   * Session key used to remember the selected printer for an event.
-   */
-  protected function printerSessionKey(int $eid): string {
-    return 'conreg_checkin_printer_' . $eid;
-  }
-
-  /**
-   * Gets the printer machine name remembered for this event, if any.
-   *
-   * Deliberately session-scoped rather than a user setting: the same
-   * staff account is often used across multiple reg-desk computers at
-   * once, each of which may have a different physical printer attached,
-   * so each session should remember its own choice independently.
-   */
-  protected function getRememberedPrinter(int $eid): ?string {
-    $request = $this->getRequest();
-    if (!$request || !$request->hasSession()) {
-      return NULL;
-    }
-    return $request->getSession()->get($this->printerSessionKey($eid));
-  }
-
-  /**
-   * Remembers the selected printer in session for this event.
-   */
-  protected function rememberPrinter(int $eid, string $printerMachineName): void {
-    $request = $this->getRequest();
-    if ($request && $request->hasSession()) {
-      $request->getSession()->set($this->printerSessionKey($eid), $printerMachineName);
-    }
   }
 
   /**
@@ -926,6 +1122,11 @@ class CheckInMembers extends FormBase {
    */
   public function cancelAction(array &$form, FormStateInterface $form_state) {
     $form_state->set('action', '');
+    // Clears any printer chosen for a since-cancelled "Check In and Print
+    // Labels" attempt, so it can't leak into a later plain check-in - see
+    // checkInSubmit()'s same reset.
+    $form_state->set('printerMachineName', NULL);
+    $form_state->set('printerDisplayName', NULL);
     $form_state->setRebuild();
   }
 
@@ -937,7 +1138,7 @@ class CheckInMembers extends FormBase {
     $form_values = $form_state->getValues();
     $saved_members = $this->memberStorage->loadAllMemberNos($eid);
     $uid = $this->currentUser()->id();
-    foreach ($form_values["table"] as $mid => $member) {
+    foreach ($this->getSubmittedTableRows($form_values) as $mid => $member) {
       if ($member["is_checked_in"] != $saved_members[$mid]["is_checked_in"]) {
         if ($member["is_checked_in"]) {
           $entry = [

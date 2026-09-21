@@ -420,6 +420,50 @@ conreg_admin_checkin:
     eid: ^[0-9]+$
     lead_mid: ^[0-9]+$
 
+conreg_admin_checkin_badge_name:
+  path: 'admin/members/checkin/{eid}/{mid}/badge-name'
+  defaults:
+    _title: 'Update badge name'
+    _form: '\Drupal\conreg\Form\Admin\CheckInBadgeNameForm'
+  requirements:
+    _permission: 'check in convention members'
+    eid: ^[0-9]+$
+    mid: ^[0-9]+$
+
+conreg_admin_checkin_label_preview:
+  path: 'admin/members/checkin/{eid}/{mid}/label-preview'
+  defaults:
+    _title: 'Label preview'
+    _controller: '\Drupal\conreg\Controller\CheckInLabelPreviewController::build'
+  requirements:
+    _permission: 'check in convention members'
+    eid: ^[0-9]+$
+    mid: ^[0-9]+$
+
+conreg_admin_checkin_undo:
+  path: 'admin/members/checkin/{eid}/{mid}/undo-checkin'
+  defaults:
+    _title: 'Undo check-in'
+    _form: '\Drupal\conreg\Form\Admin\UndoCheckInForm'
+  requirements:
+    _permission: 'undo convention member check-in'
+    eid: ^[0-9]+$
+    mid: ^[0-9]+$
+
+conreg_admin_checkin_reprint_label:
+  path: 'admin/members/checkin/{eid}/{mid}/reprint-label'
+  defaults:
+    _title: 'Reprint label'
+    _form: '\Drupal\conreg\Form\Admin\ReprintLabelForm'
+  requirements:
+    # Its own permission, not "undo convention member check-in" - the
+    # two are different-risk supervisor actions (reprinting just
+    # consumes label stock; undoing a check-in mutates registration/
+    # payment state), so a site may want to grant one without the other.
+    _permission: 'reprint convention member badge label'
+    eid: ^[0-9]+$
+    mid: ^[0-9]+$
+
 conreg_admin_fantable:
   path: 'admin/members/fantable/{eid}/{lead_mid}'
   defaults:

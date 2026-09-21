@@ -92,6 +92,52 @@
   gap: 0.75rem;
 }
 
+.conreg-checkin-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem 1.25rem;
+  border-radius: 0.5rem;
+  /* Same background as a Claro table heading, so the summary bar reads as
+   * part of the same "heading" visual language as the table below it. */
+  background-color: var(--color-gray-050, #f3f4f9);
+}
+
+.conreg-checkin-summary__label {
+  font-weight: 600;
+}
+
+.conreg-checkin-summary__item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.conreg-checkin-summary__count {
+  padding: 0.15rem 0.65rem;
+  border-radius: 0.375rem;
+  background-color: #fff;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.conreg-checkin-status-cell {
+  text-align: center;
+}
+
+/*
+ * Element + class, not just a class, to outweigh Claro's .form-boolean
+ * (also a single class) - themes load after modules, so on an equal-
+ * specificity tie Claro wins; adding the element raises our specificity
+ * so this wins regardless of load order.
+ */
+input.conreg-checkin-checkbox {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
 .member-type-card {
   position: relative;
   display: block;
@@ -255,6 +301,16 @@
   color: var(--member-type-card-error-color);
 }
 
+/*
+ * Tucks the "Select all" checkbox up against the action buttons below it -
+ * the checkbox's own form-item still carries Claro's normal stacking
+ * margin, which otherwise reads as a bigger gap here than to the table
+ * above it.
+ */
+.conreg-checkin-select-all .form-item {
+  margin-block-end: 0.25rem;
+}
+
 .conreg-checkin-actions {
   display: flex;
   flex-wrap: wrap;
@@ -263,5 +319,82 @@
 }
 
 .conreg-checkin-actions .form-item--printer {
+  /*
+   * Claro's base .form-item rule (margin-block: var(--space-l)) gives every
+   * form item a top margin too - the printer select is the only item in
+   * this row wrapped in a .form-item (the buttons aren't), so it's the only
+   * one that gets pushed down, showing as empty space above its label.
+   */
+  margin-block-start: 0;
   margin-block-end: calc(var(--space-l) / 2);
+}
+
+/*
+ * flex-end aligns each item's margin box, not its visible border box - the
+ * search field's form-item and the button have different default bottom
+ * margins (Claro gives form items more breathing room than buttons), so
+ * without this their margin boxes align but their visible bottoms don't.
+ * Zeroing both here (gap already handles spacing in this row) makes the
+ * margin box and the visible box the same, so the visible bottoms align.
+ */
+.conreg-checkin-actions .form-item--search,
+.conreg-checkin-actions .conreg-ajax-search-button {
+  margin-block-end: 0;
+}
+
+.conreg-checkin-divider {
+  margin: 1.5rem 0 1rem;
+  border: none;
+  border-top: 1px solid var(--color-gray-200, #d3d4d9);
+}
+
+.conreg-checkin-divider + h3 {
+  margin-top: 0;
+}
+
+/*
+ * The "Please confirm badges for:" list shown on Member Check-In's
+ * confirm step (see CheckInMembers::buildConfirmForm()) - roughly
+ * double the surrounding text so it reads clearly at a glance, with
+ * each member as its own bullet rather than a run of plain paragraphs.
+ */
+.conreg-checkin-confirm-list {
+  font-size: 2em;
+  line-height: 1.4;
+}
+
+.conreg-checkin-confirm-list li {
+  margin-bottom: 0.75em;
+}
+
+/*
+ * Caps the "Check-in and print labels" preview to about the same size
+ * as the "Preview label"/"Reprint label" modals' ~450px-wide dialog
+ * (data-dialog-options width: 500, minus padding) - .conreg-label-
+ * preview-image's own max-width: 100% is sized for that narrow modal
+ * and would otherwise stretch to this list's full (much wider) page
+ * column. rem, not px or em: em would compound with this list's own
+ * font-size: 2em (see .conreg-checkin-confirm-list above), growing the
+ * image every time the list's text size changes; rem stays anchored to
+ * the root font size, matching the modals' effectively-fixed size while
+ * still scaling with a user's browser-level font-size preference.
+ */
+.conreg-checkin-confirm-preview {
+  max-width: 28rem;
+  margin-top: 0.5em;
+}
+
+/*
+ * An outline (not a border, so it doesn't touch/obscure the label's own
+ * edge pixels) around the "Preview label" modal's image, matching the
+ * Label Printing Settings page's preview (#conreg-label-preview-image in
+ * conreg_label_preview.css) - a white label on the dialog's white
+ * background otherwise leaves its actual edges unclear.
+ */
+.conreg-label-preview-image {
+  display: block;
+  max-width: 28rem;
+  margin: 0 0 1em;
+  outline: 3px dotted #787878;
+  outline-offset: 2px;
 }

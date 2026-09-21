@@ -76,6 +76,14 @@
   title: Check in convention members
   description: Allow users to check in members arriving at the convention
 
+'undo convention member check-in':
+  title: Undo convention member check-in
+  description: Allow users to return a checked-in member to not checked in
+
+'reprint convention member badge label':
+  title: Reprint convention member badge label
+  description: Allow users to reprint a badge label for an already checked-in member (e.g. a lost badge)
+
 'fan table registration':
   title: Sign up members at a fan table
   description: Allow users to help members to join at a convention fan table

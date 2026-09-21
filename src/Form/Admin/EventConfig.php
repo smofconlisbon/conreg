@@ -599,7 +599,7 @@ class EventConfig extends ConfigFormBase {
     $form['conreg_checkin']['label_printing_enabled'] = [
       '#type' => 'checkbox',
       '#title' => $this->t('Enable badge label printing'),
-      '#description' => $this->t('Show a printer selector and "Check In and Print Labels" button on the Member Check-In page. Leave disabled for events that do not use label printers.'),
+      '#description' => $this->t('Show a printer selector and "Check-in and print labels" button on the Member Check-In page. Leave disabled for events that do not use label printers.'),
       '#default_value' => $config->get('checkin.label_printing_enabled') ?? FALSE,
     ];
 

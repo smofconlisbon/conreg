@@ -6,6 +6,7 @@ use Drupal\user\RoleInterface;
 use Drupal\filter\Entity\FilterFormat;
 use Drupal\conreg\Addons;
 use Drupal\conreg\Entity\Printer;
+use Drupal\conreg\Form\Admin\CheckInBadgeNameForm;
 use Drupal\conreg\Form\Admin\CheckInMembers;
 use Drupal\conreg\Form\Admin\EventAddOns;
 use Drupal\conreg\Form\Admin\EventConfig;
@@ -873,7 +874,7 @@ class FormBuildTest extends KernelTestBase {
   }
 
   /**
-   * Submitting "Check In and Print Labels" with no printer chosen errors.
+   * Submitting "Check-in and print labels" with no printer chosen errors.
    */
   public function testCheckInAndPrintRequiresPrinterSelection(): void {
     $formObject = CheckInMembers::create($this->container);
@@ -887,7 +888,7 @@ class FormBuildTest extends KernelTestBase {
   }
 
   /**
-   * Submitting "Check In and Print Labels" with a printer chosen is valid.
+   * Submitting "Check-in and print labels" with a printer chosen is valid.
    */
   public function testCheckInAndPrintAllowsSelectedPrinter(): void {
     $formObject = CheckInMembers::create($this->container);
@@ -964,7 +965,7 @@ class FormBuildTest extends KernelTestBase {
   }
 
   /**
-   * Submitting "Check In and Print Labels" remembers the printer chosen.
+   * Submitting "Check-in and print labels" remembers the printer chosen.
    */
   public function testCheckInAndPrintSubmitRemembersPrinterInSession(): void {
     $session = $this->pushRequestWithSession();
@@ -981,6 +982,97 @@ class FormBuildTest extends KernelTestBase {
     $formObject->checkInAndPrintSubmit($form, $formState);
 
     $this->assertSame('bilbo_baggins', $session->get('conreg_checkin_printer_1'));
+  }
+
+  /**
+   * The plain check-in confirm step lists members as a bulleted list.
+   *
+   * No printer was selected, so there's nothing to preview - only
+   * testCheckInConfirmFormShowsLabelPreviewWhenPrinting exercises that.
+   */
+  public function testCheckInConfirmFormListsMembersWithoutPreviewWhenNotPrinting(): void {
+    $mid = $this->createTestMember([
+      'mid' => 1,
+      'lead_mid' => 1,
+      'member_no' => 42,
+      'first_name' => 'Jane',
+      'last_name' => 'Doe',
+    ]);
+
+    $formObject = CheckInMembers::create($this->container);
+    $form = $formObject->buildConfirmForm(1, [$mid]);
+
+    // Regression test: the buttons that reach this step have no #ajax,
+    // so it's a genuine full-page rebuild that bypasses buildForm()'s
+    // own '#attached' declaration entirely - without this, conreg.css
+    // (and so .conreg-checkin-confirm-list's styling) would never load.
+    $this->assertContains('conreg/conreg_form', $form['#attached']['library']);
+    $this->assertSame('item_list', $form['members']['#theme']);
+    $this->assertSame('ul', $form['members']['#list_type']);
+    $this->assertContains('conreg-checkin-confirm-list', $form['members']['#attributes']['class']);
+    $this->assertCount(1, $form['members']['#items']);
+
+    $text = (string) $form['members']['#items'][0]['text']['#markup'];
+    // showBadgeNumber() zero-pads to conreg.settings.1's default
+    // member_no_digits (4) - see PrintJobManagerKernelTest for the same
+    // formatting behavior.
+    $this->assertStringContainsString('<strong>0042</strong>', $text);
+    $this->assertStringContainsString('<strong>Jane Doe</strong>', $text);
+    $this->assertArrayNotHasKey('preview', $form['members']['#items'][0]);
+  }
+
+  /**
+   * The "Check-in and print labels" flow also shows a per-member preview.
+   */
+  public function testCheckInConfirmFormShowsLabelPreviewWhenPrinting(): void {
+    $mid = $this->createTestMember([
+      'mid' => 1,
+      'lead_mid' => 1,
+      'member_no' => 42,
+      'first_name' => 'Jane',
+      'last_name' => 'Doe',
+    ]);
+
+    $formObject = CheckInMembers::create($this->container);
+    $form = $formObject->buildConfirmForm(1, [$mid], 'Bilbo Baggins');
+
+    $preview = $form['members']['#items'][0]['preview'];
+    $this->assertSame('img', $preview['#tag']);
+    $this->assertStringStartsWith('data:image/png;base64,', $preview['#attributes']['src']);
+    $this->assertContains('conreg-label-preview-image', $preview['#attributes']['class']);
+    $this->assertContains('conreg-checkin-confirm-preview', $preview['#attributes']['class']);
+  }
+
+  /**
+   * CheckInBadgeNameForm shows the member's current badge name.
+   */
+  public function testCheckInBadgeNameFormBuild(): void {
+    $mid = $this->createTestMember([
+      'mid' => 1,
+      'lead_mid' => 1,
+      'badge_name' => 'Original Name',
+      'is_paid' => 1,
+      'member_type' => 'A',
+      'days' => 'W',
+      'badge_type' => 'A',
+    ]);
+
+    $formObject = CheckInBadgeNameForm::create($this->container);
+    $formState = new FormState();
+    $form = $formObject->buildForm([], $formState, 1, $mid);
+
+    $this->assertSame('textfield', $form['badge_name']['#type']);
+    $this->assertSame('Original Name', $form['badge_name']['#default_value']);
+    $this->assertTrue($form['badge_name']['#required']);
+    $this->assertSame('submit', $form['actions']['submit']['#type']);
+    $this->assertSame('::ajaxSubmit', $form['actions']['submit']['#ajax']['callback']);
+    $this->assertSame('submit', $form['actions']['cancel']['#type']);
+    // Must resolve to a real no-op handler, not [] - an empty array
+    // falls back to the form's top-level #submit (which includes
+    // submitForm()), so Cancel would silently save anyway. See
+    // CheckInBadgeNameFormKernelTest::testCancelSubmitHandlerDoesNotSave.
+    $this->assertSame(['::cancelSubmit'], $form['actions']['cancel']['#submit']);
+    $this->assertSame('::ajaxCancel', $form['actions']['cancel']['#ajax']['callback']);
   }
 
   /**
