@@ -77,19 +77,19 @@ class MemberDelete extends FormBase {
     ];
 
     $form['member']['first_name'] = [
-      '#markup' => $this->t('First Name: @first_name', ['@first_name' => $member->first_name]),
+      '#markup' => $this->t('First Name: @first_name', ['@first_name' => $member->first_name ?? '']),
       '#prefix' => '<div class="field">',
       '#suffix' => '</div>',
     ];
 
     $form['member']['last_name'] = [
-      '#markup' => $this->t('Last Name: @last_name', ['@last_name' => $member->last_name]),
+      '#markup' => $this->t('Last Name: @last_name', ['@last_name' => $member->last_name ?? '']),
       '#prefix' => '<div class="field">',
       '#suffix' => '</div>',
     ];
 
     $form['member']['badge_name'] = [
-      '#markup' => $this->t('Badge Name: @badge_name', ['@badge_name' => $member->badge_name]),
+      '#markup' => $this->t('Badge Name: @badge_name', ['@badge_name' => $member->badge_name ?? '']),
       '#prefix' => '<div class="field">',
       '#suffix' => '</div>',
     ];
@@ -109,19 +109,19 @@ class MemberDelete extends FormBase {
     ];
 
     $form['member']['member_price'] = [
-      '#markup' => $this->t('Price: @member_price', ['@member_price' => $member->member_price]),
+      '#markup' => $this->t('Price: @member_price', ['@member_price' => $member->member_price ?? '']),
       '#prefix' => '<div class="field">',
       '#suffix' => '</div>',
     ];
 
     $form['member']['payment_id'] = [
-      '#markup' => $this->t('Payment reference: @payment_id', ['@payment_id' => $member->payment_id]),
+      '#markup' => $this->t('Payment reference: @payment_id', ['@payment_id' => $member->payment_id ?? '']),
       '#prefix' => '<div class="field">',
       '#suffix' => '</div>',
     ];
 
     $form['member']['comment'] = [
-      '#markup' => $this->t('Comment: @comment', ['@comment' => $member->comment]),
+      '#markup' => $this->t('Comment: @comment', ['@comment' => $member->comment ?? '']),
       '#prefix' => '<div class="field">',
       '#suffix' => '</div>',
     ];
