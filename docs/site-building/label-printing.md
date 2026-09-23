@@ -3,8 +3,10 @@
 Opt-in per-event feature letting Member Check-In queue a badge label for
 printing on a Dymo LabelWriter attached to a separate print-server device
 (not the staff member's own workstation). The print-server agent
-(`conreg_print_agent.py`) lives in a separate repository — see its
-`README.md` and `PRINT_JOB_API.md` for the agent/hardware side; this page
+(`conreg_print_agent.py`) lives in a separate repository,
+[`conreg_labels`](https://github.com/lostcarpark/conreg_labels) — see its
+`README.md` and `PRINT_JOB_API.md` for the agent/hardware side (device
+setup, CUPS/Dymo driver installation, running the agent); this page
 covers the ConReg side.
 
 **Rendering happens in ConReg, not the print agent.** Label content -

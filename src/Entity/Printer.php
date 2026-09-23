@@ -58,13 +58,23 @@ class Printer extends ContentEntityBase {
       ->setLabel(t('Name'))
       ->setDescription(t('The "fun name" stickered on the physical printer, e.g. "Bilbo Baggins". Shown to staff in the check-in printer picker.'))
       ->setRequired(TRUE)
-      ->setSetting('max_length', 64);
+      ->setSetting('max_length', 64)
+      ->setDisplayOptions('form', [
+        'type' => 'string_textfield',
+        'weight' => -30,
+      ])
+      ->setDisplayConfigurable('form', TRUE);
 
     $fields['machine_name'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Machine name'))
       ->setDescription(t('A stable, CUPS-safe identifier (e.g. "bilbo_baggins") matching the print agent\'s CUPS queue name. Sent over the API and matched against the --printer argument the agent polls with; never shown to staff.'))
       ->setRequired(TRUE)
-      ->setSetting('max_length', 64);
+      ->setSetting('max_length', 64)
+      ->setDisplayOptions('form', [
+        'type' => 'string_textfield',
+        'weight' => -20,
+      ])
+      ->setDisplayConfigurable('form', TRUE);
 
     $fields['eid'] = BaseFieldDefinition::create('integer')
       ->setLabel(t('Event ID'))

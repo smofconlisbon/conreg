@@ -160,7 +160,7 @@ final class LabelPrintingSettings extends ConfigFormBase {
     foreach ($this->entityTypeManager->getStorage('conreg_printer')->loadMultiple() as $printer) {
       /** @var \Drupal\conreg\Entity\Printer $printer */
       $printerOptions[$printer->id()] = $this->t('@name (@event)', [
-        '@name' => $printer->label(),
+        '@name' => $printer->label() ?? '',
         '@event' => $this->eventName((int) $printer->get('eid')->value),
       ]);
     }
