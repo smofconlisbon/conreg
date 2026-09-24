@@ -1230,7 +1230,6 @@ class FormBuildTest extends KernelTestBase {
     $form = Addons::getAddon(
       $this->container->get('config.factory')->get('conreg.settings.1'),
       [],
-      [],
       1,
       [self::class, 'addOnAjaxCallback'],
       $form_state
@@ -1291,7 +1290,6 @@ class FormBuildTest extends KernelTestBase {
       ->get('conreg.settings.1');
     $form = Addons::getAddon(
       $config,
-      [],
       [],
       1,
       [self::class, 'addOnAjaxCallback'],

@@ -468,32 +468,7 @@ class ConregOptions {
   }
 
   /**
-   * Return list of membership add-ons from config.
-   *
-   * @param int $eid
-   *   The event ID.
-   *
-   * @return array
-   *   Member add-on options and prices.
-   */
-  public function memberAddons(int $eid): array {
-    $config = $this->loadConfig($eid);
-    // One type per line.
-    $addOns = explode("\n", $config->get('add_ons.options') ?: '');
-    $addOnOptions = [];
-    $addOnPrices = [];
-    foreach ($addOns as $addOn) {
-      if (!empty($addOn)) {
-        [$desc, $price] = explode('|', $addOn);
-        $addOnOptions[$desc] = $desc;
-        $addOnPrices[$desc] = $price;
-      }
-    }
-    return [$addOnOptions, $addOnPrices];
-  }
-
-  /**
-   * Return list of membership add-ons from config.
+   * Return list of countries from config.
    *
    * @param int $eid
    *   The event ID.

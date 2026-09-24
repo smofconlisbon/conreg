@@ -60,7 +60,6 @@ class MemberEdit extends FormBase {
     $types = $this->conregOptions->memberTypes($eid);
     $memberClasses = $this->conregOptions->memberClasses($eid);
     $days = $this->conregOptions->days($eid);
-    [$addOnOptions] = $this->conregOptions->memberAddons($eid);
     $countryOptions = $this->conregOptions->memberCountries($eid);
     $defaultCountry = $config->get('reference.default_country');
 
@@ -311,7 +310,6 @@ class MemberEdit extends FormBase {
     $form['member']['add_on'] = Addons::getAddon(
       $config,
       $addon,
-      $addOnOptions,
       -1,
       [$this, 'updateMemberPriceCallback'],
       $form_state,

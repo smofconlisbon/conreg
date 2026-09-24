@@ -168,18 +168,6 @@ class ConregOptionsTest extends UnitTestCase {
   }
 
   /**
-   * The memberAddons() method returns options and prices keyed by description.
-   */
-  public function testMemberAddonsReturnsOptionsAndPricesKeyedByDescription(): void {
-    $service = $this->buildService(['add_ons' => ['options' => "T-Shirt|10\nMug|5"]]);
-
-    [$options, $prices] = $service->memberAddons(1);
-
-    $this->assertSame(['T-Shirt' => 'T-Shirt', 'Mug' => 'Mug'], $options);
-    $this->assertSame(['T-Shirt' => '10', 'Mug' => '5'], $prices);
-  }
-
-  /**
    * The paymentMethod() method returns the fixed, translated payment list.
    */
   public function testPaymentMethodReturnsFixedTranslatedList(): void {

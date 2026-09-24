@@ -49,8 +49,6 @@ class Addons {
    *   The configuration object.
    * @param array $addonVals
    *   Add on values from form submission.
-   * @param array $addOnOptions
-   *   Add on options.
    * @param int $memberPos
    *   The member being processed.
    * @param callable $callback
@@ -63,7 +61,7 @@ class Addons {
    * @return array
    *   Array of processed add ons.
    */
-  public static function getAddon(ImmutableConfig $config, array $addonVals, array $addOnOptions, int $memberPos, callable $callback, FormStateInterface $form_state, ?int $mid = NULL): array {
+  public static function getAddon(ImmutableConfig $config, array $addonVals, int $memberPos, callable $callback, FormStateInterface $form_state, ?int $mid = NULL): array {
 
     $addons = ['#tree' => TRUE];
     $fs_addons = [];

@@ -166,8 +166,6 @@ class Registration extends FormBase {
     }
     $lead_mid = $lead_member?->mid;
 
-    [$addOnOptions] = $this->conregOptions->memberAddons($eid);
-
     // Get the number of members on the form.
     $memberQty = $form_values['global']['member_quantity'] ?? 1;
 
@@ -486,7 +484,6 @@ class Registration extends FormBase {
       $form['members']['member' . $cnt]['add_on'] = Addons::getAddon(
         $config,
         $addon,
-        $addOnOptions,
         $cnt,
         [$this, 'updateMemberPriceCallback'],
         $form_state
@@ -717,7 +714,6 @@ class Registration extends FormBase {
     $form['payment']['global_add_on'] = Addons::getAddon(
       $config,
       $form_values['payment']['global_add_on'] ?? [],
-      $addOnOptions,
       0,
       [$this, 'updateMemberPriceCallback'],
       $form_state
