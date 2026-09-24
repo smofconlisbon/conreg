@@ -35,7 +35,7 @@ class FieldOptions {
    *
    * Parameters: Event ID, Config, Fieldset.
    */
-  public function __construct($eid, ImmutableConfig|NULL $config = NULL) {
+  public function __construct(int $eid, ImmutableConfig|NULL $config = NULL) {
     if (is_null($config)) {
       $config = ConregConfig::getConfig($eid);
     }
@@ -45,16 +45,16 @@ class FieldOptions {
     $this->options = [];
     $this->memberClasses = [];
 
-    // Get option groups and split into lines.
-    foreach (explode("\n", $config->get('conreg_options.option_groups') ?? '') as $group) {
+    // Get option groups, one per line.
+    foreach ($config->get('conreg_options.option_groups') ?? [] as $group) {
       $optionGroup = FieldOptionGroup::newGroup($group);
       if ($optionGroup) {
         $this->groups[$optionGroup->groupId] = $optionGroup;
       }
     }
 
-    // Get options and split into lines.
-    foreach (explode("\n", $config->get('conreg_options.options') ?? '') as $option) {
+    // Get options, one per line.
+    foreach ($config->get('conreg_options.options') ?? [] as $option) {
       $fieldOption = FieldOption::newOption($option);
       if ($fieldOption) {
         $this->options[$fieldOption->optionId] = $fieldOption;
@@ -90,7 +90,7 @@ class FieldOptions {
    * @return FieldOptions
    *   Object structure containing available options.
    */
-  public static function getFieldOptions($eid, $reset = FALSE) {
+  public static function getFieldOptions(int $eid, bool $reset = FALSE) {
     $language = \Drupal::languageManager()->getCurrentLanguage()->getId();
     $cid = 'conreg:fieldOptions_' . $eid . '_' . $language;
 
@@ -125,7 +125,7 @@ class FieldOptions {
 
     // Get the list of options, and put titles in an array.
     $optionTitles = [];
-    foreach (explode("\n", trim($config->get('conreg_options.options') ?? '')) as $optionLine) {
+    foreach ($config->get('conreg_options.options') ?? [] as $optionLine) {
       if ($optionLine) {
         [$optid, , $optionTitle] = explode('|', trim($optionLine));
         $optionTitles[$optid] = $optionTitle;
@@ -182,7 +182,7 @@ class FieldOptions {
    * @return array
    *   Array of member's options.
    */
-  public static function getMemberOptionValues($mid, $selected = TRUE) {
+  public static function getMemberOptionValues(int $mid, bool $selected = TRUE) {
     // Get member's options from database.
     return FieldOptionStorage::getMemberOptions($mid, $selected);
   }

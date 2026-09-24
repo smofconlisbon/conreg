@@ -5,36 +5,36 @@ payments:
   private_key: ''
   currency: 'EUR'
   symbol: '€'
-badge_types: |
-  A|Attending
-  S|Supporting
-  C|Committee
-  G|Guest
-  D|Dealer
-badge_name_options: |
-  F|Given name only
-  N|Full name on badge
-  L|Family name, given name
-  O|Custom badge name
+badge_types:
+  - A|Attending
+  - S|Supporting
+  - C|Committee
+  - G|Guest
+  - D|Dealer
+badge_name_options:
+  - F|Given name only
+  - N|Full name on badge
+  - L|Family name, given name
+  - O|Custom badge name
 badge_name_default: F
-days: |
-  W|Weekend
-  Fr|Friday
-  Sa|Saturday
-  Su|Sunday
+days:
+  - W|Weekend
+  - Fr|Friday
+  - Sa|Saturday
+  - Su|Sunday
 member_no_digits: '4'
 registration_intro: 'This is a test site. You will not be registered for any convention.'
 payment_intro: 'This is a test payment. Do not use real credit cards. No charges will be applied. Sample test card: 4242424242424242 (use any future date and any 3 digits for CVV).'
 communications_method:
-  options: |
-    E|Electronic|1
-    P|Paper|1
-    B|Both|0
+  options:
+    - E|Electronic|1
+    - P|Paper|1
+    - B|Both|0
 display_options:
-  options: |
-    F|Full name and member name
-    B|Member name only
-    N|Not at all
+  options:
+    - F|Full name and member name
+    - B|Member name only
+    - N|Not at all
   default: F
 display:
   page_size: 15

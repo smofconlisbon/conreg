@@ -36,16 +36,27 @@ conreg.settings.*:
         types:
           type: string
     badge_types:
-      type: text
+      type: sequence
       label: 'List of badge types (note: you must keep the letter before | unchanged)'
+      sequence:
+        type: text
     badge_name_options:
-      type: text
+      type: sequence
       label: 'List of options for choosing badge name'
+      sequence:
+        type: text
     badge_name_default:
       type: string
     days:
-      type: text
+      type: sequence
       label: 'List of days to attend (note: you must keep code before | unchanged)'
+      sequence:
+        type: text
+    member_upgrades:
+      type: sequence
+      label: 'Membership upgrade rules (from type/day, to type/day/badge, description, price, pipe-separated)'
+      sequence:
+        type: text
     member_no_digits:
       type: string
     registration_intro:
@@ -58,14 +69,18 @@ conreg.settings.*:
       type: mapping
       mapping:
         options:
-          type: text
+          type: sequence
           label: 'A list of communications options (note: do not translate codes before |)'
+          sequence:
+            type: text
     display_options:
       type: mapping
       mapping:
         options:
-          type: text
+          type: sequence
           label: 'A list of options for displaying member on public lists (note: do not translate codes before |)'
+          sequence:
+            type: text
         default:
           type: string
           label: 'The default option for displaying members on public lists'
@@ -447,11 +462,15 @@ conreg.settings.*:
       label: 'Settings for membership options'
       mapping:
         option_groups:
-          type: text
+          type: sequence
           label: 'The groupings of membership options'
+          sequence:
+            type: text
         options:
-          type: text
+          type: sequence
           label: 'The options withing an option group'
+          sequence:
+            type: text
     bulk_email:
       type: mapping
       label: 'Bulk email settings'
@@ -486,6 +505,36 @@ conreg.settings.*:
         easy_email_type:
           type: string
           label: 'Easy Email template for the Discord invite email'
+    clickup_option_groups:
+      type: sequence
+      label: 'ClickUp option group task mappings'
+      sequence:
+        type: mapping
+        label: 'ClickUp option group settings'
+        mapping:
+          list_id:
+            type: string
+            label: 'ClickUp list ID'
+          task_title:
+            type: label
+            label: 'Task title template'
+          task_description:
+            type: text
+            label: 'Task description template'
+          link_text:
+            type: label
+            label: 'Link text'
+          link_url:
+            type: string
+            label: 'Link URL'
+          task_status:
+            type: string
+            label: 'ClickUp task status'
+          option_mapping:
+            type: sequence
+            label: 'Conreg option ID to ClickUp member ID mapping'
+            sequence:
+              type: text
 
 # Unlike every other per-event settings key above (which nest under the
 # single 'conreg.settings.<eid>' config object), PlanZ's own admin form

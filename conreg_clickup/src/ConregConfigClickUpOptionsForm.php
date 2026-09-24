@@ -4,6 +4,7 @@ namespace Drupal\conreg_clickup;
 
 use Drupal\conreg\ConregConfig;
 use Drupal\conreg\FieldOptions;
+use Drupal\conreg\TextareaLines;
 use Drupal\conreg\Service\EventStorage;
 use Drupal\conreg\Service\MemberStorage;
 use Drupal\Core\DependencyInjection\AutowireTrait;
@@ -165,12 +166,12 @@ class ConregConfigClickUpOptionsForm extends ConfigFormBase {
         '#default_value' => ($groupVals['task_status'] ?? ''),
       ];
 
-      $mapping = ($groupVals['option_mapping'] ?? '');
+      $mapping = ($groupVals['option_mapping'] ?? []);
       $form['groups'][$groupName]['option_mapping'] = [
         '#type' => 'textarea',
         '#title' => $this->t('Option Mapping to ClickUp Members'),
         '#description' => $this->t('On each line place Conreg Option ID followed by ClickUp Member IDs, separated by |. If mapping to multiple Members, separate by commas. E.g. "1|4793987,4793985".'),
-        '#default_value' => $mapping,
+        '#default_value' => TextareaLines::toTextareaString($mapping),
       ];
 
       $form['groups'][$groupName]['mapping_test'] = [
@@ -180,13 +181,13 @@ class ConregConfigClickUpOptionsForm extends ConfigFormBase {
 
       $i = 1;
       $options = [];
-      foreach (explode("\n", $mapping) as $mappingLine) {
-        $fields = explode('|', $mappingLine);
+      foreach ($mapping as $mappingLine) {
+        $fields = array_map('trim', array_pad(explode('|', $mappingLine), 2, ''));
         $options[] = $fields[0];
         $optionName = $optionTitles[$fields[0]];
         $members = [];
-        foreach (explode(',', trim($fields[1])) as $memberId) {
-          $members[] = $memberNames[$memberId];
+        foreach (explode(',', $fields[1]) as $memberId) {
+          $members[] = $memberNames[trim($memberId)];
         }
         $form['groups'][$groupName]['mapping_test'][$i++] = [
           '#markup' => $this->t('@option => @users', ['@option' => $optionName, '@users' => implode(", ", $members)]),
@@ -297,7 +298,7 @@ class ConregConfigClickUpOptionsForm extends ConfigFormBase {
       $config->set('clickup_option_groups.' . $groupName . '.link_text', $groupVals['link_text']);
       $config->set('clickup_option_groups.' . $groupName . '.link_url', $groupVals['link_url']);
       $config->set('clickup_option_groups.' . $groupName . '.task_status', $groupVals['task_status']);
-      $config->set('clickup_option_groups.' . $groupName . '.option_mapping', $groupVals['option_mapping']);
+      $config->set('clickup_option_groups.' . $groupName . '.option_mapping', TextareaLines::toArray($groupVals['option_mapping']));
     }
     $config->save();
 

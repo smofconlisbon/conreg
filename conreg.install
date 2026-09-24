@@ -6,6 +6,7 @@
  */
 
 // cspell:ignore unconfigured
+use Drupal\conreg\TextareaLines;
 use Drupal\Core\Extension\Requirement\RequirementSeverity;
 use Drupal\Core\Database\Database;
 use Drupal\Core\Field\BaseFieldDefinition;
@@ -1186,6 +1187,7 @@ function conreg_update_9011() {
   $prefixes = ['conreg_registration_', 'conreg_mcheck_confirm_', 'conreg_mcheck_unknown_'];
   $updated = [];
 
+  /** @var \Drupal\easy_email\Entity\EasyEmailTypeInterface $type */
   foreach ($email_type_storage->loadMultiple() as $id => $type) {
     foreach ($prefixes as $prefix) {
       if (str_starts_with($id, $prefix) && $type->getGenerateBodyPlain()) {
@@ -1218,6 +1220,7 @@ function conreg_update_9012() {
   $prefixes = ['conreg_registration_', 'conreg_mcheck_confirm_', 'conreg_mcheck_unknown_'];
   $updated = [];
 
+  /** @var \Drupal\easy_email\Entity\EasyEmailTypeInterface $type */
   foreach ($email_type_storage->loadMultiple() as $id => $type) {
     foreach ($prefixes as $prefix) {
       if (!str_starts_with($id, $prefix)) {
@@ -1482,6 +1485,69 @@ function conreg_update_9023() {
   foreach (Role::loadMultiple() as $role) {
     if ($role->hasPermission('undo convention member check-in') && !$role->hasPermission('reprint convention member badge label')) {
       $role->grantPermission('reprint convention member badge label')->save();
+    }
+  }
+}
+
+/**
+ * Converts line-delimited textarea config strings to arrays.
+ *
+ * Several "one item per line" settings (member upgrades, badge types,
+ * days, etc.) used to be stored as a single CRLF/LF-delimited string.
+ * Browsers always submit textarea content with CRLF line endings, and not
+ * every place that read these values back stripped the trailing carriage
+ * return, so it could leak into the last field on a line (e.g. a price or
+ * a ClickUp member ID). Storing each line as its own array element removes
+ * the problem at the source.
+ */
+function conreg_update_9024() {
+  $config_factory = \Drupal::configFactory();
+
+  // Top-level dotted-path keys that moved from a CRLF-delimited string to a
+  // sequence of trimmed lines, per event config object.
+  $simple_keys = [
+    'member_upgrades',
+    'badge_types',
+    'badge_name_options',
+    'days',
+    'communications_method.options',
+    'display_options.options',
+    'conreg_options.option_groups',
+    'conreg_options.options',
+  ];
+
+  foreach ($config_factory->listAll('conreg.settings.') as $config_name) {
+    $config = $config_factory->getEditable($config_name);
+    $changed = FALSE;
+
+    foreach ($simple_keys as $key) {
+      $value = $config->get($key);
+      // Idempotent: skip NULL/missing and already-array (already migrated).
+      if ($value === NULL || is_array($value)) {
+        continue;
+      }
+      $config->set($key, TextareaLines::toArray($value));
+      $changed = TRUE;
+    }
+
+    // clickup_option_groups.<name>.option_mapping lives in this same config
+    // object when the conreg_clickup submodule is in use.
+    $groups = $config->get('clickup_option_groups');
+    if (is_array($groups)) {
+      foreach ($groups as $group_name => $group) {
+        $mapping = $group['option_mapping'] ?? NULL;
+        if ($mapping !== NULL && !is_array($mapping)) {
+          $config->set(
+            'clickup_option_groups.' . $group_name . '.option_mapping',
+            TextareaLines::toArray($mapping)
+          );
+          $changed = TRUE;
+        }
+      }
+    }
+
+    if ($changed) {
+      $config->save();
     }
   }
 }

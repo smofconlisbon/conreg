@@ -18,11 +18,11 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
  * Tests ConregOptions's config-parsing logic in isolation.
  *
  * Covers the methods whose logic is pure config parsing (no extra Drupal
- * machinery beyond config/translation). memberClasses()/memberUpgrades()
- * (cache-tag/invalidation timing) and memberCountries() (pulls in
- * CountryManager + module handler + translation for country names) are
- * left for follow-up coverage; memberTypes()'s complex shape is already
- * exercised by RegistrationMemberTypeCardsTest.php at the Kernel level.
+ * machinery beyond config/translation). memberClasses() (cache-tag/
+ * invalidation timing) and memberCountries() (pulls in CountryManager +
+ * module handler + translation for country names) are left for follow-up
+ * coverage; memberTypes()'s complex shape is already exercised by
+ * RegistrationMemberTypeCardsTest.php at the Kernel level.
  */
 #[Group('conreg')]
 class ConregOptionsTest extends UnitTestCase {
@@ -66,7 +66,7 @@ class ConregOptionsTest extends UnitTestCase {
    * The days() method parses "code|name" lines into an associative array.
    */
   public function testDaysParsesCodePipeNameLines(): void {
-    $service = $this->buildService(['days' => "A|Thursday\nB|Friday"]);
+    $service = $this->buildService(['days' => ['A|Thursday', 'B|Friday']]);
 
     $this->assertSame(['A' => 'Thursday', 'B' => 'Friday'], $service->days(1));
   }
@@ -75,7 +75,7 @@ class ConregOptionsTest extends UnitTestCase {
    * The badgeTypes() method parses "code|label" lines the same way.
    */
   public function testBadgeTypesParsesCodePipeLabelLines(): void {
-    $service = $this->buildService(['badge_types' => "S|Supporting\nA|Attending"]);
+    $service = $this->buildService(['badge_types' => ['S|Supporting', 'A|Attending']]);
 
     $this->assertSame(['S' => 'Supporting', 'A' => 'Attending'], $service->badgeTypes(1));
   }
@@ -84,7 +84,7 @@ class ConregOptionsTest extends UnitTestCase {
    * The display() method returns the configured options keyed by code.
    */
   public function testDisplayReturnsConfiguredOptionsKeyedByCode(): void {
-    $service = $this->buildService(['display_options' => ['options' => "F|Full Name\nN|Nickname"]]);
+    $service = $this->buildService(['display_options' => ['options' => ['F|Full Name', 'N|Nickname']]]);
 
     $this->assertSame(['F' => 'Full Name', 'N' => 'Nickname'], $service->display(1));
   }
@@ -116,7 +116,7 @@ class ConregOptionsTest extends UnitTestCase {
    */
   public function testCommunicationMethodFiltersPrivateOptionsWhenPublicOnly(): void {
     $service = $this->buildService([
-      'communications_method' => ['options' => "E|Email|1\nP|Phone|0\nM|Mail|"],
+      'communications_method' => ['options' => ['E|Email|1', 'P|Phone|0', 'M|Mail|']],
     ]);
 
     $this->assertSame(
@@ -127,6 +127,44 @@ class ConregOptionsTest extends UnitTestCase {
       ['E' => 'Email', 'P' => 'Phone', 'M' => 'Mail'],
       $service->communicationMethod(1, FALSE),
     );
+  }
+
+  /**
+   * The memberUpgrades() method parses 8 pipe-separated fields per line.
+   *
+   * Each field is trimmed, so stray whitespace or a leftover carriage
+   * return on an individual array element (e.g. from a config value
+   * written directly rather than through the admin form's
+   * TextareaLines::toArray() normalization) doesn't leak into the last
+   * field, such as the price.
+   */
+  public function testMemberUpgradesParsesAndTrimsPipeSeparatedFields(): void {
+    $service = $this->buildService([
+      'payments' => ['show_remaining' => FALSE],
+      'days' => ['W|Weekend'],
+      'member' => [
+        'types' => [
+          'S' => [
+            'name' => 'Supporting',
+            'description' => 'Supporting membership',
+            'price' => '20',
+            'badgeType' => 'S',
+            'memberClass' => 'Default',
+            'allowFirst' => TRUE,
+            'active' => TRUE,
+            'allowDuplicates' => FALSE,
+            'number_allowed' => 0,
+          ],
+        ],
+      ],
+      'member_upgrades' => ["101|S|W|A|W|Attending|Attending upgrade|45\r"],
+    ]);
+
+    $upgrades = $service->memberUpgrades(1);
+
+    $this->assertSame('Attending upgrade', $upgrades->upgrades[101]->desc);
+    $this->assertSame('45', $upgrades->upgrades[101]->price);
+    $this->assertSame([0 => 'Supporting', 101 => 'Attending upgrade'], $upgrades->options['S']['W']);
   }
 
   /**
@@ -178,7 +216,7 @@ class ConregOptionsTest extends UnitTestCase {
   public function testMemberTypesBuildsTypeObjectsFromConfig(): void {
     $service = $this->buildService([
       'payments' => ['show_remaining' => FALSE],
-      'days' => "1|Day One",
+      'days' => ['1|Day One'],
       'member' => [
         'types' => [
           'A' => [

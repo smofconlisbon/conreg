@@ -73,8 +73,8 @@ class FieldOptionGroup {
   /**
    * Convert group line into object fields.
    */
-  public function parseGroup($groupLine) {
-    [$this->groupId, $this->fieldType, $this->fieldName, $this->title, $this->global, $this->public] = array_pad(explode('|', $groupLine), 6, '');
+  public function parseGroup(string $groupLine) {
+    [$this->groupId, $this->fieldType, $this->fieldName, $this->title, $this->global, $this->public] = array_map('trim', array_pad(explode('|', $groupLine), 6, ''));
   }
 
   /**
@@ -173,7 +173,7 @@ class FieldOptionGroup {
   /**
    * Create group text fields.
    */
-  private function groupTextFields($options, &$member) {
+  private function groupTextFields(array $options, Member &$member) {
     foreach ($this->options as $option) {
       // Create a div to contain the option.
       $options[$option->optionId] = [
@@ -194,7 +194,7 @@ class FieldOptionGroup {
         $options[$option->optionId]['detail']['#attributes']['class'][] = 'detail-required';
       }
       // If member data for option, add the values.
-      if (isset($member->options[$option->optionId]->optionDetail)) {
+      if (isset($member->options) && isset($member->options[$option->optionId]->optionDetail)) {
         $options[$option->optionId]['detail']['#default_value'] = $member->options[$option->optionId]->optionDetail;
       }
     }
@@ -204,7 +204,7 @@ class FieldOptionGroup {
   /**
    * Create a new option group.
    */
-  public static function newGroup($groupLine) {
+  public static function newGroup(string $groupLine) {
     if (!empty($groupLine)) {
       $group = new FieldOptionGroup();
       $group->parseGroup($groupLine);

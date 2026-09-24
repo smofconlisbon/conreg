@@ -334,13 +334,13 @@ class ConregOptions {
     $config = $this->loadConfig($eid);
 
     $types = $this->memberTypes($eid);
-    // One upgrades per line.
-    $upgrades = explode("\n", $config->get('member_upgrades') ?? '');
+    // One upgrade per line.
+    $upgrades = $config->get('member_upgrades') ?? [];
     $upgradeOptions = [];
     $upgradeVals = [];
     foreach ($upgrades as $upgrade) {
       if (!empty($upgrade)) {
-        [$upgradeId, $fromType, $fromDays, $toType, $todays, $toBadge, $desc, $price] = array_pad(explode('|', $upgrade), 8, '');
+        [$upgradeId, $fromType, $fromDays, $toType, $todays, $toBadge, $desc, $price] = array_map('trim', array_pad(explode('|', $upgrade), 8, ''));
         // If list not present, add from type as first option.
         if (!isset($upgradeOptions[$fromType][$fromDays])) {
           $upgradeOptions[$fromType][$fromDays][0] = $types->types[$fromType]->name;
@@ -379,7 +379,7 @@ class ConregOptions {
   public function badgeTypes(int $eid): array {
     $config = $this->loadConfig($eid);
     // One type per line.
-    $types = explode("\n", $config->get('badge_types'));
+    $types = $config->get('badge_types') ?? [];
     $badgeTypes = [];
     foreach ($types as $type) {
       if (strlen(trim($type))) {
@@ -402,7 +402,7 @@ class ConregOptions {
   public function badgeNameOptions(int $eid): array {
     $config = $this->loadConfig($eid);
     // One type per line.
-    $options = explode("\n", $config->get('badge_name_options'));
+    $options = $config->get('badge_name_options') ?? [];
     $badgeNameOptions = [];
     foreach ($options as $option) {
       if (!empty($option)) {
@@ -456,7 +456,7 @@ class ConregOptions {
   public function days(int $eid): array {
     $config = $this->loadConfig($eid);
     // One type per line.
-    $dayLines = explode("\n", $config->get('days'));
+    $dayLines = $config->get('days') ?? [];
     $days = [];
     foreach ($dayLines as $dayLine) {
       if (trim($dayLine)) {
@@ -539,7 +539,7 @@ class ConregOptions {
   public function display(int $eid): array {
     // Get the config display options.
     $config = $this->loadConfig($eid);
-    $options = explode("\n", trim($config->get('display_options.options')));
+    $options = $config->get('display_options.options') ?? [];
     $display_options = [];
     foreach ($options as $option) {
       [$code, $description] = array_pad(explode('|', trim($option)), 2, '');
@@ -578,11 +578,10 @@ class ConregOptions {
     $config = $this->loadConfig($eid);
     // One communications method per line.
     $methodOptions = [];
-    $communicationsMethods = $config->get('communications_method.options');
-    if (!$communicationsMethods) {
+    $methods = $config->get('communications_method.options');
+    if (!$methods) {
       return $methodOptions;
     }
-    $methods = explode("\n", trim($communicationsMethods));
     foreach ($methods as $method) {
       [$code, $description, $public] = array_pad(explode('|', trim($method)), 3, '');
       if (!$publicOnly || $public == '1' || $public == '') {

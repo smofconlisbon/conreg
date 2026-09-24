@@ -259,7 +259,7 @@ class ConregClickUp {
 
     // Loop through each option group and check if any options set.
     foreach ($config->get('clickup_option_groups') as $groupName => $groupVals) {
-      $groupMapping = $groupVals['option_mapping'];
+      $groupMapping = $groupVals['option_mapping'] ?? [];
 
       // Check if ClickUp Task ID stored.
       $clickUpTask = self::getMemberClickupOption($mid, $groupName);
@@ -267,13 +267,14 @@ class ConregClickUp {
       $assignees = [];
       $taskOptions = [];
       $changed = FALSE;
-      foreach (explode("\n", $groupMapping) as $mappingLine) {
-        [$optId, $memberIds] = explode('|', $mappingLine);
+      foreach ($groupMapping as $mappingLine) {
+        [$optId, $memberIds] = array_map('trim', array_pad(explode('|', $mappingLine), 2, ''));
         if ($options[$optId]['option'] || $options[$optId]['is_selected']) {
           if (isset($options[$optId]['changed']) && $options[$optId]['changed']) {
             $changed = TRUE;
           }
           foreach (explode(',', $memberIds) as $memberId) {
+            $memberId = trim($memberId);
             $assignees[$memberId] = $memberId;
           }
           $taskOptions[$optId] = $optionTitles[$optId];

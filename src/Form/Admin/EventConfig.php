@@ -3,6 +3,7 @@
 namespace Drupal\conreg\Form\Admin;
 
 use Drupal\Component\Utility\EmailValidatorInterface;
+use Drupal\conreg\TextareaLines;
 use Drupal\conreg\Trait\EasyEmailTypeOptionsTrait;
 use Drupal\conreg\Trait\TokenTreeLinkTrait;
 use Drupal\conreg\Service\ConregOptions;
@@ -259,21 +260,21 @@ class EventConfig extends ConfigFormBase {
       '#type' => 'textarea',
       '#title' => $this->t('Member upgrades'),
       '#description' => $this->t('Put allowed membership upgrade on a line each with from upgrade ID, type code, from day, to type code, to day, to badge, description, price separated by | character (e.g. 101|S|W|A|W|Attending upgrade|45).'),
-      '#default_value' => $config->get('member_upgrades'),
+      '#default_value' => TextareaLines::toTextareaString($config->get('member_upgrades')),
     ];
 
     $form['conreg_members']['badge_types'] = [
       '#type' => 'textarea',
       '#title' => $this->t('Badge types'),
       '#description' => $this->t('Put each badge type on a line with type code and description separated by | character (e.g. G|Guest).'),
-      '#default_value' => $config->get('badge_types'),
+      '#default_value' => TextareaLines::toTextareaString($config->get('badge_types')),
     ];
 
     $form['conreg_members']['badge_name_options'] = [
       '#type' => 'textarea',
       '#title' => $this->t('Badge name options'),
       '#description' => $this->t('Put each badge name option on a line with option code and description separated by | character (e.g. F|First name only). Note that F, N, L, and O are the only options that make sense at the moment.'),
-      '#default_value' => $config->get('badge_name_options'),
+      '#default_value' => TextareaLines::toTextareaString($config->get('badge_name_options')),
     ];
 
     $form['conreg_members']['badge_name_default'] = [
@@ -287,7 +288,7 @@ class EventConfig extends ConfigFormBase {
       '#type' => 'textarea',
       '#title' => $this->t('Days'),
       '#description' => $this->t('Put each day type on a line with day code and description separated by | character (e.g. Sa|Saturday).'),
-      '#default_value' => $config->get('days'),
+      '#default_value' => TextareaLines::toTextareaString($config->get('days')),
     ];
 
     $form['conreg_members']['digits'] = [
@@ -334,7 +335,7 @@ class EventConfig extends ConfigFormBase {
       '#type' => 'textarea',
       '#title' => $this->t('Options'),
       '#description' => $this->t('Put each communications method on a line with single character code, description and 1/0 for public/private, separated by | character (e.g. "E|Electronic|1").'),
-      '#default_value' => $config->get('communications_method.options'),
+      '#default_value' => TextareaLines::toTextareaString($config->get('communications_method.options')),
     ];
 
     $form['conreg_communication']['default'] = [
@@ -358,7 +359,7 @@ class EventConfig extends ConfigFormBase {
       '#type' => 'textarea',
       '#title' => $this->t('Display options'),
       '#description' => $this->t('Put each display option on a line with single character code, description, separated by | character (e.g. "F|Full name and badge name").'),
-      '#default_value' => $config->get('display_options.options'),
+      '#default_value' => TextareaLines::toTextareaString($config->get('display_options.options')),
     ];
     $form['conreg_display_options']['default'] = [
       '#type' => 'select',
@@ -382,14 +383,14 @@ class EventConfig extends ConfigFormBase {
       '#type' => 'textarea',
       '#title' => $this->t('Option Groups'),
       '#description' => $this->t('Put each option group on a line with group ID, field type, field name to attach to, group title, local/global (0/1), and private/public (0/1 - groups with 0 will only be visible to admins), separated by | character (e.g. "1|checkboxes|volunteer|Please tick the areas you\'d like to volunteer|0|1").'),
-      '#default_value' => $config->get('conreg_options.option_groups'),
+      '#default_value' => TextareaLines::toTextareaString($config->get('conreg_options.option_groups')),
     ];
 
     $form['conreg_options']['options'] = [
       '#type' => 'textarea',
       '#title' => $this->t('Options'),
       '#description' => $this->t('Put each option on a line with option ID, group ID, option title, detail title, detail required (1/0), weight (bigger number goes to bottom), comma separated list of member classes to include it, must be checked (0/1), private (0/1), email to inform (optional), separated by | character (e.g. "1|1|Help with pre-con tasks|Please provide details of areas you\'d like to help|0|1|0,1|0|0|volunteer@somewhere.org").'),
-      '#default_value' => $config->get('conreg_options.options'),
+      '#default_value' => TextareaLines::toTextareaString($config->get('conreg_options.options')),
     ];
 
     /*
@@ -1072,20 +1073,20 @@ class EventConfig extends ConfigFormBase {
     $config->set('payments.auto_approve', trim($vals['conreg_payments']['auto_approve']));
     $config->set('payments.show_remaining', trim($vals['conreg_payments']['show_remaining']));
     $config->set('member_type_default', $vals['conreg_members']['member_type_default']);
-    $config->set('member_upgrades', $vals['conreg_members']['upgrades']);
-    $config->set('badge_types', $vals['conreg_members']['badge_types']);
-    $config->set('badge_name_options', $vals['conreg_members']['badge_name_options']);
+    $config->set('member_upgrades', TextareaLines::toArray($vals['conreg_members']['upgrades']));
+    $config->set('badge_types', TextareaLines::toArray($vals['conreg_members']['badge_types']));
+    $config->set('badge_name_options', TextareaLines::toArray($vals['conreg_members']['badge_name_options']));
     $config->set('badge_name_default', $vals['conreg_members']['badge_name_default']);
-    $config->set('days', $vals['conreg_members']['days']);
+    $config->set('days', TextareaLines::toArray($vals['conreg_members']['days']));
     $config->set('member_no_digits', intval($vals['conreg_members']['digits']));
     $config->set('registration_intro', $vals['conreg_intros']['registration_intro']);
     $config->set('payment_intro', $vals['conreg_intros']['payment_intro']);
-    $config->set('communications_method.options', $vals['conreg_communication']['options']);
+    $config->set('communications_method.options', TextareaLines::toArray($vals['conreg_communication']['options']));
     $config->set('communications_method.default', $vals['conreg_communication']['default']);
-    $config->set('display_options.options', $vals['conreg_display_options']['options']);
+    $config->set('display_options.options', TextareaLines::toArray($vals['conreg_display_options']['options']));
     $config->set('display_options.default', $vals['conreg_display_options']['default']);
-    $config->set('conreg_options.option_groups', $vals['conreg_options']['option_groups']);
-    $config->set('conreg_options.options', $vals['conreg_options']['options']);
+    $config->set('conreg_options.option_groups', TextareaLines::toArray($vals['conreg_options']['option_groups']));
+    $config->set('conreg_options.options', TextareaLines::toArray($vals['conreg_options']['options']));
     $config->set('member_listing_page.show_members', $vals['conreg_member_listing']['show_members']);
     $config->set('member_listing_page.show_member_no', $vals['conreg_member_listing']['show_member_no']);
     $config->set('member_listing_page.show_countries', $vals['conreg_member_listing']['show_countries']);
