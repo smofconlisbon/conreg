@@ -583,14 +583,14 @@ class Registration extends FormBase {
         $form['members']['member' . $cnt]['address']['#title'] = $curMemberClass->fields->address_heading;
       }
 
-      if ($cnt > 1 && !empty($curMemberClass->fields->same_address)) {
+      // The checkbox (and therefore anything that depends on it, such as
+      // the #states below) only exists for members after the first, and
+      // only if the site has configured a label for it.
+      $hasSameAddressCheckbox = ($cnt > 1 && !empty($curMemberClass->fields->same_address));
+      if ($hasSameAddressCheckbox) {
         $form['members']['member' . $cnt]['address']['same_address'] = [
           '#type' => 'checkbox',
           '#title' => $curMemberClass->fields->same_address,
-          '#ajax' => [
-            'callback' => [$this, 'updateMemberAddressCallback'],
-            'event' => 'change',
-          ],
         ];
       }
 
@@ -601,60 +601,87 @@ class Registration extends FormBase {
         $same = $member_values['address']['same_address'];
       }
 
-      // Always show address for member 1, and for other members
-      // if "same" box isn't checked.
-      if ($cnt == 1 || !$same) {
-        if (!empty($curMemberClass->fields->street)) {
-          $form['members']['member' . $cnt]['address']['street'] = [
-            '#type' => 'textfield',
-            '#title' => $curMemberClass->fields->street,
-            '#required' => ($curMemberClass->mandatory->street ? TRUE : FALSE),
-          ];
-        }
+      // Address fields are only ever required for member 1, or for other
+      // members if the "same" box isn't checked - but the fields themselves
+      // are always built (rather than omitted when "same" is checked) so
+      // #states can show/hide them client-side without an AJAX round trip.
+      // #states is only added when the checkbox it depends on actually
+      // exists, so it never references a non-existent field.
+      $required = ($cnt == 1 || !$same);
+      $addressStates = $hasSameAddressCheckbox ? [
+        'visible' => [
+          ':input[name="members[member' . $cnt . '][address][same_address]"]' => ['checked' => FALSE],
+        ],
+      ] : NULL;
 
-        if (!empty($curMemberClass->fields->street2)) {
-          $form['members']['member' . $cnt]['address']['street2'] = [
-            '#type' => 'textfield',
-            '#title' => $curMemberClass->fields->street2,
-            '#required' => ($curMemberClass->mandatory->street2 ? TRUE : FALSE),
-          ];
+      if (!empty($curMemberClass->fields->street)) {
+        $form['members']['member' . $cnt]['address']['street'] = [
+          '#type' => 'textfield',
+          '#title' => $curMemberClass->fields->street,
+          '#required' => ($required && $curMemberClass->mandatory->street ? TRUE : FALSE),
+        ];
+        if ($addressStates) {
+          $form['members']['member' . $cnt]['address']['street']['#states'] = $addressStates;
         }
+      }
 
-        if (!empty($curMemberClass->fields->city)) {
-          $form['members']['member' . $cnt]['address']['city'] = [
-            '#type' => 'textfield',
-            '#title' => $curMemberClass->fields->city,
-            '#required' => ($curMemberClass->mandatory->city ? TRUE : FALSE),
-          ];
+      if (!empty($curMemberClass->fields->street2)) {
+        $form['members']['member' . $cnt]['address']['street2'] = [
+          '#type' => 'textfield',
+          '#title' => $curMemberClass->fields->street2,
+          '#required' => ($required && $curMemberClass->mandatory->street2 ? TRUE : FALSE),
+        ];
+        if ($addressStates) {
+          $form['members']['member' . $cnt]['address']['street2']['#states'] = $addressStates;
         }
+      }
 
-        if (!empty($curMemberClass->fields->county)) {
-          $form['members']['member' . $cnt]['address']['county'] = [
-            '#type' => 'textfield',
-            '#title' => $curMemberClass->fields->county,
-            '#required' => ($curMemberClass->mandatory->county ? TRUE : FALSE),
-          ];
+      if (!empty($curMemberClass->fields->city)) {
+        $form['members']['member' . $cnt]['address']['city'] = [
+          '#type' => 'textfield',
+          '#title' => $curMemberClass->fields->city,
+          '#required' => ($required && $curMemberClass->mandatory->city ? TRUE : FALSE),
+        ];
+        if ($addressStates) {
+          $form['members']['member' . $cnt]['address']['city']['#states'] = $addressStates;
         }
+      }
 
-        if (!empty($curMemberClass->fields->postcode)) {
-          $form['members']['member' . $cnt]['address']['postcode'] = [
-            '#type' => 'textfield',
-            '#title' => $curMemberClass->fields->postcode,
-            '#required' => ($curMemberClass->mandatory->postcode ? TRUE : FALSE),
-          ];
+      if (!empty($curMemberClass->fields->county)) {
+        $form['members']['member' . $cnt]['address']['county'] = [
+          '#type' => 'textfield',
+          '#title' => $curMemberClass->fields->county,
+          '#required' => ($required && $curMemberClass->mandatory->county ? TRUE : FALSE),
+        ];
+        if ($addressStates) {
+          $form['members']['member' . $cnt]['address']['county']['#states'] = $addressStates;
         }
+      }
 
-        if (!empty($curMemberClass->fields->country)) {
-          $form['members']['member' . $cnt]['address']['country'] = [
-            '#type' => 'select',
-            '#title' => $curMemberClass->fields->country,
-            '#options' => $countryOptions,
-            '#description' => $curMemberClass->fields->country_description ?? '',
-            '#required' => ($curMemberClass->mandatory->country ? TRUE : FALSE),
-          ];
-          if (!empty($defaultCountry)) {
-            $form['members']['member' . $cnt]['address']['country']['#default_value'] = $defaultCountry;
-          }
+      if (!empty($curMemberClass->fields->postcode)) {
+        $form['members']['member' . $cnt]['address']['postcode'] = [
+          '#type' => 'textfield',
+          '#title' => $curMemberClass->fields->postcode,
+          '#required' => ($required && $curMemberClass->mandatory->postcode ? TRUE : FALSE),
+        ];
+        if ($addressStates) {
+          $form['members']['member' . $cnt]['address']['postcode']['#states'] = $addressStates;
+        }
+      }
+
+      if (!empty($curMemberClass->fields->country)) {
+        $form['members']['member' . $cnt]['address']['country'] = [
+          '#type' => 'select',
+          '#title' => $curMemberClass->fields->country,
+          '#options' => $countryOptions,
+          '#description' => $curMemberClass->fields->country_description ?? '',
+          '#required' => ($required && $curMemberClass->mandatory->country ? TRUE : FALSE),
+        ];
+        if (!empty($defaultCountry)) {
+          $form['members']['member' . $cnt]['address']['country']['#default_value'] = $defaultCountry;
+        }
+        if ($addressStates) {
+          $form['members']['member' . $cnt]['address']['country']['#states'] = $addressStates;
         }
       }
 
@@ -883,29 +910,6 @@ class Registration extends FormBase {
       else {
         $ajax_response->addCommand(new HtmlCommand('#memberBadgeName' . $cnt, ""));
       }
-    }
-
-    return $ajax_response;
-  }
-
-  /**
-   * Callback for "same as first member" checkbox. Replace address block.
-   *
-   * @param array $form
-   *   The form definition.
-   * @param \Drupal\Core\Form\FormStateInterface $form_state
-   *   Current state of form.
-   *
-   * @return \Drupal\Core\Ajax\AjaxResponse
-   *   The Ajax commands to update the form.
-   */
-  public function updateMemberAddressCallback(array $form, FormStateInterface $form_state): AjaxResponse {
-    $ajax_response = new AjaxResponse();
-    // Don't show address fields if "same as member 1 box" ticked.
-    $memberQty = $form_state->getValue(['global', 'member_quantity']);
-    // Only need to reshow from member 2 up.
-    for ($cnt = 2; $cnt <= $memberQty; $cnt++) {
-      $ajax_response->addCommand(new HtmlCommand('#memberAddress' . $cnt, $this->renderer->render($form['members']['member' . $cnt]['address'])));
     }
 
     return $ajax_response;

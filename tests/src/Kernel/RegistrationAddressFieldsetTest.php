@@ -5,10 +5,8 @@ declare(strict_types=1);
 namespace Drupal\Tests\conreg\Kernel;
 
 use Drupal\conreg\Form\Registration;
-use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Database\Database;
 use Drupal\Core\Form\FormState;
-use Drupal\Core\Render\RenderContext;
 use Drupal\KernelTests\KernelTestBase;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
@@ -139,40 +137,108 @@ class RegistrationAddressFieldsetTest extends KernelTestBase {
     $member2Address = $form['members']['member2']['address'];
     $this->assertArrayHasKey('same_address', $member2Address);
     $this->assertSame('checkbox', $member2Address['same_address']['#type']);
-    $this->assertSame([$registration, 'updateMemberAddressCallback'], $member2Address['same_address']['#ajax']['callback']);
   }
 
   /**
-   * The "same address" AJAX callback still targets the right wrapper.
+   * Regression coverage for #3596656: unchecking "same" restores the fields.
    *
-   * The callback re-renders each later member's address element and swaps
-   * it into #memberAddress{n} - that id lives on the outer div, which now
-   * wraps a fieldset instead of being ungrouped, so this pins down that the
-   * AJAX wiring survived the restructuring.
+   * The fields used to be omitted from the form entirely while "same" was
+   * checked, and an AJAX callback re-rendered the wrapper to show them
+   * again on uncheck - but that callback only ever fired reliably on check,
+   * not uncheck, permanently hiding the fields. The fix replaces the AJAX
+   * round trip with #states, so showing and hiding both happen client-side
+   * via the same mechanism and can't drift apart from each other.
    */
-  public function testUpdateMemberAddressCallbackTargetsMemberAddressWrapper(): void {
+  public function testAddressFieldsUseStatesToToggleOnSameAddressCheckbox(): void {
     $formState = new FormState();
     $formState->setValues(['global' => ['member_quantity' => 2]]);
-    $registration = $this->createRegistrationForm();
-    $form = $registration->buildForm([], $formState, 1);
+    $form = $this->createRegistrationForm()->buildForm([], $formState, 1);
 
-    $response = $this->container->get('renderer')->executeInRenderContext(
-      new RenderContext(),
-      fn () => $registration->updateMemberAddressCallback($form, $formState),
-    );
+    $expectedStates = [
+      'visible' => [
+        ':input[name="members[member2][address][same_address]"]' => ['checked' => FALSE],
+      ],
+    ];
+    $member2Address = $form['members']['member2']['address'];
+    foreach (['street', 'street2', 'city', 'county', 'postcode', 'country'] as $field) {
+      $this->assertArrayHasKey('#states', $member2Address[$field], "Field \"$field\" should declare #states.");
+      $this->assertSame($expectedStates, $member2Address[$field]['#states']);
+    }
 
-    $this->assertInstanceOf(AjaxResponse::class, $response);
-    $commands = $response->getCommands();
-    $this->assertCount(1, $commands);
-    $this->assertSame('#memberAddress2', $commands[0]['selector']);
+    // The fields must still actually be present (not omitted) so #states
+    // has something to toggle, and so previously-entered values survive an
+    // accidental check/uncheck round trip.
+    $this->assertArrayHasKey('street', $member2Address);
+  }
 
-    // The swapped-in markup is the whole restructured block: the fieldset
-    // and its legend, the regrouped checkbox, and the address fields -
-    // not just the fields it had before the checkbox moved inside.
-    $data = (string) $commands[0]['data'];
-    $this->assertStringContainsString('fieldset-legend">Address<', $data);
-    $this->assertStringContainsString('Same as member 1', $data);
-    $this->assertStringContainsString('Address line 1', $data);
+  /**
+   * Member 1 never has a "same as member 1" checkbox to depend on.
+   *
+   * #states referencing a selector for a field that doesn't exist would be
+   * at best dead weight and at worst confusing, so member 1's address
+   * fields (which can never have "same_address" as a sibling) must not
+   * declare #states at all.
+   */
+  public function testAddressFieldsHaveNoStatesForMemberOne(): void {
+    $form = $this->createRegistrationForm()->buildForm([], new FormState(), 1);
+
+    $member1Address = $form['members']['member1']['address'];
+    foreach (['street', 'street2', 'city', 'county', 'postcode', 'country'] as $field) {
+      $this->assertArrayNotHasKey('#states', $member1Address[$field], "Field \"$field\" should not declare #states.");
+    }
+  }
+
+  /**
+   * With no "same address" label configured, later members get no checkbox.
+   *
+   * Their address fields must not declare #states referencing it, the same
+   * as member 1's.
+   */
+  public function testAddressFieldsHaveNoStatesWhenSameAddressLabelBlank(): void {
+    $this->container->get('config.factory')
+      ->getEditable('conreg.settings.1')
+      ->set('member.classes.Default.fields.same_address', '')
+      ->save();
+
+    $formState = new FormState();
+    $formState->setValues(['global' => ['member_quantity' => 2]]);
+    $form = $this->createRegistrationForm()->buildForm([], $formState, 1);
+
+    $member2Address = $form['members']['member2']['address'];
+    $this->assertArrayNotHasKey('same_address', $member2Address);
+    foreach (['street', 'street2', 'city', 'county', 'postcode', 'country'] as $field) {
+      $this->assertArrayNotHasKey('#states', $member2Address[$field], "Field \"$field\" should not declare #states.");
+    }
+  }
+
+  /**
+   * Required-ness of member 2+ address fields must still track the checkbox.
+   *
+   * The fields are now always built rather than omitted, so #required has
+   * to carry the "same as member 1" logic that omission used to provide
+   * implicitly.
+   */
+  public function testAddressFieldsRequiredReflectsSameAddressSubmittedValue(): void {
+    $this->container->get('config.factory')
+      ->getEditable('conreg.settings.1')
+      ->set('member.classes.Default.mandatory.street', 1)
+      ->save();
+
+    $formState = new FormState();
+    $formState->setValues([
+      'global' => ['member_quantity' => 2],
+      'members' => [
+        'member2' => [
+          'address' => ['same_address' => 1],
+        ],
+      ],
+    ]);
+    $form = $this->createRegistrationForm()->buildForm([], $formState, 1);
+
+    // Member 1 is always required regardless of the checkbox.
+    $this->assertTrue($form['members']['member1']['address']['street']['#required']);
+    // Member 2 ticked "same as member 1", so its own fields aren't required.
+    $this->assertFalse($form['members']['member2']['address']['street']['#required']);
   }
 
 }
