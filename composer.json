@@ -17,5 +17,8 @@
     "drupal/symfony_mailer_lite": "^2.0",
     "drupal/registration_theme": "^1.0@alpha"
   },
+  "conflict": {
+    "twig/twig": "3.30.0"
+  },
   "minimum-stability": "dev"
 }

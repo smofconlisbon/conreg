@@ -1,0 +1,4 @@
+# Deriver for dynamic member Discord menu items.
+conreg_discord.event_links:
+  deriver: \Drupal\conreg_discord\Plugin\Derivative\DiscordMenuDeriver
+  menu_name: admin
