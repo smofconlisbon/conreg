@@ -2,6 +2,7 @@
 
 namespace Drupal\conreg_planz\Form;
 
+use Drupal\Component\Utility\Html;
 use Drupal\conreg\FieldOptions;
 use Drupal\conreg\Member;
 use Drupal\conreg_planz\PlanZ;
@@ -205,7 +206,7 @@ class PlanZAdminForm extends FormBase {
 
     foreach ($entries as $entry) {
       // Sanitize each entry.
-      $rows[] = array_map('Drupal\Component\Utility\Html::escape', (array) $entry);
+      $rows[] = array_map(fn ($value) => Html::escape((string) $value), (array) $entry);
     }
 
     $form['search_results']['table'] = [
