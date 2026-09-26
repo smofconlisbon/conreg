@@ -16,9 +16,8 @@
 
 ## Implementation notes
 
-- `conreg_clickup.links.menu.yml` references
-  `\Drupal\conreg_clickup\Plugin\Derivative\ClickUpMenuDeriver`, but this class
-  is not present in the repository.
-- `conreg_clickup.links.task.yml` declares task key
-  `conreg_clickup.config_planz_options` and points to
-  `conreg_config_planz_options`.
+- The module is not currently in use and has no admin menu links. Its menu
+  file referenced a `ClickUpMenuDeriver` class that never existed, which broke
+  menu rebuilds, so it was removed until the module is reworked. The previous
+  static links can be recovered with
+  `git show defe100^:conreg_clickup/conreg_clickup.links.menu.yml`.

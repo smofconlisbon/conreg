@@ -1,4 +1,0 @@
-# Deriver for dynamic ClickUp menu items.
-conreg_clickup.event_links:
-  deriver: \Drupal\conreg_clickup\Plugin\Derivative\ClickUpMenuDeriver
-  menu_name: admin

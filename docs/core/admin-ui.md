@@ -23,6 +23,17 @@ route - see `entity.easy_email_type.collection`
 - Fan table, check-in, bulk email
 - Configure registration
 
+Each event gets a parent link, `conreg.event_links:conreg_event_{eid}`, under
+`conreg.overview`, and the links above are its children. Submodules (badges,
+PlanZ, lookup, Discord) add their own per-event links by using the same
+parent ID in their derivers.
+
+Derivers only run when the menu link tree is rebuilt, so `EventStorage`
+rebuilds it after inserting or deleting an event, and after an update that
+changes a field listed in `EventStorage::MENU_FIELDS` (currently
+`event_name`). Code that writes to `conreg_events` directly, bypassing
+`EventStorage`, won't update the menu until the next cache clear.
+
 ## Local tasks
 
 Core tabs in `conreg.links.task.yml`:
