@@ -6,6 +6,7 @@
  */
 
 // cspell:ignore unconfigured
+use Drupal\conreg\FieldOptions;
 use Drupal\conreg\TextareaLines;
 use Drupal\Core\Extension\Requirement\RequirementSeverity;
 use Drupal\Core\Database\Database;
@@ -1550,4 +1551,105 @@ function conreg_update_9024() {
       $config->save();
     }
   }
+}
+
+/**
+ * Restores member options left under the pre-rename config key.
+ *
+ * When the module was renamed from simple_conreg, each event's
+ * simple_conreg_options setting became conreg_options, but existing values
+ * were never moved, so upgraded sites lost their member options. This moves
+ * them across, converting them to lists as conreg_update_9024() does for
+ * other settings.
+ *
+ * Every event's option lines are also padded to their full number of
+ * fields. Older versions allowed missing trailing fields, but Event
+ * Configuration now rejects them, so the options couldn't be saved.
+ */
+function conreg_update_9025() {
+  $config_factory = \Drupal::configFactory();
+  $logger = \Drupal::logger('conreg');
+  $moved = [];
+  $padded = [];
+  $cids = [];
+
+  foreach ($config_factory->listAll('conreg.settings.') as $config_name) {
+    $config = $config_factory->getEditable($config_name);
+    $changed = FALSE;
+
+    $old = $config->get('simple_conreg_options');
+    if ($old !== NULL) {
+      $oldGroups = TextareaLines::toArray($old['option_groups'] ?? NULL);
+      $oldOptions = TextareaLines::toArray($old['options'] ?? NULL);
+      $hasCurrent = TextareaLines::toArray($config->get('conreg_options.option_groups')) !== []
+        || TextareaLines::toArray($config->get('conreg_options.options')) !== [];
+
+      if ($oldGroups === [] && $oldOptions === []) {
+        // Nothing worth keeping under the old key.
+        $config->clear('simple_conreg_options');
+        $changed = TRUE;
+      }
+      elseif (!$hasCurrent) {
+        $config->set('conreg_options.option_groups', $oldGroups);
+        $config->set('conreg_options.options', $oldOptions);
+        $config->clear('simple_conreg_options');
+        $moved[] = $config_name;
+        $changed = TRUE;
+      }
+      else {
+        // Options have been entered since the upgrade. Don't overwrite
+        // either copy; leave them for someone to compare.
+        $logger->warning('@config has member options under both simple_conreg_options and conreg_options. The old simple_conreg_options values were left in place; compare them with the event configuration and remove them manually.', [
+          '@config' => $config_name,
+        ]);
+      }
+    }
+
+    $normalisers = [
+      'option_groups' => FieldOptions::normaliseGroupLine(...),
+      'options' => FieldOptions::normaliseOptionLine(...),
+    ];
+    foreach ($normalisers as $key => $normalise) {
+      $value = $config->get("conreg_options.$key");
+      if ($value === NULL) {
+        continue;
+      }
+
+      $lines = [];
+      foreach (TextareaLines::toArray($value) as $index => $line) {
+        $normalised = $normalise($line);
+        if ($normalised === NULL) {
+          $logger->warning('@config: line @line of conreg_options.@key has too many fields and was left unchanged. Correct it in the event configuration.', [
+            '@config' => $config_name,
+            '@line' => $index + 1,
+            '@key' => $key,
+          ]);
+          $normalised = $line;
+        }
+        $lines[] = $normalised;
+      }
+
+      if ($lines !== $value) {
+        $config->set("conreg_options.$key", $lines);
+        $padded[$config_name] = $config_name;
+        $changed = TRUE;
+      }
+    }
+
+    if ($changed) {
+      $config->save();
+      $eid = substr($config_name, strlen('conreg.settings.'));
+      foreach (\Drupal::languageManager()->getLanguages() as $language) {
+        $cids[] = 'conreg:fieldOptions_' . $eid . '_' . $language->getId();
+      }
+    }
+  }
+
+  // Cached option lists were built from the old values.
+  \Drupal::cache()->deleteMultiple($cids);
+
+  return t('Moved member options from simple_conreg_options on: @moved. Updated member option lines on: @padded.', [
+    '@moved' => implode(', ', $moved) ?: '(none)',
+    '@padded' => implode(', ', $padded) ?: '(none)',
+  ]);
 }

@@ -10,6 +10,16 @@ use Drupal\Core\Config\ImmutableConfig;
 class FieldOptions {
 
   /**
+   * The number of pipe-separated fields in an option group line.
+   */
+  public const GROUP_FIELD_COUNT = 6;
+
+  /**
+   * The number of pipe-separated fields in an option line.
+   */
+  public const OPTION_FIELD_COUNT = 10;
+
+  /**
    * Array of field option groups.
    *
    * @var array
@@ -356,6 +366,71 @@ class FieldOptions {
    */
   public static function updateOptionFields($mid, array &$options) {
     FieldOptionStorage::updateMemberOptions($mid, $options);
+  }
+
+  /**
+   * Pads an option group line to its full number of fields.
+   *
+   * Older versions accepted lines with missing trailing fields, which
+   * FieldOptionGroup::parseGroup() still reads as empty strings. Event
+   * configuration now requires every field, with 0 or 1 for the
+   * local/global and private/public flags, so empty flags become 0.
+   *
+   * @param string $line
+   *   The option group line.
+   *
+   * @return string|null
+   *   The padded line, or NULL if it has too many fields to pad safely.
+   */
+  public static function normaliseGroupLine(string $line): ?string {
+    return self::normaliseLine($line, self::GROUP_FIELD_COUNT, [4, 5]);
+  }
+
+  /**
+   * Pads an option line to its full number of fields.
+   *
+   * Older versions accepted lines with missing trailing fields, which
+   * FieldOption::parseOption() still reads as empty strings. Event
+   * configuration now requires every field, with 0 or 1 for detail
+   * required, must be checked and private, and an integer weight, so those
+   * become 0 when empty.
+   *
+   * @param string $line
+   *   The option line.
+   *
+   * @return string|null
+   *   The padded line, or NULL if it has too many fields to pad safely.
+   */
+  public static function normaliseOptionLine(string $line): ?string {
+    return self::normaliseLine($line, self::OPTION_FIELD_COUNT, [4, 5, 7, 8]);
+  }
+
+  /**
+   * Pads a pipe-separated line, filling empty numeric fields with 0.
+   *
+   * @param string $line
+   *   The line to pad.
+   * @param int $count
+   *   The number of fields the line should have.
+   * @param int[] $numericFields
+   *   Indexes of fields that must not be empty, and default to 0.
+   *
+   * @return string|null
+   *   The padded line, or NULL if it has more than $count fields.
+   */
+  protected static function normaliseLine(string $line, int $count, array $numericFields): ?string {
+    $fields = array_map('trim', explode('|', trim($line)));
+    if (count($fields) > $count) {
+      return NULL;
+    }
+
+    $fields = array_pad($fields, $count, '');
+    foreach ($numericFields as $index) {
+      if ($fields[$index] === '') {
+        $fields[$index] = '0';
+      }
+    }
+    return implode('|', $fields);
   }
 
   /**

@@ -3,6 +3,7 @@
 namespace Drupal\conreg\Form\Admin;
 
 use Drupal\Component\Utility\EmailValidatorInterface;
+use Drupal\conreg\FieldOptions;
 use Drupal\conreg\TextareaLines;
 use Drupal\conreg\Trait\EasyEmailTypeOptionsTrait;
 use Drupal\conreg\Trait\TokenTreeLinkTrait;
@@ -812,11 +813,12 @@ class EventConfig extends ConfigFormBase {
 
       $lineNumber = $index + 1;
       $fields = array_map('trim', explode('|', $line));
-      if (count($fields) !== 6) {
+      if (count($fields) !== FieldOptions::GROUP_FIELD_COUNT) {
         $form_state->setErrorByName(
           'conreg_options][option_groups',
-          $this->t('Option Groups line @line must contain exactly 6 pipe-separated values.', [
+          $this->t('Option Groups line @line must contain exactly @count pipe-separated values.', [
             '@line' => $lineNumber,
+            '@count' => FieldOptions::GROUP_FIELD_COUNT,
           ])
         );
         continue;
@@ -900,11 +902,12 @@ class EventConfig extends ConfigFormBase {
 
       $lineNumber = $index + 1;
       $fields = array_map('trim', explode('|', $line));
-      if (count($fields) !== 10) {
+      if (count($fields) !== FieldOptions::OPTION_FIELD_COUNT) {
         $form_state->setErrorByName(
           'conreg_options][options',
-          $this->t('Options line @line must contain exactly 10 pipe-separated values.', [
+          $this->t('Options line @line must contain exactly @count pipe-separated values.', [
             '@line' => $lineNumber,
+            '@count' => FieldOptions::OPTION_FIELD_COUNT,
           ])
         );
         continue;
