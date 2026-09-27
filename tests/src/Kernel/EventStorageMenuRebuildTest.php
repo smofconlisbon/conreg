@@ -62,6 +62,14 @@ class EventStorageMenuRebuildTest extends KernelTestBase {
     $this->eventStorage = $this->container->get(EventStorage::class);
     $this->menuLinkManager = $this->container->get('plugin.manager.menu.link');
 
+    // A second open event keeps every event in its own submenu, so each
+    // event's parent link exists. With a lone event, MenuHooks would move
+    // its links directly under ConReg; that is covered by
+    // TopLevelEventMenuTest.
+    Database::getConnection()->insert('conreg_events')
+      ->fields(['event_name' => 'Background event', 'is_open' => 1])
+      ->execute();
+
     // Start from a built menu tree, as a real site would have.
     $this->menuLinkManager->rebuild();
   }

@@ -48,4 +48,4 @@ conreg.label_printing_settings:
   route_name: conreg_label_printing_settings
   menu_name: admin
   parent: conreg.overview
-  weight: -100
+  weight: 300

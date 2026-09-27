@@ -46,7 +46,7 @@ final class LookupMenuDeriver extends DeriverBase implements ContainerDeriverInt
         'route_name' => 'conreg_member_lookup',
         'route_parameters' => ['eid' => $eid],
         'parent' => "conreg.event_links:conreg_event_$eid",
-        'weight' => 21,
+        'weight' => 30,
       ] + $base_plugin_definition;
     }
 

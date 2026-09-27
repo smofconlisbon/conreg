@@ -46,7 +46,7 @@ final class DiscordMenuDeriver extends DeriverBase implements ContainerDeriverIn
         'route_name' => 'conreg_config_discord_invitebot',
         'route_parameters' => ['eid' => $eid],
         'parent' => "conreg.event_links:conreg_event_$eid",
-        'weight' => 22,
+        'weight' => 320,
       ] + $base_plugin_definition;
     }
 

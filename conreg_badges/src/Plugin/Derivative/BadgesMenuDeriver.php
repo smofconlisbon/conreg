@@ -47,7 +47,7 @@ final class BadgesMenuDeriver extends DeriverBase implements ContainerDeriverInt
         'route_name' => 'conreg_badges_list',
         'route_parameters' => ['eid' => $eid],
         'parent' => "conreg.event_links:conreg_event_$eid",
-        'weight' => 17,
+        'weight' => 230,
       ] + $base_plugin_definition;
 
       $links["conreg_badge_print_$eid"] = [
@@ -55,7 +55,7 @@ final class BadgesMenuDeriver extends DeriverBase implements ContainerDeriverInt
         'route_name' => 'conreg_badges_print',
         'route_parameters' => ['eid' => $eid],
         'parent' => "conreg.event_links:conreg_event_$eid",
-        'weight' => 18,
+        'weight' => 240,
       ] + $base_plugin_definition;
     }
 

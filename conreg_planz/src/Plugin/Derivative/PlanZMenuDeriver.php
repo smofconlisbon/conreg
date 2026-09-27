@@ -46,7 +46,7 @@ final class PlanZMenuDeriver extends DeriverBase implements ContainerDeriverInte
         'route_name' => 'conreg_config_planz_admin',
         'route_parameters' => ['eid' => $eid],
         'parent' => "conreg.event_links:conreg_event_$eid",
-        'weight' => 12,
+        'weight' => 210,
       ] + $base_plugin_definition;
 
       $links["conreg_planz_config_$eid"] = [
@@ -54,7 +54,7 @@ final class PlanZMenuDeriver extends DeriverBase implements ContainerDeriverInte
         'route_name' => 'conreg_config_planz_options',
         'route_parameters' => ['eid' => $eid],
         'parent' => "conreg.event_links:conreg_event_$eid",
-        'weight' => 13,
+        'weight' => 310,
       ] + $base_plugin_definition;
     }
 

@@ -3,4 +3,4 @@ conreg_mailerlite.config:
   route_name: conreg_config_mailerlite
   menu_name: admin
   parent: conreg.overview
-  weight: -99
+  weight: 330

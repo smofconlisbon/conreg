@@ -10,6 +10,17 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Deriver class to add extra links to the navigation menus.
+ *
+ * Per-event links and the top-level links under ConReg share one weight
+ * scale, so they sort the same way whether an event's links are in its own
+ * submenu or moved directly under ConReg (see MenuHooks). Weights fall into
+ * these groups, spaced by 10 so submodules can slot links in between:
+ * - 10-99: day-to-day tasks (member summary, check-in, lookup).
+ * - 100-199: reports (member details, selected options).
+ * - 200-299: outreach and exports (bulk email, badge export and printing).
+ * - 300-389: configuration (site-wide and per-event settings).
+ * - 390: "Configure registration", always the last per-event link.
+ * - 1000+: event submenus, always last.
  */
 final class EventsMenuDeriver extends DeriverBase implements ContainerDeriverInterface {
 
@@ -37,8 +48,9 @@ final class EventsMenuDeriver extends DeriverBase implements ContainerDeriverInt
   public function getDerivativeDefinitions($base_plugin_definition) {
     $links = [];
 
-    $weight = -1;
     $events = $this->eventStorage->loadAll();
+    // Event submenus come after every other ConReg link, newest first.
+    $weight = 1000 + count($events);
 
     foreach ($events as $event) {
       $eid = $event['eid'];
@@ -57,7 +69,7 @@ final class EventsMenuDeriver extends DeriverBase implements ContainerDeriverInt
         'route_name' => 'conreg_admin_member_summary',
         'route_parameters' => ['eid' => $eid],
         'parent' => $base_plugin_definition['id'] . ':' . $parent_id,
-        'weight' => 0,
+        'weight' => 10,
       ] + $base_plugin_definition;
 
       $links["conreg_admin_$eid"] = [
@@ -65,7 +77,7 @@ final class EventsMenuDeriver extends DeriverBase implements ContainerDeriverInt
         'route_name' => 'conreg_admin_members',
         'route_parameters' => ['eid' => $eid],
         'parent' => $base_plugin_definition['id'] . ':' . $parent_id,
-        'weight' => 1,
+        'weight' => 20,
       ] + $base_plugin_definition;
 
       $links["conreg_details_$eid"] = [
@@ -73,7 +85,7 @@ final class EventsMenuDeriver extends DeriverBase implements ContainerDeriverInt
         'route_name' => 'conreg_admin_member_list',
         'route_parameters' => ['eid' => $eid],
         'parent' => $base_plugin_definition['id'] . ':' . $parent_id,
-        'weight' => 2,
+        'weight' => 100,
       ] + $base_plugin_definition;
 
       $links["conreg_email_list_$eid"] = [
@@ -81,7 +93,7 @@ final class EventsMenuDeriver extends DeriverBase implements ContainerDeriverInt
         'route_name' => 'conreg_admin_mailout_emails',
         'route_parameters' => ['eid' => $eid],
         'parent' => $base_plugin_definition['id'] . ':' . $parent_id,
-        'weight' => 3,
+        'weight' => 220,
       ] + $base_plugin_definition;
 
       $links["conreg_options_$eid"] = [
@@ -89,7 +101,7 @@ final class EventsMenuDeriver extends DeriverBase implements ContainerDeriverInt
         'route_name' => 'conreg_admin_member_options',
         'route_parameters' => ['eid' => $eid],
         'parent' => $base_plugin_definition['id'] . ':' . $parent_id,
-        'weight' => 5,
+        'weight' => 110,
       ] + $base_plugin_definition;
 
       $links["conreg_addons_$eid"] = [
@@ -97,7 +109,7 @@ final class EventsMenuDeriver extends DeriverBase implements ContainerDeriverInt
         'route_name' => 'conreg_admin_member_addons',
         'route_parameters' => ['eid' => $eid],
         'parent' => $base_plugin_definition['id'] . ':' . $parent_id,
-        'weight' => 6,
+        'weight' => 120,
       ] + $base_plugin_definition;
 
       $links["conreg_children_$eid"] = [
@@ -105,7 +117,7 @@ final class EventsMenuDeriver extends DeriverBase implements ContainerDeriverInt
         'route_name' => 'conreg_admin_child_member_ages',
         'route_parameters' => ['eid' => $eid],
         'parent' => $base_plugin_definition['id'] . ':' . $parent_id,
-        'weight' => 7,
+        'weight' => 130,
       ] + $base_plugin_definition;
 
       $links["conreg_fantable_$eid"] = [
@@ -113,7 +125,7 @@ final class EventsMenuDeriver extends DeriverBase implements ContainerDeriverInt
         'route_name' => 'conreg_admin_fantable',
         'route_parameters' => ['eid' => $eid],
         'parent' => $base_plugin_definition['id'] . ':' . $parent_id,
-        'weight' => 11,
+        'weight' => 50,
       ] + $base_plugin_definition;
 
       $links["conreg_checkin_$eid"] = [
@@ -121,7 +133,7 @@ final class EventsMenuDeriver extends DeriverBase implements ContainerDeriverInt
         'route_name' => 'conreg_admin_checkin',
         'route_parameters' => ['eid' => $eid],
         'parent' => $base_plugin_definition['id'] . ':' . $parent_id,
-        'weight' => 15,
+        'weight' => 40,
       ] + $base_plugin_definition;
 
       $links["conreg_bulk_email_$eid"] = [
@@ -129,7 +141,7 @@ final class EventsMenuDeriver extends DeriverBase implements ContainerDeriverInt
         'route_name' => 'conreg_admin_bulk_email',
         'route_parameters' => ['eid' => $eid],
         'parent' => $base_plugin_definition['id'] . ':' . $parent_id,
-        'weight' => 20,
+        'weight' => 200,
       ] + $base_plugin_definition;
 
       $links["conreg_config_$eid"] = [
@@ -137,7 +149,7 @@ final class EventsMenuDeriver extends DeriverBase implements ContainerDeriverInt
         'route_name' => 'conreg_config',
         'route_parameters' => ['eid' => $eid],
         'parent' => $base_plugin_definition['id'] . ':' . $parent_id,
-        'weight' => 25,
+        'weight' => 390,
       ] + $base_plugin_definition;
 
       $weight--;
