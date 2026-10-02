@@ -4,6 +4,7 @@ namespace Drupal\conreg\Service;
 
 use Drupal\Core\Database\Statement\FetchAs;
 use Drupal\Core\Database\Connection;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Menu\MenuLinkManagerInterface;
 use Drupal\Core\Messenger\MessengerInterface;
 
@@ -29,11 +30,14 @@ class EventStorage {
    *   The messenger service.
    * @param \Drupal\Core\Menu\MenuLinkManagerInterface $menuLinkManager
    *   The menu link manager.
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager
+   *   The entity type manager.
    */
   public function __construct(
     protected Connection $connection,
     protected MessengerInterface $messenger,
     protected MenuLinkManagerInterface $menuLinkManager,
+    protected EntityTypeManagerInterface $entityTypeManager,
   ) {}
 
   /**
@@ -103,16 +107,28 @@ class EventStorage {
   }
 
   /**
-   * Delete an event from the database.
+   * Delete an event from the database, along with its rate plans.
    *
    * @param array $entry
    *   An array containing at least the event identifier 'eid'.
    */
   public function delete(array $entry): void {
-    $this->connection
-      ->delete('conreg_events')
-      ->condition('eid', $entry['eid'])
-      ->execute();
+    $transaction = $this->connection->startTransaction();
+    try {
+      // Applied plans can't be deleted through the admin UI, but they belong
+      // to the event, so go with it.
+      $ratePlanStorage = $this->entityTypeManager->getStorage('conreg_rate_plan');
+      $ratePlanStorage->delete($ratePlanStorage->loadByProperties(['eid' => $entry['eid']]));
+      $this->connection
+        ->delete('conreg_events')
+        ->condition('eid', $entry['eid'])
+        ->execute();
+    }
+    catch (\Throwable $e) {
+      $transaction->rollBack();
+      throw $e;
+    }
+    unset($transaction);
     $this->menuLinkManager->rebuild();
   }
 

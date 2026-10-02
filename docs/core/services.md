@@ -14,6 +14,7 @@
 | `conreg.pricing` | `PricingService` | Registration pricing via `MemberPricingRule`/`PricingAdjustment` plugins — see `docs/architecture/pricing.md` |
 | `conreg.pricing.member_rule_manager` | `MemberPricingRulePluginManager` | Discovers `MemberPricingRule` plugins |
 | `conreg.pricing.adjustment_manager` | `PricingAdjustmentPluginManager` | Discovers `PricingAdjustment` plugins |
+| `conreg.rate_plan.manager` | `RatePlanManager` | Rate plan rules (missing member type and day prices, applying a plan) and display formatting; rate plans themselves are `conreg_rate_plan` entities |
 
 ## Usage guidance
 

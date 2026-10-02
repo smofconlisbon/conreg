@@ -1,0 +1,65 @@
+/* cspell:ignore nums */
+
+.conreg-rate-plan--due .conreg-rate-plan__when {
+  font-weight: bold;
+}
+
+.conreg-rate-plan__missing::before {
+  content: "\26A0\FE0E  ";
+}
+
+.conreg-rate-plan__price-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.conreg-rate-plan__price-list li {
+  margin: 0;
+}
+
+.conreg-rate-plan__changed,
+tr.conreg-rate-plan__changed td {
+  font-weight: 600;
+}
+
+.conreg-rate-plan__unchanged,
+tr.conreg-rate-plan__unchanged td {
+  color: var(--color-gray-800, #55565b);
+}
+
+.conreg-rate-plan__changes {
+  width: auto;
+}
+
+.conreg-rate-plan__changes th:not(:first-child),
+.conreg-rate-plan__changes td:not(:first-child) {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Claro stretches inputs in table cells to the full width, which pushes the
+   currency symbol onto a line of its own. Keep it beside a price-sized
+   input. The table element also puts the class on the cell, so only the
+   form item is targeted. */
+.form-item.conreg-rate-plan__price {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 var(--space-xs, 0.5rem);
+  margin-block: 0;
+}
+
+td > .form-item.conreg-rate-plan__price > .form-element {
+  width: 10em;
+}
+
+.form-item.conreg-rate-plan__price .form-item__error-message,
+.form-item.conreg-rate-plan__price .form-item__description {
+  flex-basis: 100%;
+}
+
+/* Day rows sit under their member type's row. */
+tr.conreg-rate-plan__day td:first-child {
+  padding-inline-start: 2.5em;
+}

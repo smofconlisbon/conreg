@@ -121,3 +121,9 @@ member_email_check:
       css/member_email_check.css: {}
   js:
     js/member_email_check.js: {}
+
+conreg_rate_plans:
+  version: 1.x
+  css:
+    theme:
+      css/conreg_rate_plans.css: {}

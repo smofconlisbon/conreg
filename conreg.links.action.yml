@@ -9,3 +9,9 @@ conreg.printer.add_form:
   title: 'Add printer'
   appears_on:
     - entity.conreg_printer.collection
+
+conreg.rate_plan_add:
+  title: Add rate plan
+  route_name: entity.conreg_rate_plan.add_form
+  appears_on:
+    - entity.conreg_rate_plan.collection

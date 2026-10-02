@@ -222,6 +222,63 @@ conreg_config_member_types:
     _permission: 'configure convention registration'
     eid: ^[0-9]+$
 
+entity.conreg_rate_plan.collection:
+  path: 'admin/config/conreg/rate-plans/{eid}'
+  defaults:
+    _title: 'Rate plans'
+    _entity_list: 'conreg_rate_plan'
+  requirements:
+    _permission: 'configure convention registration'
+    eid: ^[0-9]+$
+
+conreg_rate_plans_applied:
+  path: 'admin/config/conreg/rate-plans/{eid}/applied'
+  defaults:
+    _title: 'Applied rate plans'
+    _controller: '\Drupal\conreg\Controller\RatePlanController::applied'
+  requirements:
+    _permission: 'configure convention registration'
+    eid: ^[0-9]+$
+
+entity.conreg_rate_plan.add_form:
+  path: 'admin/config/conreg/rate-plans/{eid}/add'
+  defaults:
+    _title: 'Add rate plan'
+    _entity_form: 'conreg_rate_plan.add'
+  requirements:
+    _entity_create_access: 'conreg_rate_plan'
+    eid: ^[0-9]+$
+
+entity.conreg_rate_plan.edit_form:
+  path: 'admin/config/conreg/rate-plans/{eid}/{conreg_rate_plan}/edit'
+  defaults:
+    _title: 'Edit rate plan'
+    _entity_form: 'conreg_rate_plan.edit'
+  requirements:
+    _entity_access: 'conreg_rate_plan.update'
+    eid: ^[0-9]+$
+    conreg_rate_plan: ^[0-9]+$
+
+entity.conreg_rate_plan.delete_form:
+  path: 'admin/config/conreg/rate-plans/{eid}/{conreg_rate_plan}/delete'
+  defaults:
+    _title: 'Delete rate plan'
+    _entity_form: 'conreg_rate_plan.delete'
+  requirements:
+    _entity_access: 'conreg_rate_plan.delete'
+    eid: ^[0-9]+$
+    conreg_rate_plan: ^[0-9]+$
+
+entity.conreg_rate_plan.apply_form:
+  path: 'admin/config/conreg/rate-plans/{eid}/{conreg_rate_plan}/apply'
+  defaults:
+    _title: 'Apply rate plan'
+    _entity_form: 'conreg_rate_plan.apply'
+  requirements:
+    _entity_access: 'conreg_rate_plan.apply'
+    eid: ^[0-9]+$
+    conreg_rate_plan: ^[0-9]+$
+
 conreg_config_addons:
   path: 'admin/config/conreg/addons/{eid}'
   defaults:

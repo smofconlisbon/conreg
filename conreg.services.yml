@@ -85,6 +85,10 @@ services:
     class: Drupal\conreg\Service\PricingService
   Drupal\conreg\Service\PricingServiceInterface: '@conreg.pricing'
 
+  conreg.rate_plan.manager:
+    class: Drupal\conreg\Service\RatePlanManager
+  Drupal\conreg\Service\RatePlanManager: '@conreg.rate_plan.manager'
+
   logger.channel.conreg:
     parent: logger.channel_base
     arguments:

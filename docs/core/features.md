@@ -12,6 +12,9 @@
 
 - Event list and clone (`EventList`, `EventClone`).
 - Event config, member classes, member types, add-ons, email templates.
+- Rate plans (`PlannedRatePlanListBuilder`, `AppliedRatePlanListBuilder`,
+  `RatePlanForm`, `RatePlanApplyForm`,
+  `RatePlanDeleteForm`) for planning member type price changes.
 - Member admin (`AdminMembers`) with add/edit/delete/transfer/email.
 - Check-in, fan table registration, options/add-ons reports.
 - Badge label printing, opt-in per event (`site-building/label-printing.md`).

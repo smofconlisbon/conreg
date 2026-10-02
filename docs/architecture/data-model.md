@@ -52,3 +52,26 @@ It also added a second **config** entity, `conreg_label_size`
 (`Drupal\conreg\Entity\LabelSize`) — a named Dymo label size (width/
 height in mm, plus a rotation override), global rather than per-event.
 See `site-building/label-printing.md`.
+
+Rate plans are a **content** entity, `conreg_rate_plan`
+(`Drupal\conreg\Entity\RatePlan`), in the `conreg_rate_plan` base table. Each
+plan belongs to an event (`eid`) and has a planned date, and is applied by an
+administrator (`applied`, `applied_by`). Its prices are a multi-value
+`conreg_member_type_price` field (in `conreg_rate_plan__prices`) holding, per
+member type and per enabled day of each member type, the planned price and the
+price before the plan was applied. The item's `day` is NULL for a member
+type's main price. Applying a plan also records the member type and day names
+on each item (`member_type_name`, `day_name`), so the history keeps the names
+they had at the time.
+Applied plans are kept as the history of price changes, so
+`RatePlanAccessControlHandler` forbids editing, re-applying or deleting them.
+It also forbids applying a plan that is missing a price for a member type or
+enabled day, or that wouldn't change any prices. Only one plan per event is
+applied at a time (`RatePlanManager::apply()` locks the event). Deleting an
+event (`EventStorage::delete()`) deletes its rate plans, applied or not;
+cloning an event doesn't copy them.
+The rate plan collection, an event's planned plans, is listed by
+`PlannedRatePlanListBuilder`. Applied plans are listed by
+`AppliedRatePlanListBuilder`, rendered by `RatePlanController`, as an entity
+type has only one list builder handler. Both list only the plans of the event
+in the route's `eid`.

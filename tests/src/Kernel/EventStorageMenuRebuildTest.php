@@ -58,6 +58,8 @@ class EventStorageMenuRebuildTest extends KernelTestBase {
     parent::setUp();
 
     $this->installSchema('conreg', ['conreg_events']);
+    // Deleting an event deletes its rate plans.
+    $this->installEntitySchema('conreg_rate_plan');
 
     $this->eventStorage = $this->container->get(EventStorage::class);
     $this->menuLinkManager = $this->container->get('plugin.manager.menu.link');

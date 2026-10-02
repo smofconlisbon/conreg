@@ -1653,3 +1653,13 @@ function conreg_update_9025() {
     '@padded' => implode(', ', $padded) ?: '(none)',
   ]);
 }
+
+/**
+ * Install the conreg_rate_plan entity type.
+ */
+function conreg_update_9026() {
+  $update_manager = \Drupal::entityDefinitionUpdateManager();
+  $entity_type_manager = \Drupal::entityTypeManager();
+
+  $update_manager->installEntityType($entity_type_manager->getDefinition('conreg_rate_plan'));
+}

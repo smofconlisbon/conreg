@@ -26,7 +26,25 @@ conreg.config_addons:
   title: Add-Ons
   route_name: conreg_config_addons
   base_route: conreg_config
+  weight: 5
+
+conreg.config_rate_plans:
+  title: Rate Plans
+  route_name: entity.conreg_rate_plan.collection
+  base_route: conreg_config
   weight: 4
+
+conreg.config_rate_plans_planned:
+  title: Planned
+  route_name: entity.conreg_rate_plan.collection
+  parent_id: conreg.config_rate_plans
+  weight: 0
+
+conreg.config_rate_plans_applied:
+  title: Applied
+  route_name: conreg_rate_plans_applied
+  parent_id: conreg.config_rate_plans
+  weight: 1
 
 conreg.label_printing_settings:
   title: Settings

@@ -41,4 +41,10 @@ Core tabs in `conreg.links.task.yml`:
 - Event configuration
 - Member classes
 - Member types
+- Rate plans, with Planned and Applied sub-tabs
 - Add-ons
+
+## Local actions
+
+`conreg.links.action.yml` includes an "Add rate plan" button on the planned
+rate plans page.

@@ -5,7 +5,9 @@ namespace Drupal\Tests\conreg\Kernel;
 use Drupal\user\RoleInterface;
 use Drupal\filter\Entity\FilterFormat;
 use Drupal\conreg\Addons;
+use Drupal\conreg\AppliedRatePlanListBuilder;
 use Drupal\conreg\Entity\Printer;
+use Drupal\conreg\Entity\RatePlan;
 use Drupal\conreg\Form\Admin\CheckInBadgeNameForm;
 use Drupal\conreg\Form\Admin\CheckInMembers;
 use Drupal\conreg\Form\Admin\EventAddOns;
@@ -14,13 +16,17 @@ use Drupal\conreg\Payment;
 use Drupal\conreg\Plugin\Derivative\EventsMenuDeriver;
 use Drupal\conreg\Service\PaymentStorage;
 use Drupal\Core\Database\Database;
+use Drupal\Core\Entity\EntityFormInterface;
+use Drupal\Core\Routing\RouteObjectInterface;
 use Drupal\easy_email\Entity\EasyEmailType;
 use Drupal\Core\Form\FormState;
 use Drupal\Core\Render\Element;
 use Drupal\Core\Session\UserSession;
 use Drupal\KernelTests\KernelTestBase;
+use Drupal\Tests\user\Traits\UserCreationTrait;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
+use Symfony\Component\HttpFoundation\InputBag;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Session\Session;
 use Symfony\Component\HttpFoundation\Session\Storage\MockArraySessionStorage;
@@ -32,6 +38,8 @@ use Symfony\Component\Routing\Route;
 #[Group('conreg')]
 #[RunTestsInSeparateProcesses]
 class FormBuildTest extends KernelTestBase {
+
+  use UserCreationTrait;
 
   /**
    * A handful of legacy conreg.settings keys predate a strict schema.
@@ -83,6 +91,7 @@ class FormBuildTest extends KernelTestBase {
       'conreg_payments',
       'conreg_payment_lines',
     ]);
+    $this->installEntitySchema('conreg_rate_plan');
     $this->installConfig(['conreg']);
 
     // Required for MemberTypes.php's default text format lookup, now that
@@ -1618,6 +1627,387 @@ class FormBuildTest extends KernelTestBase {
     $this->assertEquals(30, $saved['addon_amount']);
     $this->assertCount(1, $payment->paymentLines);
     $this->assertEquals(30, $payment->paymentLines[0]->amount);
+  }
+
+  /**
+   * Create and save a rate plan for event 1.
+   */
+  protected function createRatePlan(string $plannedDate, array $prices): RatePlan {
+    $plan = RatePlan::create(['eid' => 1, 'planned_date' => $plannedDate])->setPrices($prices);
+    $plan->save();
+    return $plan;
+  }
+
+  /**
+   * Get a rate plan entity form object.
+   */
+  protected function ratePlanForm(RatePlan $plan, string $operation): EntityFormInterface {
+    return $this->container->get('entity_type.manager')
+      ->getFormObject('conreg_rate_plan', $operation)
+      ->setEntity($plan);
+  }
+
+  /**
+   * Test building the rate plan add and edit forms.
+   */
+  public function testAdminRatePlanEditFormBuild() {
+    $route = $this->container
+      ->get('router.route_provider')
+      ->getRouteByName('entity.conreg_rate_plan.add_form');
+
+    $this->assertInstanceOf(Route::class, $route);
+    $this->assertEquals('Add rate plan', $route->getDefault('_title'));
+
+    $form = $this->container
+      ->get('entity.form_builder')
+      ->getForm(RatePlan::create(['eid' => 1]), 'add');
+
+    $this->assertEquals('conreg_rate_plan_add_form', $form['#form_id']);
+    $this->assertSame('', $form['planned_date']['#default_value']);
+    // A new plan starts from the current prices.
+    $this->assertEquals(50, $form['prices']['A']['price']['#default_value']);
+    $this->assertSame('€', $form['prices']['A']['price']['#field_prefix']);
+    $this->assertArrayNotHasKey('delete', $form['actions']);
+
+    $plan = $this->createRatePlan('2026-11-01', ['A' => '60']);
+    $form = $this->container
+      ->get('entity.form_builder')
+      ->getForm($plan, 'edit');
+
+    $this->assertEquals('Edit the rate plan planned for Sun, 1 November 2026', (string) $form['#title']);
+    $this->assertSame('2026-11-01', $form['planned_date']['#default_value']);
+    $this->assertEquals(60, $form['prices']['A']['price']['#default_value']);
+    $warning = $form['missing']['#message_list']['warning'][0];
+    $this->assertEquals('These member types were added after this plan was created, so need a price:', (string) $warning['intro']['#markup']);
+    $this->assertSame(['Low Income', 'Child', 'Infant', 'Supporting'], $warning['list']['#items']);
+    $this->assertTrue($form['prices']['U']['price']['#required']);
+    // Member types added since the plan was saved aren't pre-filled.
+    $this->assertSame('', $form['prices']['U']['price']['#default_value']);
+    $this->assertSame(['submit', 'delete'], array_values(array_filter(array_keys($form['actions']), fn($key) => $key[0] !== '#')));
+  }
+
+  /**
+   * Test a rate plan can't be saved without a price for every member type.
+   */
+  public function testAdminRatePlanEditRequiresAllPrices() {
+    $form_state = (new FormState())->setValues([
+      'planned_date' => '2026-11-01',
+      // Clear the prices pre-filled from the current ones.
+      'prices' => [
+        'A' => ['price' => '60'],
+        'U' => ['price' => ''],
+        'C' => ['price' => ''],
+        'I' => ['price' => ''],
+        'S' => ['price' => ''],
+      ],
+      'op' => 'Save',
+    ]);
+    $this->container->get('form_builder')->submitForm($this->ratePlanForm(RatePlan::create(['eid' => 1]), 'add'), $form_state);
+
+    $this->assertSame(['prices][U][price', 'prices][C][price', 'prices][I][price', 'prices][S][price'], array_keys($form_state->getErrors()));
+    $this->assertSame([], $this->container->get('entity_type.manager')->getStorage('conreg_rate_plan')->loadPlanned(1));
+  }
+
+  /**
+   * Test a rate plan can't be saved with an invalid planned date.
+   */
+  public function testAdminRatePlanEditRejectsInvalidDates() {
+    $prices = [
+      'A' => ['price' => '60'],
+      'U' => ['price' => '25'],
+      'C' => ['price' => '15'],
+      'I' => ['price' => '0'],
+      'S' => ['price' => '25'],
+    ];
+    foreach (['2026-02-31', '2026-13-01', '2026-1-1'] as $date) {
+      $form_state = (new FormState())->setValues([
+        'planned_date' => $date,
+        'prices' => $prices,
+        'op' => 'Save',
+      ]);
+      $this->container->get('form_builder')->submitForm($this->ratePlanForm(RatePlan::create(['eid' => 1]), 'add'), $form_state);
+      $this->assertSame(['planned_date'], array_keys($form_state->getErrors()), $date);
+    }
+    $this->assertSame([], $this->container->get('entity_type.manager')->getStorage('conreg_rate_plan')->loadPlanned(1));
+  }
+
+  /**
+   * Test saving a rate plan always reports the save, as core forms do.
+   */
+  public function testAdminRatePlanEditReportsSave() {
+    $plan = $this->createRatePlan('2026-11-01', ['A' => '60', 'U' => '25', 'C' => '15', 'I' => '0', 'S' => '25']);
+    $form_builder = $this->container->get('form_builder');
+    $messenger = $this->container->get('messenger');
+
+    $form_state = (new FormState())->setValues(['op' => 'Save']);
+    $form_builder->submitForm($this->ratePlanForm($plan, 'edit'), $form_state);
+    $this->assertSame([], $form_state->getErrors());
+    $this->assertCount(1, $messenger->deleteByType('status'));
+
+    $form_state = (new FormState())->setValues([
+      'prices' => ['A' => ['price' => '65']],
+      'op' => 'Save',
+    ]);
+    $form_builder->submitForm($this->ratePlanForm($plan, 'edit'), $form_state);
+    $this->assertCount(1, $messenger->deleteByType('status'));
+    $plan = $this->container->get('entity_type.manager')->getStorage('conreg_rate_plan')->loadUnchanged($plan->id());
+    $this->assertEquals(65, $plan->getPrices()['A']);
+  }
+
+  /**
+   * Test editing a plan hides and tidies away deleted member types.
+   */
+  public function testAdminRatePlanEditTidiesDeletedMemberTypes() {
+    // X is a member type deleted after the plan was saved.
+    $plan = $this->createRatePlan('2026-11-01', [
+      'A' => '60',
+      'U' => '25',
+      'C' => '15',
+      'I' => '0',
+      'S' => '25',
+      'X' => '99',
+    ]);
+
+    $form = $this->container->get('entity.form_builder')->getForm($plan, 'edit');
+    $this->assertArrayNotHasKey('X', $form['prices']);
+
+    $form_state = (new FormState())->setValues(['op' => 'Save']);
+    $this->container->get('form_builder')->submitForm($this->ratePlanForm($plan, 'edit'), $form_state);
+    $plan = $this->container->get('entity_type.manager')->getStorage('conreg_rate_plan')->loadUnchanged($plan->id());
+    $this->assertSame(['A', 'U', 'C', 'I', 'S'], array_keys($plan->getPrices()));
+  }
+
+  /**
+   * Test building the rate plan apply and delete confirmation forms.
+   */
+  public function testAdminRatePlanConfirmFormsBuild() {
+    $plan = $this->createRatePlan('2026-11-01', ['A' => '60', 'U' => '25', 'C' => '15', 'I' => '0', 'S' => '25']);
+    $entity_form_builder = $this->container->get('entity.form_builder');
+
+    $form = $entity_form_builder->getForm($plan, 'apply');
+    $this->assertEquals('conreg_rate_plan_apply_form', $form['#form_id']);
+    $this->assertCount(5, $form['prices']['#rows']);
+    $this->assertArrayHasKey('submit', $form['actions']);
+    $this->assertArrayNotHasKey('earlier', $form);
+
+    // Applying a plan warns about earlier plans that haven't been applied.
+    $later = $this->createRatePlan('2026-12-01', ['A' => '70', 'U' => '25', 'C' => '15', 'I' => '0', 'S' => '25']);
+    $form = $entity_form_builder->getForm($later, 'apply');
+    $this->assertEquals('There is an unapplied rate plan planned before this one.', (string) $form['earlier']['#message_list']['warning'][0]);
+    $this->assertArrayHasKey('submit', $form['actions']);
+
+    $form = $entity_form_builder->getForm($plan, 'delete');
+    $this->assertEquals('conreg_rate_plan_delete_form', $form['#form_id']);
+  }
+
+  /**
+   * Test building the planned and applied rate plan lists.
+   */
+  public function testAdminRatePlanListsBuild() {
+    $this->installEntitySchema('user');
+    $complete = ['A' => '60', 'U' => '25', 'C' => '15', 'I' => '0', 'S' => '25'];
+    $this->createRatePlan('2000-01-01', $complete);
+    $this->createRatePlan('2099-11-01', ['A' => '60']);
+    $this->createRatePlan('2099-12-01', ['A' => '70'] + $complete);
+    // Back to the current prices, so changes nothing if applied now.
+    $this->createRatePlan('2099-12-02', ['A' => '50'] + $complete);
+    // X is a member type deleted after the plan was applied, and Adult has
+    // been renamed since.
+    $this->createRatePlan('2000-01-02', ['A' => '55', 'X' => '10'])
+      ->markApplied(['A' => '50', 'X' => '5'], [], 0, 200)
+      ->setNames(['A' => 'Grown-up', 'X' => 'Dealer'], [])
+      ->save();
+    // Applied with no names recorded.
+    $this->createRatePlan('2000-01-03', ['A' => '50'])->markApplied(['A' => '55'], [], 0, 300)->save();
+
+    $this->setUpCurrentUser(permissions: ['configure convention registration']);
+
+    // The lists show the plans of the event in the route.
+    $route_name = 'entity.conreg_rate_plan.collection';
+    $request = Request::create('/admin/config/conreg/rate-plans/1');
+    $request->attributes->set(RouteObjectInterface::ROUTE_NAME, $route_name);
+    $request->attributes->set(RouteObjectInterface::ROUTE_OBJECT, $this->container->get('router.route_provider')->getRouteByName($route_name));
+    $request->attributes->set('_raw_variables', new InputBag(['eid' => '1']));
+    $request->setSession(new Session(new MockArraySessionStorage()));
+    $this->container->get('request_stack')->push($request);
+
+    $entity_type_manager = $this->container->get('entity_type.manager');
+    $planned = $entity_type_manager->getListBuilder('conreg_rate_plan')->render();
+    $this->assertEquals('Test event rate plans', (string) $planned['#title']);
+    $this->assertStringContainsString('There are no planned rate plans.', (string) $planned['table']['#empty']);
+    $rows = array_values($planned['table']['#rows']);
+    $this->assertCount(4, $rows);
+    // Only changed and unset prices are listed, as if the plans before have
+    // been applied: the first plan changes Adult from its current price; the
+    // second leaves Adult at the first plan's price and four prices unset;
+    // the third changes Adult from the first plan's price.
+    $this->assertCount(1, $rows[0]['data']['prices']['data']['#items']);
+    $this->assertEquals('Adult: €50.00 → €60.00 (+€10.00)', (string) $rows[0]['data']['prices']['data']['#items'][0]['#markup']);
+    $this->assertCount(4, $rows[1]['data']['prices']['data']['#items']);
+    $this->assertCount(1, $rows[2]['data']['prices']['data']['#items']);
+    $this->assertEquals('Adult: €60.00 → €70.00 (+€10.00)', (string) $rows[2]['data']['prices']['data']['#items'][0]['#markup']);
+
+    // Apply is the visible operation once a complete plan is due, can be
+    // applied early from the dropdown, and isn't offered for incomplete plans.
+    $links = $rows[0]['data']['operations']['data']['#links'];
+    $this->assertSame(['apply', 'edit', 'delete'], array_keys($links));
+    $this->assertSame(['edit', 'delete'], array_keys($rows[1]['data']['operations']['data']['#links']));
+    $this->assertSame(['edit', 'apply', 'delete'], array_keys($rows[2]['data']['operations']['data']['#links']));
+    // A plan that changes nothing from the current prices can't be applied,
+    // even though it changes prices from the plans before it.
+    $this->assertCount(1, $rows[3]['data']['prices']['data']['#items']);
+    $this->assertSame(['edit', 'delete'], array_keys($rows[3]['data']['operations']['data']['#links']));
+
+    // Rows that need attention are highlighted as core does: an error for a
+    // plan that can't be applied, a warning for one that is overdue.
+    $this->assertSame(['color-warning', 'conreg-rate-plan--due'], $rows[0]['class']);
+    $this->assertSame(['color-error'], $rows[1]['class']);
+    $this->assertSame([], $rows[2]['class']);
+
+    // Apply and Delete open in a modal; Edit is a full page.
+    $this->assertSame('modal', $links['apply']['attributes']['data-dialog-type']);
+    // The label reads the date in words, without an abbreviated weekday.
+    $this->assertEquals('Apply Rate plan for 1 January 2000', (string) $links['apply']['attributes']['aria-label']);
+    $this->assertSame('modal', $links['delete']['attributes']['data-dialog-type']);
+    $this->assertArrayNotHasKey('attributes', $links['edit']);
+
+    $applied = $entity_type_manager
+      ->createHandlerInstance(AppliedRatePlanListBuilder::class, $entity_type_manager->getDefinition('conreg_rate_plan'))
+      ->render();
+    $this->assertEquals('Test event applied rate plans', (string) $applied['#title']);
+    $this->assertEquals('No rate plans have been applied.', (string) $applied['table']['#empty']);
+    // Prices changed without a rate plan aren't recorded, so the page says so.
+    $this->assertStringContainsString('not shown', (string) $applied['intro']['#value']);
+    $applied_rows = array_values($applied['table']['#rows']);
+    $this->assertCount(2, $applied_rows);
+    // Without recorded names, member types are named as they are now.
+    $applied_items = $applied_rows[0]['prices']['data']['#items'];
+    $this->assertEquals(['Adult: €55.00 → €50.00 (−€5.00)'], array_map(fn($item) => (string) $item['#markup'], $applied_items));
+    // Member types are named as they were when the plan was applied, deleted
+    // ones are still listed, and changes show the difference.
+    $applied_items = $applied_rows[1]['prices']['data']['#items'];
+    $this->assertCount(2, $applied_items);
+    $this->assertEquals('Grown-up: €50.00 → €55.00 (+€5.00)', (string) $applied_items[0]['#markup']);
+    $this->assertEquals('Dealer: €5.00 → €10.00 (+€5.00)', (string) $applied_items[1]['#markup']);
+    $this->assertSame(['conreg-rate-plan__changed'], $applied_items[0]['#wrapper_attributes']['class']);
+  }
+
+  /**
+   * Enable Friday and Saturday for Adult, with Saturday given no price.
+   */
+  protected function enableAdultDays(): void {
+    $this->config('conreg.settings.1')
+      ->set('member.types.A.days', [
+        'Fr' => ['description' => 'Friday only', 'price' => '20'],
+        'Sa' => ['description' => 'Saturday only', 'price' => ''],
+      ])
+      ->save();
+    $this->container->get('cache_tags.invalidator')->invalidateTags(['event:1:type']);
+  }
+
+  /**
+   * Test the rate plan editor has a row for each enabled day.
+   */
+  public function testAdminRatePlanEditDayPrices() {
+    $this->enableAdultDays();
+    $entity_form_builder = $this->container->get('entity.form_builder');
+
+    $form = $entity_form_builder->getForm(RatePlan::create(['eid' => 1]), 'add');
+    // Day rows follow their member type's row.
+    $keys = array_values(array_filter(array_keys($form['prices']), fn($key) => $key[0] !== '#'));
+    $this->assertSame(['A', 'day:A:Fr', 'day:A:Sa', 'U'], array_slice($keys, 0, 4));
+    $friday = $form['prices']['day:A:Fr'];
+    $this->assertSame(['conreg-rate-plan__day'], $friday['#attributes']['class']);
+    $this->assertEquals('Planned Friday price for Adult', (string) $friday['price']['#title']);
+    $this->assertTrue($friday['price']['#required']);
+    // A new plan starts from the current day prices, and a day with no price
+    // is free.
+    $this->assertEquals(20, $friday['price']['#default_value']);
+    $this->assertSame('0', $form['prices']['day:A:Sa']['price']['#default_value']);
+
+    $prices = [
+      'A' => ['price' => '60'],
+      'U' => ['price' => '25'],
+      'C' => ['price' => '15'],
+      'I' => ['price' => '0'],
+      'S' => ['price' => '25'],
+    ];
+    $form_state = (new FormState())->setValues([
+      'planned_date' => '2026-11-01',
+      'prices' => $prices,
+      'day_prices' => ['A' => ['Fr' => '25', 'Sa' => '']],
+      'op' => 'Save',
+    ]);
+    $this->container->get('form_builder')->submitForm($this->ratePlanForm(RatePlan::create(['eid' => 1]), 'add'), $form_state);
+    $this->assertSame(['day_prices][A][Sa'], array_keys($form_state->getErrors()));
+
+    $form_state = (new FormState())->setValues([
+      'planned_date' => '2026-11-01',
+      'prices' => $prices,
+      'day_prices' => ['A' => ['Fr' => '25', 'Sa' => '5']],
+      'op' => 'Save',
+    ]);
+    $this->container->get('form_builder')->submitForm($this->ratePlanForm(RatePlan::create(['eid' => 1]), 'add'), $form_state);
+    $this->assertSame([], $form_state->getErrors());
+    $plans = $this->container->get('entity_type.manager')->getStorage('conreg_rate_plan')->loadPlanned(1);
+    $plan = reset($plans);
+    $this->assertEquals(['A' => 60, 'U' => 25, 'C' => 15, 'I' => 0, 'S' => 25], $plan->getPrices());
+    $this->assertEquals(['A' => ['Fr' => 25, 'Sa' => 5]], $plan->getDayPrices());
+
+    // Days enabled since the plan was saved aren't pre-filled.
+    $plan->setDayPrices(['A' => ['Fr' => '25']])->save();
+    $form = $entity_form_builder->getForm($plan, 'edit');
+    $this->assertEquals(25, $form['prices']['day:A:Fr']['price']['#default_value']);
+    $this->assertSame('', $form['prices']['day:A:Sa']['price']['#default_value']);
+    $warning = $form['missing']['#message_list']['warning'][0];
+    $this->assertEquals('These days were enabled after this plan was created, so need a price:', (string) $warning['intro']['#markup']);
+    $this->assertSame('item_list', $warning['list']['#theme']);
+    $this->assertEquals(['Adult, Saturday'], array_map('strval', $warning['list']['#items']));
+  }
+
+  /**
+   * Test the apply confirmation and lists show day price changes.
+   */
+  public function testAdminRatePlanDayPriceChanges() {
+    $this->installEntitySchema('user');
+    $this->enableAdultDays();
+    $complete = ['A' => '50', 'U' => '25', 'C' => '15', 'I' => '0', 'S' => '25'];
+    // Only day prices change: Friday goes up, and Saturday stays free.
+    $plan = $this->createRatePlan('2099-11-01', $complete)->setDayPrices(['A' => ['Fr' => '25', 'Sa' => '0']]);
+    $plan->save();
+    // Changes Adult's price, and Friday's from the plan before.
+    $this->createRatePlan('2099-12-01', ['A' => '60'] + $complete)->setDayPrices(['A' => ['Fr' => '30', 'Sa' => '0']])->save();
+
+    $form = $this->container->get('entity.form_builder')->getForm($plan, 'apply');
+    $this->assertCount(7, $form['prices']['#rows']);
+    $this->assertSame(['conreg-rate-plan__changed', 'conreg-rate-plan__day'], $form['prices']['#rows'][1]['class']);
+    $this->assertSame(['conreg-rate-plan__unchanged', 'conreg-rate-plan__day'], $form['prices']['#rows'][2]['class']);
+    $this->assertEquals('Applying this plan will change 1 day price.', (string) $form['summary']['#value']);
+    $plans = $this->container->get('entity_type.manager')->getStorage('conreg_rate_plan')->loadPlanned(1);
+    $form = $this->container->get('entity.form_builder')->getForm(end($plans), 'apply');
+    $this->assertEquals('Applying this plan will change 1 member type price and 1 day price.', (string) $form['summary']['#value']);
+
+    $this->setUpCurrentUser(permissions: ['configure convention registration']);
+    $route_name = 'entity.conreg_rate_plan.collection';
+    $request = Request::create('/admin/config/conreg/rate-plans/1');
+    $request->attributes->set(RouteObjectInterface::ROUTE_NAME, $route_name);
+    $request->attributes->set(RouteObjectInterface::ROUTE_OBJECT, $this->container->get('router.route_provider')->getRouteByName($route_name));
+    $request->attributes->set('_raw_variables', new InputBag(['eid' => '1']));
+    $request->setSession(new Session(new MockArraySessionStorage()));
+    $this->container->get('request_stack')->push($request);
+
+    $planned = $this->container->get('entity_type.manager')->getListBuilder('conreg_rate_plan')->render();
+    $rows = array_values($planned['table']['#rows']);
+    $items = array_map(fn($item) => (string) $item['#markup'], $rows[0]['data']['prices']['data']['#items']);
+    // Saturday's missing price is free, so setting it to 0 isn't a change.
+    $this->assertSame(['Adult, Friday: €20.00 → €25.00 (+€5.00)'], $items);
+    // Can be applied, as a plan changing only day prices still changes prices.
+    $this->assertArrayHasKey('apply', $rows[0]['data']['operations']['data']['#links']);
+    $items = array_map(fn($item) => (string) $item['#markup'], $rows[1]['data']['prices']['data']['#items']);
+    $this->assertSame([
+      'Adult: €50.00 → €60.00 (+€10.00)',
+      'Adult, Friday: €25.00 → €30.00 (+€5.00)',
+    ], $items);
   }
 
   /**
